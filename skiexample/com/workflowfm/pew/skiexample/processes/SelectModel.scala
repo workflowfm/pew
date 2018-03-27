@@ -1,4 +1,4 @@
-package src.com.workflowfm.pew.skiexample.processes
+package com.workflowfm.pew.skiexample.processes
 
 import scala.concurrent._
 import com.workflowfm.pew._

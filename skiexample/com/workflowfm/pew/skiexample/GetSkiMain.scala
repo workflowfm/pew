@@ -1,4 +1,4 @@
-package src.com.workflowfm.pew.skiexample
+package com.workflowfm.pew.skiexample
 
 import scala.concurrent._
 import scala.concurrent.duration.Duration

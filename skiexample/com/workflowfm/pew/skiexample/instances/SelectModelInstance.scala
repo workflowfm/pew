@@ -1,4 +1,4 @@
-package src.com.workflowfm.pew.skiexample.instances
+package com.workflowfm.pew.skiexample.instances
 
 import scala.concurrent._
 import com.workflowfm.pew.skiexample.SkiExampleTypes._
