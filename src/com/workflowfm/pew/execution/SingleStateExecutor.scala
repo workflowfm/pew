@@ -17,7 +17,7 @@ class SingleStateExecutor(processes:Map[String,PiProcess])(override implicit val
   def this(l:PiProcess*) = this(PiProcess.mapOf(l :_*))
   
   var ctr:Int = 0
-  var instance:Option[PiInstance] = None
+  var instance:Option[PiInstance[Int]] = None
   var promise:Promise[Option[Any]] = Promise()
   
   def call(p:PiProcess,args:PiObject*) = {
@@ -42,7 +42,7 @@ class SingleStateExecutor(processes:Map[String,PiProcess])(override implicit val
     promise = Promise()  
   }
   
-  def failure(inst:PiInstance) = {
+  def failure(inst:PiInstance[Int]) = {
 	  System.err.println(" === Failed to obtain output! ===")
 	  System.err.println(" === FINAL STATE === \n" + inst.state + "\n === === === === === === === ===")
 	  promise.success(None) 

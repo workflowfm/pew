@@ -44,5 +44,3 @@ trait ProcessExecutorTester {
   def exe(e:ProcessExecutor,p:PiProcess,args:Any*) = await(e.execute(p,args:Seq[Any]))
   def await[A](f:Future[A]):A = Await.result(f,Duration.Inf)  
 }
-
-

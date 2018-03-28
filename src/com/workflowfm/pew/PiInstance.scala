@@ -1,6 +1,6 @@
 package com.workflowfm.pew
 
-case class PiInstance(final val id:Int, called:Seq[Int], process:PiProcess, state:PiState) {
+case class PiInstance[T](final val id:T, called:Seq[Int], process:PiProcess, state:PiState) {
   def result:Option[Any] = {
     val res = state.resources.sub(process.output._1)
     if (res.isGround) Some(PiObject.get(res))
@@ -14,14 +14,14 @@ case class PiInstance(final val id:Int, called:Seq[Int], process:PiProcess, stat
    */
   def completed:Boolean = state.threads.isEmpty && called.isEmpty 
   
-  def postResult(thread:Int, res:PiObject):PiInstance = copy(
+  def postResult(thread:Int, res:PiObject):PiInstance[T] = copy(
 		  called = called filterNot (_ == thread),
 		  state = state.result(thread,res).map(_.fullReduce()).getOrElse(state)
     )
 
-  def reduce:PiInstance = copy(state = state.fullReduce())
+  def reduce:PiInstance[T] = copy(state = state.fullReduce())
   
-  def handleThreads(handler:(Int,PiFuture)=>Boolean):PiInstance = {
+  def handleThreads(handler:(Int,PiFuture)=>Boolean):PiInstance[T] = {
     val newstate = state.handleThreads(THandler(handler))
     copy(called=newstate.threads.keys.toSeq,state=newstate)
   }
@@ -37,23 +37,29 @@ case class PiInstance(final val id:Int, called:Seq[Int], process:PiProcess, stat
   }
 }
 object PiInstance {
-  def apply(id:Int,p:PiProcess,args:PiObject*):PiInstance = PiInstance(id, Seq(), p, p.execState(args))
+  def apply[T](id:T,p:PiProcess,args:PiObject*):PiInstance[T] = PiInstance(id, Seq(), p, p.execState(args))
 }
 
 
 
 
-trait PiInstanceStore {
-  def get(id:Int):Option[PiInstance]
-  def put(i:PiInstance):PiInstanceStore
-  def del(id:Int):PiInstanceStore
+trait PiInstanceStore[T] {
+  def get(id:T):Option[PiInstance[T]]
+  def put(i:PiInstance[T]):PiInstanceStore[T]
+  def del(id:T):PiInstanceStore[T]
 }
 
-case class SimpleInstanceStore(m:Map[Int,PiInstance]) extends PiInstanceStore {
+trait PiInstanceMutableStore[T] {
+  def get(id:T):Option[PiInstance[T]]
+  def put(i:PiInstance[T]):Unit
+  def del(id:T):Unit
+}
+
+case class SimpleInstanceStore(m:Map[Int,PiInstance[Int]]) extends PiInstanceStore[Int] {
   def get(id:Int) = m.get(id)
-  def put(i:PiInstance) = copy(m = m + (i.id->i))
+  def put(i:PiInstance[Int]) = copy(m = m + (i.id->i))
   def del(id:Int) = copy(m = m - id)
 }
 object SimpleInstanceStore {
-  def apply(l:PiInstance*):SimpleInstanceStore = (SimpleInstanceStore(Map[Int,PiInstance]()) /: l) (_.put(_))
+  def apply(l:PiInstance[Int]*):SimpleInstanceStore = (SimpleInstanceStore(Map[Int,PiInstance[Int]]()) /: l) (_.put(_))
 }

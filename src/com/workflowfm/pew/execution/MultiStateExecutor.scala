@@ -13,8 +13,8 @@ import scala.annotation.tailrec
  * promises/futures from the first workflow can trigger changes on the state!
  */
 
-class MultiStateExecutor(var store:PiInstanceStore,processes:Map[String,PiProcess])(override implicit val context: ExecutionContext = ExecutionContext.global) extends ProcessExecutor {
-  def this(store:PiInstanceStore,l:PiProcess*) = this(store,PiProcess.mapOf(l :_*))
+class MultiStateExecutor(var store:PiInstanceStore[Int],processes:Map[String,PiProcess])(override implicit val context: ExecutionContext = ExecutionContext.global) extends ProcessExecutor {
+  def this(store:PiInstanceStore[Int],l:PiProcess*) = this(store,PiProcess.mapOf(l :_*))
   def this(l:PiProcess*) = this(SimpleInstanceStore(),PiProcess.mapOf(l :_*))
   
   var ctr:Int = 0
@@ -30,7 +30,7 @@ class MultiStateExecutor(var store:PiInstanceStore,processes:Map[String,PiProces
 	  promise.future
   }
 
-  def update(i:PiInstance) = store.synchronized {
+  def update(i:PiInstance[Int]) = store.synchronized {
     store = store.put(i)
   }
   
@@ -39,7 +39,7 @@ class MultiStateExecutor(var store:PiInstanceStore,processes:Map[String,PiProces
     promises = promises - id
   }
   
-  def success(i:PiInstance, res:Any) = {
+  def success(i:PiInstance[Int], res:Any) = {
     System.err.println(" === FINAL STATE " + i.id + " === \n" + i.state + "\n === === === === === === === ===")
     promises.get(i.id) match {
       case Some(p) => p.success(Some(res))
@@ -48,7 +48,7 @@ class MultiStateExecutor(var store:PiInstanceStore,processes:Map[String,PiProces
     clean(i.id)
   }
   
-  def failure(inst:PiInstance) = {
+  def failure(inst:PiInstance[Int]) = {
 	  System.err.println(" === Failed to obtain output " + inst.id + " ! ===")
 	  System.err.println(" === FINAL STATE " + inst.id + " === \n" + inst.state + "\n === === === === === === === ===")
     promises.get(inst.id) match {
@@ -58,7 +58,7 @@ class MultiStateExecutor(var store:PiInstanceStore,processes:Map[String,PiProces
 	  clean(inst.id)
   }
   
-  final def run(i:PiInstance):Unit = store.synchronized {
+  final def run(i:PiInstance[Int]):Unit = store.synchronized {
 	  val ni = i.reduce
 	  if (ni.completed) ni.result match {
 		  case None => failure(ni)
