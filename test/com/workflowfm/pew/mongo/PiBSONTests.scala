@@ -16,6 +16,7 @@ import org.scalatest.Matchers
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.bson.io._
+import java.nio.ByteBuffer
 
 @RunWith(classOf[JUnitRunner])
 class PiBSONTests extends FlatSpec with Matchers {
@@ -44,6 +45,12 @@ class PiBSONTests extends FlatSpec with Matchers {
   val writer: BsonBinaryWriter = new BsonBinaryWriter(new BasicOutputBuffer())
   reg.get(classOf[PiPair]).encode(writer, obj, EncoderContext.builder().build())
   System.err.println(">>>" + writer.getBsonOutput().asInstanceOf[BasicOutputBuffer].toByteArray())
+  
+  val buffer: BasicOutputBuffer = writer.getBsonOutput().asInstanceOf[BasicOutputBuffer];
+  val reader: BsonBinaryReader = new BsonBinaryReader(new ByteBufferBsonInput(new ByteBufNIO(ByteBuffer.wrap(buffer.toByteArray))))
+
+  val dec = reg.get(classOf[PiPair]).decode(reader, DecoderContext.builder().build())
+  System.err.println(">>>! " + dec)
   
   "ha" should "tell the truth" in {
 		1 should be (1)
