@@ -64,7 +64,8 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
 	  
 	  roundTrip(PiItem("Oh!"), """{piitem: "Oh!"}""", codec)
 	  roundTrip(PiItem(9), """{piitem: 9}""", codec)
-  }     
+  } 
+  
   
 // This doesn't work because the decoder doesn't know how to deal with the (sub-)Document and that it should be mapped to a PiItem.
 // You either (a) manually decode the Document to a PiItem or (b) use a bsonTypeCodecMap to map Documents to PiItems 
@@ -93,22 +94,35 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
 //  }  
 	   
   
-  "codec" should "decode a custom sealed trait somehow" in {
-    sealed trait Patata
-    case class Ntomata(n:Int) extends Patata
-    case class Mpou(mxs:Int) extends Patata
-    
-    sealed class XTree
-    case class XBranch(b1: XTree, b2: XTree, value: Int) extends XTree
-    case class XLeaf(value: Int) extends XTree
+//  "codec" should "decode a custom sealed trait somehow" in {
+//    sealed class Patata
+//    case class Ntomata(n:String) extends Patata
+//    case class Mpou(mxs:Int) extends Patata
+//    
+//    sealed class XTree
+//    case class XBranch(b1: XTree, b2: XTree, value: Int) extends XTree
+//    case class XLeaf(value: Int) extends XTree
+//
+//    //val codecRegistry = fromRegistries( fromProviders(classOf[Tree]), DEFAULT_CODEC_REGISTRY )
+//    
+//    val p = Macros.createCodecProvider[XTree]()
+//    val p2 = Macros.createCodecProvider[Patata]()
+//    //val p3 = Macros.createCodecProvider[PiObject]()
+//    val reg = fromRegistries(fromProviders(p),DEFAULT_CODEC_REGISTRY) 
+//    
+//    roundTrip(XLeaf(5), """{value: 5}""", p)
+//  }
+  
+  it should "encode/decode PiObjects" in {
+	  val codec = new PiObjectCodec
 
-    //val codecRegistry = fromRegistries( fromProviders(classOf[Tree]), DEFAULT_CODEC_REGISTRY )
-    
-    val p = Macros.createCodecProvider[XTree]()
-    val reg = fromRegistries(fromProviders(p),DEFAULT_CODEC_REGISTRY) 
-    
-    roundTrip(XLeaf(5), """{value: 5}""", p)
+	  roundTrip(PiItem("Oh!"), """{"_t": "PiItem", "class":"java.lang.String", "i":"Oh!"}""", codec)
+	  roundTrip(Chan("Oh!"), """{"_t": "Chan", "s":"Oh!"}""", codec)
+	  roundTrip(PiPair(Chan("L"),PiItem("R")), """{"_t": "PiPair", "l":{"_t" : "Chan", "s":"L"}, "r":{"_t" : "PiItem", "class":"java.lang.String", "i":"R"}}""", codec)
+	  
   }
+  	
+  	
 //  "ha" should "tell the truth" in {
 //	  val obj = PiPair(PiItem("Oh!"),PiItem("Hi!"))
 //

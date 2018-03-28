@@ -30,7 +30,7 @@ package com.workflowfm.pew
  */
 sealed trait PiObject {
   def isGround:Boolean = frees.isEmpty
-  def frees:Seq[Chan]
+  def frees:Seq[Chan] = Seq()
 }
 object PiObject {
   def apply(a:Any):PiObject = a match {
