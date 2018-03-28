@@ -28,30 +28,12 @@ import scala.reflect.ClassTag
 
 @RunWith(classOf[JUnitRunner])
 class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
-	
-  //val p = new PiObjectCodecProvider
-  
-  val chanCodecProvider = Macros.createCodecProvider[Chan]()
-  val pairCodecProvider = Macros.createCodecProvider[PiPair]()
-  val optCodecProvider = Macros.createCodecProvider[PiOpt]()
-  val leftCodecProvider = Macros.createCodecProvider[PiLeft]()
-  val rightCodecProvider = Macros.createCodecProvider[PiRight]()
-  val reg = fromRegistries( 
-	      fromProviders( 
-	        chanCodecProvider, 
-	        pairCodecProvider, 
-	        optCodecProvider,
-	        leftCodecProvider,
-	        rightCodecProvider),
-	      fromCodecs(new PiItemCodec),
-	      DEFAULT_CODEC_REGISTRY) 
-  
-  //val r = fromRegistries(fromProviders(p), DEFAULT_CODEC_REGISTRY
   
 	"codec" should "encode/decode PiItems" in {
-//	  val obj = PiItem("Oh!")
-//	  
-	  val codec = new PiItemCodec
+    val codec = new PiItemCodec
+
+    //	  val obj = PiItem("Oh!")
+//	    
 //
 //	  val writer: BsonBinaryWriter = new BsonBinaryWriter(new BasicOutputBuffer())
 //	  codec.encode(writer, obj, EncoderContext.builder().build())
@@ -119,24 +101,8 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
 	  roundTrip(PiItem("Oh!"), """{"_t": "PiItem", "class":"java.lang.String", "i":"Oh!"}""", codec)
 	  roundTrip(Chan("Oh!"), """{"_t": "Chan", "s":"Oh!"}""", codec)
 	  roundTrip(PiPair(Chan("L"),PiItem("R")), """{"_t": "PiPair", "l":{"_t" : "Chan", "s":"L"}, "r":{"_t" : "PiItem", "class":"java.lang.String", "i":"R"}}""", codec)
-	  
+	  roundTrip(PiOpt(Chan("L"),PiPair(Chan("RL"),Chan("RR"))), """{"_t": "PiOpt", "l":{"_t" : "Chan", "s":"L"}, "r":{"_t" : "PiPair", "l":{"_t" : "Chan", "s":"RL"}, "r":{"_t" : "Chan", "s":"RR"}}}""", codec)
   }
-  	
-  	
-//  "ha" should "tell the truth" in {
-//	  val obj = PiPair(PiItem("Oh!"),PiItem("Hi!"))
-//
-//			  val writer: BsonBinaryWriter = new BsonBinaryWriter(new BasicOutputBuffer())
-//			  reg.get(classOf[PiPair]).encode(writer, obj, EncoderContext.builder().build())
-//			  System.err.println(">>>" + writer.getBsonOutput().asInstanceOf[BasicOutputBuffer].toByteArray())
-//
-//			  val buffer: BasicOutputBuffer = writer.getBsonOutput().asInstanceOf[BasicOutputBuffer];
-//			  val reader: BsonBinaryReader = new BsonBinaryReader(new ByteBufferBsonInput(new ByteBufNIO(ByteBuffer.wrap(buffer.toByteArray))))
-//
-//					  val dec = reg.get(classOf[PiPair]).decode(reader, DecoderContext.builder().build())
-//					  System.err.println(">>>! " + dec)
-//					  1 should be (1)
-//  }
 }
 
 trait PiBSONTestHelper {
