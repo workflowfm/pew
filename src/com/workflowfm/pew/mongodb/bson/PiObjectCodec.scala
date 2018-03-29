@@ -63,7 +63,7 @@ class PiObjectCodec(registry: CodecRegistry) extends Codec[PiObject] {
 
   override def decode(reader: BsonReader, decoderContext: DecoderContext): PiObject = {
     reader.readStartDocument()
-    reader.readName() // "_t"
+    reader.readName("_t")
     val ret:PiObject = reader.readString() match {
       case "PiItem" => {
         reader.readName("class")
@@ -105,6 +105,22 @@ class PiObjectCodec(registry: CodecRegistry) extends Codec[PiObject] {
   }
 }
 
+
+class ChanCodec(registry: CodecRegistry) extends Codec[Chan] { 
+  def this() = this(DEFAULT_CODEC_REGISTRY)
+  
+  val objCodec = registry.get(classOf[PiObject])
+  
+  override def encode(writer: BsonWriter, value: Chan, encoderContext: EncoderContext): Unit = 
+    objCodec.encode(writer,value,encoderContext)
+
+  override def getEncoderClass: Class[Chan] = classOf[Chan]
+
+  override def decode(reader: BsonReader, decoderContext: DecoderContext): Chan = 
+    objCodec.decode(reader,decoderContext).asInstanceOf[Chan] // TODO type check with exception?
+}
+
+
 /**
  * CodecProvider for PiObjectCodec
  * 
@@ -112,10 +128,12 @@ class PiObjectCodec(registry: CodecRegistry) extends Codec[PiObject] {
  * https://github.com/mongodb/mongo-scala-driver/blob/master/bson/src/main/scala/org/mongodb/scala/bson/codecs/DocumentCodecProvider.scala
  */
 class PiObjectCodecProvider(bsonTypeClassMap:BsonTypeClassMap) extends CodecProvider {
-  val PROVIDEDCLASS:Class[PiObject] =  classOf[PiObject]  
+  val OBJCLASS:Class[PiObject] =  classOf[PiObject]
+  val CHANCLASS:Class[Chan] =  classOf[Chan]
   
   override def get[T](clazz:Class[T], registry:CodecRegistry):Codec[T] = clazz match {
-      case PROVIDEDCLASS => new PiObjectCodec(registry).asInstanceOf[Codec[T]]
+      case OBJCLASS => new PiObjectCodec(registry).asInstanceOf[Codec[T]]
+      case CHANCLASS => new ChanCodec(registry).asInstanceOf[Codec[T]]
       case _ => null
     }
 }

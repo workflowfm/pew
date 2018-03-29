@@ -7,10 +7,11 @@ import org.bson._
 import org.bson.codecs._
 import org.bson.codecs.configuration.CodecProvider
 import org.bson.codecs.configuration.CodecRegistry
+import org.bson.codecs.configuration.CodecRegistries
 import scala.collection.mutable.Queue
 
 class TermCodec(registry: CodecRegistry) extends Codec[Term] { 
-  def this() = this(DEFAULT_CODEC_REGISTRY)
+  def this() = this(CodecRegistries.fromRegistries(CodecRegistries.fromCodecs(new PiObjectCodec),DEFAULT_CODEC_REGISTRY))
   
   val piobjCodec:Codec[PiObject] = registry.get(classOf[PiObject])
   
@@ -141,7 +142,7 @@ class TermCodec(registry: CodecRegistry) extends Codec[Term] {
 
   override def decode(reader: BsonReader, decoderContext: DecoderContext): Term = {
     reader.readStartDocument()
-    reader.readName() // "_t"
+    reader.readName("_t")
     val ret:Term = reader.readString() match {
       case "Devour" => {
         reader.readName("c")
@@ -277,7 +278,7 @@ class TermCodecProvider(bsonTypeClassMap:BsonTypeClassMap) extends CodecProvider
   val PROVIDEDCLASS:Class[Term] =  classOf[Term]  
   
   override def get[T](clazz:Class[T], registry:CodecRegistry):Codec[T] = clazz match {
-      case PROVIDEDCLASS => new PiObjectCodec(registry).asInstanceOf[Codec[T]]
+      case PROVIDEDCLASS => new TermCodec(registry).asInstanceOf[Codec[T]]
       case _ => null
     }
 }
