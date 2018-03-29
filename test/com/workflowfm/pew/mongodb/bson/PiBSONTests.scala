@@ -112,13 +112,27 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
   }
   
   "ChanMapCodec" should "encode/decode ChanMaps" in {
-	  val reg = fromRegistries(fromProviders(new PiObjectCodecProvider),DEFAULT_CODEC_REGISTRY)
+	  val reg = fromRegistries(fromProviders(new PiCodecProvider()),DEFAULT_CODEC_REGISTRY)
 	  val codec = reg.get(classOf[ChanMap])
 
 	  roundTrip(ChanMap(), codec)
 	  roundTrip(ChanMap((Chan("X"),Chan("Y"))), codec)
 	  roundTrip(ChanMap((Chan("X"),PiItem("Oh!")),(Chan("Y"),PiPair(Chan("L"),PiItem("R"))),(Chan("2"),PiOpt(Chan("L"),PiPair(Chan("RL"),Chan("RR"))))), codec)
   }
+  
+  "PiStateCodec" should "encode/decode PiStates" in {
+	  val proc1 = DummyProcess("PROC", Seq("C","R"), "R", Seq((Chan("INPUT"),"C")))
+	  val procs = PiProcess.mapOf(proc1)
+    
+    val reg = fromRegistries(fromProviders(new PiCodecProvider(procs)),DEFAULT_CODEC_REGISTRY)
+	  val codec = reg.get(classOf[PiState])
+	  //xcodec should be an[PiStateCodec]
+	  
+	  roundTrip(PiState(In("A","C",PiCall<("PROC","C","R")),Out("A",Chan("X"))) withProc proc1 withCalls proc1.getFuture(Chan("X"),Chan("R")) withSub ("INPUT",PiItem("OHHAI!")), codec)
+	  roundTrip(PiState(WithIn("X","L","R",Devour("L","AAA"),WithIn("R","LL","RR",Devour("LL","BBB"),Devour("RR","CCC"))),LeftOut("X","A",Out("A",PiItem("aaa")))) withProc proc1 withThread (0,"PROC","R",Seq(PiResource(PiItem("OHHAI!"),Chan("X")))) incTCtr() withFCtr(5), codec)
+	  roundTrip(PiState() withProc proc1 withSub ("RESULT",PiItem("ResultString")) incTCtr() , codec)
+  }
+
 }
 
 trait PiBSONTestHelper {
@@ -140,6 +154,7 @@ trait PiBSONTestHelper {
   def roundTripCodec[T](value: T, codec: Codec[T]): Unit = {
     val encoded = encode(codec, value)
     val actual = decode(documentCodec, encoded)
+    System.out.println(s"Encoded document: ${actual.toJson()}")
     val roundTripped = decode(codec, encode(codec, value))
     System.out.println(s"Round Tripped case class: ($roundTripped) must equal the original: ($value)")
     assert(roundTripped == value, s"Round Tripped case class: ($roundTripped) did not equal the original: ($value)")

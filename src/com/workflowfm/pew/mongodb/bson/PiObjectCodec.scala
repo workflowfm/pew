@@ -170,8 +170,8 @@ class PiResourceCodec(registry:CodecRegistry) extends Codec[PiResource] {
   
   override def encode(writer: BsonWriter, value: PiResource, encoderContext: EncoderContext): Unit = { 
 	  writer.writeStartDocument()
-	  writer.writeName("_t")
-	  writer.writeString("PiResource")
+//	  writer.writeName("_t")
+//	  writer.writeString("PiResource")
     writer.writeName("obj")
 	  encoderContext.encodeWithChildContext(piobjCodec,writer,value.obj)
 	  writer.writeName("c")
@@ -183,8 +183,8 @@ class PiResourceCodec(registry:CodecRegistry) extends Codec[PiResource] {
 
   override def decode(reader: BsonReader, decoderContext: DecoderContext): PiResource = {
 	  reader.readStartDocument()
-	  reader.readName("_t")
-	  reader.readString("PiResource")
+//	  reader.readName("_t")
+//	  reader.readString("PiResource")
     reader.readName("obj")
 	  val obj = decoderContext.decodeWithChildContext(piobjCodec,reader)
 	  reader.readName("c")
@@ -200,8 +200,8 @@ class PiFutureCodec(registry:CodecRegistry) extends Codec[PiFuture] {
   
   override def encode(writer: BsonWriter, value: PiFuture, encoderContext: EncoderContext): Unit = { 
 	  writer.writeStartDocument()
-	  writer.writeName("_t")
-	  writer.writeString("PiFuture")
+//	  writer.writeName("_t")
+//	  writer.writeString("PiFuture")
     writer.writeName("fun")
     writer.writeString(value.fun)
     writer.writeName("oc")
@@ -217,8 +217,8 @@ class PiFutureCodec(registry:CodecRegistry) extends Codec[PiFuture] {
 
   override def decode(reader: BsonReader, decoderContext: DecoderContext): PiFuture = {
 	  reader.readStartDocument()
-	  reader.readName("_t")
-	  reader.readString("PiFuture")
+//	  reader.readName("_t")
+//	  reader.readString("PiFuture")
 	  reader.readName("fun")
 	  val f = reader.readString()
 	  reader.readName("oc")
@@ -236,26 +236,3 @@ class PiFutureCodec(registry:CodecRegistry) extends Codec[PiFuture] {
   }
 }
 
-// case class PiFuture(fun:String, outChan:Chan, args:Seq[PiResource])
-/**
- * Provider for Codecs for PiObject, Chan, ChanMap, PiResource, PiFuture
- * 
- * Created using this as an example:
- * https://github.com/mongodb/mongo-scala-driver/blob/master/bson/src/main/scala/org/mongodb/scala/bson/codecs/DocumentCodecProvider.scala
- */
-class PiObjectCodecProvider() extends CodecProvider { //bsonTypeClassMap:BsonTypeClassMap
-  val OBJCLASS:Class[PiObject] =  classOf[PiObject]
-  val CHANCLASS:Class[Chan] =  classOf[Chan]
-  val CHANMAPCLASS:Class[ChanMap] =  classOf[ChanMap]
-  val RESOURCECLASS:Class[PiResource] = classOf[PiResource]
-  val FUTURECLASS:Class[PiFuture] = classOf[PiFuture]
-  
-  override def get[T](clazz:Class[T], registry:CodecRegistry):Codec[T] = clazz match {
-      case OBJCLASS => new PiObjectCodec(registry).asInstanceOf[Codec[T]]
-      case CHANCLASS => new ChanCodec(registry).asInstanceOf[Codec[T]]
-      case CHANMAPCLASS => new ChanMapCodec(registry).asInstanceOf[Codec[T]]
-      case RESOURCECLASS => new PiResourceCodec(registry).asInstanceOf[Codec[T]]
-      case FUTURECLASS => new PiFutureCodec(registry).asInstanceOf[Codec[T]]
-      case _ => null
-    }
-}
