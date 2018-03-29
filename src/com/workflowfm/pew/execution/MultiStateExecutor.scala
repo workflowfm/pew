@@ -75,7 +75,7 @@ class MultiStateExecutor(var store:PiInstanceStore[Int],processes:Map[String,PiP
         false
       }
       case Some(p:AtomicProcess) => {
-        p.run(args map (_._1)).onSuccess{ case res => postResult(id,ref,res)}
+        p.run(args map (_.obj)).onSuccess{ case res => postResult(id,ref,res)}
         System.err.println("*** Called process: " + p.name + " id:" + id + " ref:" + ref)
         true
       }

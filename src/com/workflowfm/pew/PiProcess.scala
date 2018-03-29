@@ -65,7 +65,7 @@ trait AtomicProcess extends PiProcess {
   /**
    * This constructs a PiFuture to be added to the state when the process is called.
    */
-  def getFuture(m:ChanMap):PiFuture = PiFuture(name,m.resolve(Chan(output._2)),inputs map { case (o,c) => (o,m.resolve(Chan(c))) }) 
+  def getFuture(m:ChanMap):PiFuture = PiFuture(name,m.resolve(Chan(output._2)),inputs map { case (o,c) => PiResource.of(o,c,m) })
   def getFuture(args:Chan*):PiFuture = getFuture(mapArgs(args:_*))
 
   /** 

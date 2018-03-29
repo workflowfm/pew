@@ -7,6 +7,7 @@ import org.bson._
 import org.bson.codecs._
 import org.bson.codecs.configuration.CodecProvider
 import org.bson.codecs.configuration.CodecRegistry
+import scala.collection.mutable.Queue
 
 class PiObjectCodec(registry: CodecRegistry) extends Codec[PiObject] { 
   def this() = this(DEFAULT_CODEC_REGISTRY)
@@ -121,19 +122,140 @@ class ChanCodec(registry: CodecRegistry) extends Codec[Chan] {
 }
 
 
+class ChanMapCodec(registry:CodecRegistry) extends Codec[ChanMap] { 
+  val chanCodec:Codec[Chan] = registry.get(classOf[Chan])
+  val piobjCodec:Codec[PiObject] = registry.get(classOf[PiObject])
+  
+  override def encode(writer: BsonWriter, value: ChanMap, encoderContext: EncoderContext): Unit = { 
+	  writer.writeStartDocument()
+	  writer.writeName("ChanMap")
+    writer.writeStartArray()
+	  for ((k,v) <- value.map) {
+	    writer.writeStartDocument()
+	    writer.writeName("k")
+	    encoderContext.encodeWithChildContext(chanCodec,writer,k)
+	    writer.writeName("v")
+	    encoderContext.encodeWithChildContext(piobjCodec,writer,v)
+	    writer.writeEndDocument()
+	  }
+	  writer.writeEndArray()
+	  writer.writeEndDocument()
+  }
+ 
+  override def getEncoderClass: Class[ChanMap] = classOf[ChanMap]
+
+  override def decode(reader: BsonReader, decoderContext: DecoderContext): ChanMap = {
+	  reader.readStartDocument()
+	  reader.readName("ChanMap")
+    reader.readStartArray()
+	  var args:Queue[(Chan,PiObject)] = Queue()
+	  while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
+	    reader.readStartDocument()
+	    reader.readName("k")
+		  val k = decoderContext.decodeWithChildContext(chanCodec,reader)
+		  reader.readName("v")
+		  val v = decoderContext.decodeWithChildContext(piobjCodec,reader)
+		  reader.readEndDocument()
+		  args+= ((k,v))  
+	  }
+	  reader.readEndArray()
+	  reader.readEndDocument()
+	  ChanMap(args:_*)
+  }
+}
+
+class PiResourceCodec(registry:CodecRegistry) extends Codec[PiResource] { 
+  val chanCodec:Codec[Chan] = registry.get(classOf[Chan])
+  val piobjCodec:Codec[PiObject] = registry.get(classOf[PiObject])
+  
+  override def encode(writer: BsonWriter, value: PiResource, encoderContext: EncoderContext): Unit = { 
+	  writer.writeStartDocument()
+	  writer.writeName("_t")
+	  writer.writeString("PiResource")
+    writer.writeName("obj")
+	  encoderContext.encodeWithChildContext(piobjCodec,writer,value.obj)
+	  writer.writeName("c")
+	  encoderContext.encodeWithChildContext(chanCodec,writer,value.c)
+	  writer.writeEndDocument()
+  }
+ 
+  override def getEncoderClass: Class[PiResource] = classOf[PiResource]
+
+  override def decode(reader: BsonReader, decoderContext: DecoderContext): PiResource = {
+	  reader.readStartDocument()
+	  reader.readName("_t")
+	  reader.readString("PiResource")
+    reader.readName("obj")
+	  val obj = decoderContext.decodeWithChildContext(piobjCodec,reader)
+	  reader.readName("c")
+	  val c = decoderContext.decodeWithChildContext(chanCodec,reader)
+	  reader.readEndDocument()
+	  PiResource(obj,c)
+  }
+}
+
+class PiFutureCodec(registry:CodecRegistry) extends Codec[PiFuture] { 
+  val chanCodec:Codec[Chan] = registry.get(classOf[Chan])
+  val resourceCodec:Codec[PiResource] = registry.get(classOf[PiResource])
+  
+  override def encode(writer: BsonWriter, value: PiFuture, encoderContext: EncoderContext): Unit = { 
+	  writer.writeStartDocument()
+	  writer.writeName("_t")
+	  writer.writeString("PiFuture")
+    writer.writeName("fun")
+    writer.writeString(value.fun)
+    writer.writeName("oc")
+	  encoderContext.encodeWithChildContext(chanCodec,writer,value.outChan)
+	  writer.writeName("args")
+	  writer.writeStartArray()
+	  for (arg <- value.args) encoderContext.encodeWithChildContext(resourceCodec,writer,arg)
+	  writer.writeEndArray()
+	  writer.writeEndDocument()
+  }
+ 
+  override def getEncoderClass: Class[PiFuture] = classOf[PiFuture]
+
+  override def decode(reader: BsonReader, decoderContext: DecoderContext): PiFuture = {
+	  reader.readStartDocument()
+	  reader.readName("_t")
+	  reader.readString("PiFuture")
+	  reader.readName("fun")
+	  val f = reader.readString()
+	  reader.readName("oc")
+	  val oc = decoderContext.decodeWithChildContext(chanCodec,reader)
+    reader.readName("args")
+    reader.readStartArray()
+    var args:Queue[PiResource] = Queue()
+    while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
+    	val r = decoderContext.decodeWithChildContext(resourceCodec,reader)
+    	args+=r
+    }
+    reader.readEndArray()
+	  reader.readEndDocument()
+	  PiFuture(f,oc,args.toSeq)
+  }
+}
+
+// case class PiFuture(fun:String, outChan:Chan, args:Seq[PiResource])
 /**
- * CodecProvider for PiObjectCodec
+ * Provider for Codecs for PiObject, Chan, ChanMap, PiResource, PiFuture
  * 
  * Created using this as an example:
  * https://github.com/mongodb/mongo-scala-driver/blob/master/bson/src/main/scala/org/mongodb/scala/bson/codecs/DocumentCodecProvider.scala
  */
-class PiObjectCodecProvider(bsonTypeClassMap:BsonTypeClassMap) extends CodecProvider {
+class PiObjectCodecProvider() extends CodecProvider { //bsonTypeClassMap:BsonTypeClassMap
   val OBJCLASS:Class[PiObject] =  classOf[PiObject]
   val CHANCLASS:Class[Chan] =  classOf[Chan]
+  val CHANMAPCLASS:Class[ChanMap] =  classOf[ChanMap]
+  val RESOURCECLASS:Class[PiResource] = classOf[PiResource]
+  val FUTURECLASS:Class[PiFuture] = classOf[PiFuture]
   
   override def get[T](clazz:Class[T], registry:CodecRegistry):Codec[T] = clazz match {
       case OBJCLASS => new PiObjectCodec(registry).asInstanceOf[Codec[T]]
       case CHANCLASS => new ChanCodec(registry).asInstanceOf[Codec[T]]
+      case CHANMAPCLASS => new ChanMapCodec(registry).asInstanceOf[Codec[T]]
+      case RESOURCECLASS => new PiResourceCodec(registry).asInstanceOf[Codec[T]]
+      case FUTURECLASS => new PiFutureCodec(registry).asInstanceOf[Codec[T]]
       case _ => null
     }
 }

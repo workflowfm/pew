@@ -270,13 +270,13 @@ case class PiCut(z:String,lc:String,rc:String,left:Term,right:Term) extends Term
  * @param outChan the channel through which we should send the output when it arrives
  * @param args the process inputs, each including a pattern of the input and the corresponding channel it will arrive through
  */
-case class PiFuture(fun:String, outChan:Chan, args:Seq[(PiObject,Chan)]) {
+case class PiFuture(fun:String, outChan:Chan, args:Seq[PiResource]) {
   /** 
    *  We call this once the process output has arrived, to create the appropriate Output pi-calculus term.
    */
   def toOutput(res:PiObject):Output = Output.of(res,outChan.s)
   
-  def sub(s:ChanMap):PiFuture = copy(args = args map { case (o,c) => (s.sub(o),c) })
+  def sub(s:ChanMap):PiFuture = copy(args = args map { case PiResource(o,c) => PiResource(s.sub(o),c) })
   
   /**
    * We call this to check if all inputs have arrived and we can execute the process.
@@ -285,7 +285,7 @@ case class PiFuture(fun:String, outChan:Chan, args:Seq[(PiObject,Chan)]) {
    */
   def execute(m:ChanMap):Option[PiFuture] = {
     val newFut = sub(m)
-    if (newFut.args exists (!_._1.isGround)) None 
+    if (newFut.args exists (!_.obj.isGround)) None 
     else Some(newFut)
   }  
 }

@@ -134,3 +134,9 @@ case class ChanMap(map:Map[Chan,PiObject] = Map()) {
 object ChanMap {
   def apply(l:(Chan,PiObject)*):ChanMap = ChanMap(Map(l:_*))
 }
+
+
+case class PiResource(obj:PiObject,c:Chan)
+object PiResource {
+  def of(obj:PiObject,c:String,m:ChanMap=ChanMap()):PiResource = PiResource(obj,m.resolve(Chan(c)))
+}

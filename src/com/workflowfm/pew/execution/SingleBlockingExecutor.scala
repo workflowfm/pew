@@ -43,7 +43,7 @@ case class SingleBlockingExecutor(processes:Map[String,PiProcess]) extends Proce
         Some(s removeThread ref)
       }
       case Some(p:AtomicProcess) => {
-        val f = p.run(args map (_._1))
+        val f = p.run(args map (_.obj))
         val res = Await.result(f,Duration.Inf)
         s.result(ref,res)
       }

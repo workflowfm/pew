@@ -110,6 +110,15 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
 	  val ski = PiCut("z14","x12","oSelectSki_lB_PriceUSD_Plus_Exception_rB_",WithIn("x12","cUSD2NOK_PriceUSD_1","c12",LeftOut("y12","oUSD2NOK_PriceNOK_",PiCall<("USD2NOK","cUSD2NOK_PriceUSD_1","oUSD2NOK_PriceNOK_")),RightOut("y12","d12",PiId("c12","d12","m13"))),PiCut("z9","z8","oSelectModel_lB_Brand_x_Model_rB_",ParInI("z8","cSelectSki_Brand_2","cSelectSki_Model_3",PiCut("z4","cSelectSki_LengthInch_1","oCM2Inch_LengthInch_",PiCall<("SelectSki","cSelectSki_LengthInch_1","cSelectSki_Brand_2","cSelectSki_Model_3","oSelectSki_lB_PriceUSD_Plus_Exception_rB_"),PiCut("z2","cCM2Inch_LengthCM_1","oSelectLength_LengthCM_",PiCall<("CM2Inch","cCM2Inch_LengthCM_1","oCM2Inch_LengthInch_"),PiCall<("SelectLength","cSelectLength_HeightCM_1","cSelectLength_WeightKG_2","oSelectLength_LengthCM_")))),PiCall<("SelectModel","cSelectModel_PriceLimit_1","cSelectModel_SkillLevel_2","oSelectModel_lB_Brand_x_Model_rB_")))
 	  roundTrip(ski, codec)
   }
+  
+  "ChanMapCodec" should "encode/decode ChanMaps" in {
+	  val reg = fromRegistries(fromProviders(new PiObjectCodecProvider),DEFAULT_CODEC_REGISTRY)
+	  val codec = reg.get(classOf[ChanMap])
+
+	  roundTrip(ChanMap(), codec)
+	  roundTrip(ChanMap((Chan("X"),Chan("Y"))), codec)
+	  roundTrip(ChanMap((Chan("X"),PiItem("Oh!")),(Chan("Y"),PiPair(Chan("L"),PiItem("R"))),(Chan("2"),PiOpt(Chan("L"),PiPair(Chan("RL"),Chan("RR"))))), codec)
+  }
 }
 
 trait PiBSONTestHelper {

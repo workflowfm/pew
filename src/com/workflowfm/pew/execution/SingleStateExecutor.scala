@@ -71,7 +71,7 @@ class SingleStateExecutor(processes:Map[String,PiProcess])(override implicit val
         false
       }
       case Some(p:AtomicProcess) => {
-        p.run(args map (_._1)).onSuccess{ case res => postResult(id,ref,res)}
+        p.run(args map (_.obj)).onSuccess{ case res => postResult(id,ref,res)}
         System.err.println("*** Called process: " + p.name + " ref:" + ref)
         true
       }

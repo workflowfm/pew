@@ -13,7 +13,7 @@ case class AtomicProcessExecutor(process:AtomicProcess) {
     s.threads.headOption match {
       case None => None
       case Some((ref,PiFuture(_, _, args))) => {
-        val f = process.run(args map (_._1))
+        val f = process.run(args map (_.obj))
         val res = Await.result(f,Duration.Inf)
         s.result(ref,res) map (_.fullReduce()) map { x => PiObject.get(x.resources.sub(process.output._1)) }
       }

@@ -10,14 +10,18 @@ class AtomicCallTests extends FlatSpec with Matchers with PiStateTester {
   it should "reduce a call after a simple input" in { 
     val proc1 = DummyProcess("PROC", Seq("C","R"), "R", Seq((Chan("INPUT"),"C")))
     
+    System.out.println("1")
     reduceOnce(In("A","C",PiCall<("PROC","C","R")),Out("A",Chan("X"))) should be( Some(PiState()) ) // no process information throws away the call
     
+    System.out.println("2")
     PiState(In("A","C",PiCall<("PROC","C","R")),Out("A",Chan("X"))) withProc proc1 reduce() should be (Some(
         PiState() withProc proc1 handleCall(PiCall<("PROC","X","R")) ))//proc1.getFuture(Chan("X"),Chan("R")) ))
-
+    
+    System.out.println("3")
     PiState(In("A","C",PiCall<("PROC","C","R")),Out("A",Chan("X"))) withProc proc1 reduce() should be (Some(
         PiState() withProc proc1 withCalls proc1.getFuture(Chan("X"),Chan("R")) withTerms proc1.getInputs(Chan("X"),Chan("R"))))
     
+    System.out.println("4")
     PiState(In("A","C",PiCall<("PROC","C","R")),Out("A",Chan("X"))) withProc proc1 reduce() should be (Some(
         PiState(Devour("X","INPUT")) withProc proc1 withCalls proc1.getFuture(Chan("X"),Chan("R")) ))
   }
@@ -26,26 +30,26 @@ class AtomicCallTests extends FlatSpec with Matchers with PiStateTester {
     val proc1 = DummyProcess("PROC", Seq("C","R"), "R", Seq((Chan("INPUT"),"C")))
     
     PiState() withProc proc1 withCalls proc1.getFuture(Chan("X"),Chan("R")) withSub ("INPUT",PiItem("OHHAI!")) reduce() should be (Some(
-        PiState() withProc proc1 withThread (0,"PROC","R",Seq((PiItem("OHHAI!"),Chan("X")))) incTCtr ))
+        PiState() withProc proc1 withThread (0,"PROC","R",Seq(PiResource(PiItem("OHHAI!"),Chan("X")))) incTCtr ))
     
     PiState(Devour("X","INPUT"),Out("X",PiItem("OHHAI!"))) withProc proc1 withCalls proc1.getFuture(Chan("X"),Chan("R")) reduce() should be (Some(
     		PiState() withProc proc1 withCalls proc1.getFuture(Chan("X"),Chan("R")) withSub ("INPUT",PiItem("OHHAI!")) ))
 
     PiState(Devour("X","INPUT"),Out("X",PiItem("OHHAI!"))) withProc proc1 withCalls proc1.getFuture(Chan("X"),Chan("R")) fullReduce() should be (
-    		PiState() withProc proc1 withThread (0,"PROC","R",Seq((PiItem("OHHAI!"),Chan("X")))) incTCtr )
+    		PiState() withProc proc1 withThread (0,"PROC","R",Seq(PiResource(PiItem("OHHAI!"),Chan("X")))) incTCtr )
   } 
   
   it should "register a thread result properly" in {
-    PiState() withThread (0,"PROC","R",Seq((PiItem("OHHAI!"),Chan("X")))) result(0,PiItem("!IAHHO")) should be (Some(
+    PiState() withThread (0,"PROC","R",Seq(PiResource(PiItem("OHHAI!"),Chan("X")))) result(0,PiItem("!IAHHO")) should be (Some(
        PiState(Out("R",PiItem("!IAHHO")))  ))
-    PiState() withThread (0,"PROC","R",Seq((PiItem("OHHAI!"),Chan("X")))) result(0,PiObject(("1","2"))) should be (Some(
+    PiState() withThread (0,"PROC","R",Seq(PiResource(PiItem("OHHAI!"),Chan("X")))) result(0,PiObject(("1","2"))) should be (Some(
        PiState(ParOut("R","R#L","R#R",Out("R#L",PiItem("1")),Out("R#R",PiItem("2"))))  ))
     //TODO left and right options
     
-    PiState() withThread (0,"PROC1","R1",Seq((PiItem("OHHAI!"),Chan("X1")))) withThread (1,"PROC2","R2",Seq((PiItem("OHHAI!"),Chan("X2")))) result(0,PiObject("!IAHHO")) should be (Some(
-       PiState(Out("R1",PiItem("!IAHHO"))) withThread (1,"PROC2","R2",Seq((PiItem("OHHAI!"),Chan("X2")))) ))
-    PiState() withThread (0,"PROC1","R1",Seq((PiItem("OHHAI!"),Chan("X1")))) withThread (1,"PROC2","R2",Seq((PiItem("OHHAI!"),Chan("X2")))) result(1,PiObject("!IAHHO")) should be (Some(
-       PiState(Out("R2",PiItem("!IAHHO"))) withThread (0,"PROC1","R1",Seq((PiItem("OHHAI!"),Chan("X1")))) ))
+    PiState() withThread (0,"PROC1","R1",Seq(PiResource(PiItem("OHHAI!"),Chan("X1")))) withThread (1,"PROC2","R2",Seq(PiResource(PiItem("OHHAI!"),Chan("X2")))) result(0,PiObject("!IAHHO")) should be (Some(
+       PiState(Out("R1",PiItem("!IAHHO"))) withThread (1,"PROC2","R2",Seq(PiResource(PiItem("OHHAI!"),Chan("X2")))) ))
+    PiState() withThread (0,"PROC1","R1",Seq(PiResource(PiItem("OHHAI!"),Chan("X1")))) withThread (1,"PROC2","R2",Seq(PiResource(PiItem("OHHAI!"),Chan("X2")))) result(1,PiObject("!IAHHO")) should be (Some(
+       PiState(Out("R2",PiItem("!IAHHO"))) withThread (0,"PROC1","R1",Seq(PiResource(PiItem("OHHAI!"),Chan("X1")))) ))
   }
   
   it should "fully execute a simple process" in {

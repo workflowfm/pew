@@ -49,7 +49,7 @@ case class PiState(inputs:Map[Chan,Input], outputs:Map[Chan,Output], calls:List[
 
     def withCalls(l:PiFuture*) = copy(calls = l.toList ++ calls)
     
-    def withThread(ref:Int, name:String, chan:String, args:Seq[(PiObject,Chan)]) = withThreads((ref,PiFuture(name,Chan(chan),args)))
+    def withThread(ref:Int, name:String, chan:String, args:Seq[PiResource]) = withThreads((ref,PiFuture(name,Chan(chan),args)))
     def withThreads(t:(Int,PiFuture)*) = copy(threads = threads ++ (t map { x => x._1 -> x._2 }))
     def removeThread(ref:Int) = copy(threads=threads - ref)
     def removeThreads(refs:Iterable[Int]) = copy(threads=threads -- refs)
@@ -67,8 +67,8 @@ case class PiState(inputs:Map[Chan,Input], outputs:Map[Chan,Output], calls:List[
      * The intersection of key sets detects common channels between inputs and outputs, which can then communicate.
      */
     def reduce():Option[PiState] = communicateFirst(inputs.keySet intersect outputs.keySet toList) match {
-      case None => executeFirst()
       case Some(s) => Some(s)
+      case None => executeFirst()
     }
     
     /**
@@ -78,7 +78,7 @@ case class PiState(inputs:Map[Chan,Input], outputs:Map[Chan,Output], calls:List[
     final def fullReduce():PiState = reduce() match {
       case None => this
       case Some(s) => {
-        //System.err.println(s)
+        System.err.println(s)
         s.fullReduce()
       }
     }
@@ -128,7 +128,7 @@ case class PiState(inputs:Map[Chan,Input], outputs:Map[Chan,Output], calls:List[
         this
       }
       case Some(p:AtomicProcess) => {
-        //System.err.println("*** Handling atomic call: " + c.name)
+        System.err.println("*** Handling atomic call: " + c.name)
         val m = p.mapArgs(c.args:_*)
         copy(calls = p.getFuture(m) +: calls) withTerms p.getInputs(m)
       }
@@ -169,7 +169,7 @@ case class PiState(inputs:Map[Chan,Input], outputs:Map[Chan,Output], calls:List[
      */
     def execute(p:PiFuture):Option[PiState] = {
       //val frees = (processes get p.fun toSeq) flatMap (_.inputFrees())
-      val frees = p.args map (_._1.frees)
+      val frees = p.args map (_.obj.frees)
       p.execute(resources) map { fut => copy(threads = threads + (threadCtr->fut),threadCtr = threadCtr + 1, resources = resources -- (frees.flatten :_*)) }
     }
     
