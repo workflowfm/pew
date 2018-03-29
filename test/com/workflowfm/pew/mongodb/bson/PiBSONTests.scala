@@ -1,17 +1,15 @@
-package com.workflowfm.pew.mongo
+package com.workflowfm.pew.mongodb.bson
 
 import org.mongodb.scala.bson.collection.immutable.Document
-import org.bson.codecs.configuration.CodecRegistries.{fromRegistries, fromProviders, fromCodecs}
 import org.mongodb.scala.bson.codecs.Macros
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import com.workflowfm.pew._
+
 import org.bson.types._
 import org.bson._
 import org.bson.codecs._
-import org.bson.codecs.configuration.CodecProvider
-import org.bson.codecs.configuration.CodecRegistry
-import org.bson.codecs.configuration.CodecRegistries
-
+import org.bson.codecs.configuration.{CodecProvider, CodecRegistry, CodecRegistries}
+import org.bson.codecs.configuration.CodecRegistries.{fromRegistries, fromProviders, fromCodecs}
 
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
@@ -29,24 +27,24 @@ import scala.reflect.ClassTag
 @RunWith(classOf[JUnitRunner])
 class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
   
-	"codec" should "encode/decode PiItems" in {
-    val codec = new PiItemCodec
-
-    //	  val obj = PiItem("Oh!")
-//	    
+//	"codec" should "encode/decode PiItems" in {
+//    val codec = new PiItemCodec
 //
-//	  val writer: BsonBinaryWriter = new BsonBinaryWriter(new BasicOutputBuffer())
-//	  codec.encode(writer, obj, EncoderContext.builder().build())
+//    //	  val obj = PiItem("Oh!")
+////	    
+////
+////	  val writer: BsonBinaryWriter = new BsonBinaryWriter(new BasicOutputBuffer())
+////	  codec.encode(writer, obj, EncoderContext.builder().build())
+////	  
+////	  val buffer: BasicOutputBuffer = writer.getBsonOutput().asInstanceOf[BasicOutputBuffer];
+////	  val reader: BsonBinaryReader = new BsonBinaryReader(new ByteBufferBsonInput(new ByteBufNIO(ByteBuffer.wrap(buffer.toByteArray))))
+////		val dec = codec.decode(reader, DecoderContext.builder().build())
+////		
+////		obj should be (dec)
 //	  
-//	  val buffer: BasicOutputBuffer = writer.getBsonOutput().asInstanceOf[BasicOutputBuffer];
-//	  val reader: BsonBinaryReader = new BsonBinaryReader(new ByteBufferBsonInput(new ByteBufNIO(ByteBuffer.wrap(buffer.toByteArray))))
-//		val dec = codec.decode(reader, DecoderContext.builder().build())
-//		
-//		obj should be (dec)
-	  
-	  roundTrip(PiItem("Oh!"), """{piitem: "Oh!"}""", codec)
-	  roundTrip(PiItem(9), """{piitem: 9}""", codec)
-  } 
+//	  roundTrip(PiItem("Oh!"), """{piitem: "Oh!"}""", codec)
+//	  roundTrip(PiItem(9), """{piitem: 9}""", codec)
+//  } 
   
   
 // This doesn't work because the decoder doesn't know how to deal with the (sub-)Document and that it should be mapped to a PiItem.
@@ -95,13 +93,22 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
 //    roundTrip(XLeaf(5), """{value: 5}""", p)
 //  }
   
-  it should "encode/decode PiObjects" in {
+  "PiObjectCodec" should "encode/decode PiObjects" in {
 	  val codec = new PiObjectCodec
 
 	  roundTrip(PiItem("Oh!"), """{"_t": "PiItem", "class":"java.lang.String", "i":"Oh!"}""", codec)
 	  roundTrip(Chan("Oh!"), """{"_t": "Chan", "s":"Oh!"}""", codec)
 	  roundTrip(PiPair(Chan("L"),PiItem("R")), """{"_t": "PiPair", "l":{"_t" : "Chan", "s":"L"}, "r":{"_t" : "PiItem", "class":"java.lang.String", "i":"R"}}""", codec)
 	  roundTrip(PiOpt(Chan("L"),PiPair(Chan("RL"),Chan("RR"))), """{"_t": "PiOpt", "l":{"_t" : "Chan", "s":"L"}, "r":{"_t" : "PiPair", "l":{"_t" : "Chan", "s":"RL"}, "r":{"_t" : "Chan", "s":"RR"}}}""", codec)
+  }
+  
+  "TermCodec" should "encode/decode Terms" in {
+	  val objcodec = new PiObjectCodec
+	  val codec = new TermCodec(fromCodecs(objcodec))
+
+	  roundTrip(ParInI("XC","LC","RC",PiCall<("P1","LC","RC","Z")), codec)
+	  val ski = PiCut("z14","x12","oSelectSki_lB_PriceUSD_Plus_Exception_rB_",WithIn("x12","cUSD2NOK_PriceUSD_1","c12",LeftOut("y12","oUSD2NOK_PriceNOK_",PiCall<("USD2NOK","cUSD2NOK_PriceUSD_1","oUSD2NOK_PriceNOK_")),RightOut("y12","d12",PiId("c12","d12","m13"))),PiCut("z9","z8","oSelectModel_lB_Brand_x_Model_rB_",ParInI("z8","cSelectSki_Brand_2","cSelectSki_Model_3",PiCut("z4","cSelectSki_LengthInch_1","oCM2Inch_LengthInch_",PiCall<("SelectSki","cSelectSki_LengthInch_1","cSelectSki_Brand_2","cSelectSki_Model_3","oSelectSki_lB_PriceUSD_Plus_Exception_rB_"),PiCut("z2","cCM2Inch_LengthCM_1","oSelectLength_LengthCM_",PiCall<("CM2Inch","cCM2Inch_LengthCM_1","oCM2Inch_LengthInch_"),PiCall<("SelectLength","cSelectLength_HeightCM_1","cSelectLength_WeightKG_2","oSelectLength_LengthCM_")))),PiCall<("SelectModel","cSelectModel_PriceLimit_1","cSelectModel_SkillLevel_2","oSelectModel_lB_Brand_x_Model_rB_")))
+	  roundTrip(ski, codec)
   }
 }
 
@@ -112,11 +119,24 @@ trait PiBSONTestHelper {
     val codec = registry.get(ct.runtimeClass).asInstanceOf[Codec[T]]
     roundTripCodec(value, Document(expected), codec)
   }
+
+  def roundTrip[T](value: T, codec: Codec[T]): Unit = {
+    roundTripCodec(value, codec)
+  }
   
   def roundTrip[T](value: T, expected: String, codec: Codec[T]): Unit = {
     roundTripCodec(value, Document(expected), codec)
   }
 
+  def roundTripCodec[T](value: T, codec: Codec[T]): Unit = {
+    val encoded = encode(codec, value)
+    val actual = decode(documentCodec, encoded)
+    val roundTripped = decode(codec, encode(codec, value))
+    System.out.println(s"Round Tripped case class: ($roundTripped) must equal the original: ($value)")
+    assert(roundTripped == value, s"Round Tripped case class: ($roundTripped) did not equal the original: ($value)")
+  }
+  
+  
   def roundTripCodec[T](value: T, expected: Document, codec: Codec[T]): Unit = {
     val encoded = encode(codec, value)
     val actual = decode(documentCodec, encoded)
