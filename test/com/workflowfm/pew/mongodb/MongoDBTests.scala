@@ -152,7 +152,43 @@ class MongoDBTests extends FlatSpec with Matchers with PiBSONTestHelper with Mon
     res.head.id should be (oid)
     res.head.state should be (fState((Chan("V"),PiItem("OUTPUT"))))
   }
+  
+  it should "update PiInstances with chained observables" in {
+    val proc1 = DummyProcess("PROC", Seq("C","R"), "R", Seq((Chan("INPUT"),"C")))
+	  val procs = PiProcess.mapOf(proc1)
+    
+    val reg = fromRegistries(fromProviders(new PiCodecProvider(procs)),DEFAULT_CODEC_REGISTRY)
+    val oid = new ObjectId
+    val inst = PiInstance(oid,Seq(),proc1,PiState(Devour("C","V"),Out("C",PiItem("OUTPUT"))))
+
+    val mongoClient: MongoClient = MongoClient()
+    val database: MongoDatabase = mongoClient.getDatabase("pew").withCodecRegistry(reg);
+    val collection:MongoCollection[PiInstance[ObjectId]] = database.getCollection("test_insts")
+    
+    await(collection.insertOne(inst))
+    
+    val sessionQ = await(mongoClient.startSession(ClientSessionOptions.builder.causallyConsistent(true).build()))
+    sessionQ should not be empty
+    val session = sessionQ.head
+       
+    val obs = collection.find(session,Filters.equal("_id",oid)).flatMap({ i => collection.replaceOne(session,Filters.equal("_id",oid),i.reduce)})
+    
+    val done = await(obs)
+    done should not be empty
+    session.close()
+    
+    val res = await(collection.find(Filters.equal("_id",oid)))
+    res should not be empty
+    println("Result: " + res)
+    mongoClient.close()      
+    
+    res should not be empty
+    res.head.id should be (oid)
+    res.head.state should be (fState((Chan("V"),PiItem("OUTPUT"))))
+  }
 }
+
+
 
 trait MongoDBTestHelper {
   def await[T](obs:Observable[T]) = Await.result(obs.toFuture,1.minute)
