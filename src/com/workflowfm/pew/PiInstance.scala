@@ -32,8 +32,7 @@ case class PiInstance[T](final val id:T, called:Seq[Int], process:PiProcess, sta
   private case class THandler(handler:(Int,PiFuture)=>Boolean) extends (((Int,PiFuture)) => Boolean) {
     def apply(t:(Int,PiFuture)):Boolean = 
       if (called contains t._1) true
-      else if (handler(t._1,t._2)) true
-      else false 
+      else handler(t._1,t._2)
   }
 }
 object PiInstance {

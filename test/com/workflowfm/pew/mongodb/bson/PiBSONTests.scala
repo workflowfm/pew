@@ -183,6 +183,8 @@ trait PiBSONTestHelper {
     System.out.println(s"Round Tripped case class: ($roundTripped) must equal the original: ($value)")
     assert(roundTripped == value, s"Round Tripped case class: ($roundTripped) did not equal the original: ($value)")
   }
+  
+  def documentOf[T](codec: Codec[T], value: T): Document = decode(documentCodec, encode(codec, value))
 
   def encode[T](codec: Codec[T], value: T): OutputBuffer = {
     val buffer = new BasicOutputBuffer()
