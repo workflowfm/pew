@@ -21,6 +21,7 @@ class DefaultHandler[T] extends PiEventHandler[T,Unit] {
   override def failure(i:PiInstance[T],reason:Option[Throwable]=None) = {	  
 	  System.err.println(" === FINAL STATE " + i.id + " === \n" + i.state + "\n === === === === === === === ===")
 	  System.err.println(" === FAILED: " + i.id + " ! === Exception: " + reason)
+	  reason map (_.printStackTrace())
   }
 }
 

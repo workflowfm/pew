@@ -32,6 +32,7 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
   val handler = new PromiseHandler[ObjectId]  
     
   def await[T](obs:Observable[T]) = Await.result(obs.toFuture,timeout)
+  def await[T](f:Future[T]) = Await.result(f,timeout)
   
   def call(p:PiProcess,args:PiObject*) = {
     val oid = new ObjectId
@@ -57,30 +58,34 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
   
   
   final def postResult(id:ObjectId, ref:Int, res:PiObject):Unit = {
-		val database: MongoDatabase = client.getDatabase(db).withCodecRegistry(codecRegistry);
+		System.err.println("*** [" + id + "] Got result for thread " + ref + " : " + res)
+    val database: MongoDatabase = client.getDatabase(db).withCodecRegistry(codecRegistry);
     val col:MongoCollection[PiInstance[ObjectId]] = database.getCollection(collection)
    
     val sessionQ = client.startSession(ClientSessionOptions.builder.causallyConsistent(true).build())
-    sessionQ.head().map { session => {
-      val obs = col.find(session,Filters.equal("_id",id)).subscribe({ i:PiInstance[ObjectId] => await(
-          postResult(i,ref,res,col,session).recover({ case ex => handler.failure(i,Some(ex))})
-          )})
-    // TODO handle more exceptions!
+    sessionQ.head().map { session => { 
+      System.err.println("*** [" + id + "] Session started: " + ref)
+      val obs = col.find(session,Filters.equal("_id",id)).head().flatMap { i:PiInstance[ObjectId] => {
+        System.err.println("*** [" + id + "] Got PiInstance")
+        postResult(i,ref,res,col,session).recover({ case ex => handler.failure(i,Some(ex))}).toFuture()
+      }}
+      await(obs)
+      System.err.println("*** [" + id + "] Closing session: " + ref)
       session.close()
     }}
   }
   
   def postResult(i:PiInstance[ObjectId], ref:Int, res:PiObject, col:MongoCollection[PiInstance[ObjectId]], session:ClientSession):Observable[_] = {
-    System.err.println("*** [" + i.id + "] Received result for thread " + ref + " : " + res)
+    System.err.println("*** [" + i.id + "] Handling result for thread " + ref + " : " + res)
 	  val ni = i.postResult(ref, res).reduce
 	  if (ni.completed) ni.result match {
-		  case None => {
-		    handler.failure(ni)
-		    col.deleteOne(session,Filters.equal("_id",i.id))
+		  case None => {   
+		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
+		    col.deleteOne(session,Filters.equal("_id",i.id)) andThen { case _ => handler.failure(ni)}
 		  }
 		  case Some(res) => {
-		    handler.success(i,res)
-		    col.deleteOne(session,Filters.equal("_id",i.id))
+		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
+		    col.deleteOne(session,Filters.equal("_id",i.id)) andThen {case _ => handler.success(i,res)}
 		  }
 		} else {
 			col.replaceOne(session,Filters.equal("_id",i.id), ni.handleThreads(handleThread(ni.id)))
