@@ -78,7 +78,7 @@ case class PiState(inputs:Map[Chan,Input], outputs:Map[Chan,Output], calls:List[
     final def fullReduce():PiState = reduce() match {
       case None => this
       case Some(s) => {
-        System.err.println(s)
+        //System.err.println(s)
         s.fullReduce()
       }
     }
@@ -128,7 +128,7 @@ case class PiState(inputs:Map[Chan,Input], outputs:Map[Chan,Output], calls:List[
         this
       }
       case Some(p:AtomicProcess) => {
-        System.err.println("*** Handling atomic call: " + c.name)
+        //System.err.println("*** Handling atomic call: " + c.name)
         val m = p.mapArgs(c.args:_*)
         copy(calls = p.getFuture(m) +: calls) withTerms p.getInputs(m)
       }

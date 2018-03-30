@@ -24,7 +24,12 @@ case class AtomicProcessExecutor(process:AtomicProcess) {
 /**
  * Trait representing the ability to execute any PiProcess
  */
-trait ProcessExecutor {
+trait ProcessExecutor[R] {
+	def execute(process:PiProcess,args:Seq[Any]):R
+}
+
+
+trait FutureExecutor extends ProcessExecutor[Future[Option[Any]]] {
   implicit val context: ExecutionContext = ExecutionContext.global
 	def execute(process:PiProcess,args:Seq[Any]):Future[Option[Any]]
 }
@@ -41,6 +46,6 @@ object ProcessExecutor {
  * Shortcut methods for unit testing
  */
 trait ProcessExecutorTester {
-  def exe(e:ProcessExecutor,p:PiProcess,args:Any*) = await(e.execute(p,args:Seq[Any]))
+  def exe(e:FutureExecutor,p:PiProcess,args:Any*) = await(e.execute(p,args:Seq[Any]))
   def await[A](f:Future[A]):A = Await.result(f,Duration.Inf)  
 }

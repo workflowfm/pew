@@ -9,7 +9,7 @@ import scala.annotation.tailrec
  * SingleBlockingExecutor fully executes one PiProcess from a map of given PiProcesses.
  * It blocks waiting for every atomic call to finish, so has no concurrency.
  */
-case class SingleBlockingExecutor(processes:Map[String,PiProcess]) extends ProcessExecutor {
+case class SingleBlockingExecutor(processes:Map[String,PiProcess]) extends FutureExecutor {
   def call(name:String,args:PiObject*) = {
     processes get name match {
       case None => None

@@ -20,11 +20,11 @@ object GetSkiMain {
 		
 		val getSki = new GetSki(cM2Inch , selectLength , selectModel , selectSki , uSD2NOK)
 		
-		//implicit val executor:ProcessExecutor = SingleBlockingExecutor()
+		//implicit val executor:FutureExecutor = SingleBlockingExecutor()
 		//println("*** Result 1: " + Await.result(getSki( "height" , "price" , "skill" , "weight" ),Duration.Inf))
 		//println("*** Result 2: " + Await.result(getSki( "h" , "p" , "s" , "w" ),Duration.Inf))
 
-   	implicit val executor:ProcessExecutor = new MultiStateExecutor(selectModel, selectLength, cM2Inch, uSD2NOK, selectSki, getSki)
+   	implicit val executor:FutureExecutor = new MultiStateExecutor(selectModel, selectLength, cM2Inch, uSD2NOK, selectSki, getSki)
     val f1 = getSki( "height" , "price" , "skill" , "weight" )
 		val f2 = getSki( "h" , "p" , "s" , "w" )
 		

@@ -13,86 +13,75 @@ import scala.annotation.tailrec
  * promises/futures from the first workflow can trigger changes on the state!
  */
 
-class MultiStateExecutor(var store:PiInstanceStore[Int],processes:Map[String,PiProcess])(override implicit val context: ExecutionContext = ExecutionContext.global) extends ProcessExecutor {
-  def this(store:PiInstanceStore[Int],l:PiProcess*) = this(store,PiProcess.mapOf(l :_*))
+class MultiStateExecutor(var store:PiInstanceStore[Int], processes:Map[String,PiProcess])(override implicit val context: ExecutionContext = ExecutionContext.global) extends FutureExecutor {
+  def this(store:PiInstanceStore[Int], l:PiProcess*) = this(store,PiProcess.mapOf(l :_*))
   def this(l:PiProcess*) = this(SimpleInstanceStore(),PiProcess.mapOf(l :_*))
   
   var ctr:Int = 0
-  var promises:Map[Int,Promise[Option[Any]]] = Map()
+  val handler = new PromiseHandler[Int]
   
   def call(p:PiProcess,args:PiObject*) = store.synchronized {
 	  val inst = PiInstance(ctr,p,args:_*)
-	  val promise = Promise[Option[Any]]()
-	  System.err.println(" === INITIAL STATE " + ctr + " === \n" + inst.state + "\n === === === === === === === ===")
-	  promises += (ctr -> promise)
+	  val ret = handler.start(inst)
+	  val ni = inst.reduce
+    if (ni.completed) ni.result match {
+		  case None => {
+			  handler.failure(ni)
+		  }
+		  case Some(res) => {
+			  handler.success(ni, res)
+		  }
+	  } else {
+		  store = store.put(ni.handleThreads(handleThread(ni.id)))
+	  }
 	  ctr = ctr + 1
-	  run(inst)
-	  promise.future
-  }
-
-  def update(i:PiInstance[Int]) = store.synchronized {
-    store = store.put(i)
+	  ret
   }
   
-  def clean(id:Int) = store.synchronized {
-    store = store.del(id)
-    promises = promises - id
-  }
-  
-  def success(i:PiInstance[Int], res:Any) = {
-    System.err.println(" === FINAL STATE " + i.id + " === \n" + i.state + "\n === === === === === === === ===")
-    promises.get(i.id) match {
-      case Some(p) => p.success(Some(res))
-      case None => Unit
-    }
-    clean(i.id)
-  }
-  
-  def failure(inst:PiInstance[Int]) = {
-	  System.err.println(" === Failed to obtain output " + inst.id + " ! ===")
-	  System.err.println(" === FINAL STATE " + inst.id + " === \n" + inst.state + "\n === === === === === === === ===")
-    promises.get(inst.id) match {
-      case Some(p) => p.success(None)
-      case None => Unit
-    }
-	  clean(inst.id)
-  }
-  
-  final def run(i:PiInstance[Int]):Unit = store.synchronized {
-	  val ni = i.reduce
-	  if (ni.completed) ni.result match {
-		  case None => failure(ni)
-		  case Some(res) => success(i,res)        
-		} else {
-			update(ni.handleThreads(handleThread(ni.id)))
-		}
+  final def run(id:Int,f:PiInstance[Int]=>PiInstance[Int]):Unit = store.synchronized {
+	  store.get(id) match {
+      case None => System.err.println("*** [" + id + "] No running instance! ***")
+      case Some(i) => 
+        if (i.id != id) System.err.println("*** [" + id + "] Different instance ID encountered: " + i.id)
+        else {
+          System.err.println("*** [" + id + "] Running!")
+          val ni = f(i).reduce
+    		  if (ni.completed) ni.result match {
+      		  case None => {
+      			  handler.failure(ni)
+      			  store = store.del(ni.id)
+      		  }
+      		  case Some(res) => {
+      			  handler.success(ni, res)
+      			  store = store.del(ni.id)
+      		  }
+    		  } else {
+    			  store = store.put(ni.handleThreads(handleThread(ni.id)))
+    		  }
+        }
+	  }
   }
  
-  def handleThread(id:Int)(ref:Int,f:PiFuture):Boolean = f match {
+  def handleThread(id:Int)(ref:Int,f:PiFuture):Boolean = {
+     System.err.println("*** [" + id + "] Handling thread: " + ref + " (" + f.fun + ")")
+    f match {
     case PiFuture(name, outChan, args) => processes get name match {
       case None => {
-        System.err.println("*** ERROR *** Unable to find process: " + name)
+        System.err.println("*** [" + id + "] ERROR *** Unable to find process: " + name)
         false
       }
       case Some(p:AtomicProcess) => {
-        p.run(args map (_.obj)).onSuccess{ case res => postResult(id,ref,res)}
-        System.err.println("*** Called process: " + p.name + " id:" + id + " ref:" + ref)
+        p.run(args map (_.obj)).onSuccess{ case res => postResult(id,ref,res) }
+        System.err.println("*** [" + id + "] Called process: " + p.name + " ref:" + ref)
         true
       }
-      case Some(p:CompositeProcess) => { System.err.println("*** Executor encountered composite process thread: " + name); false } // TODO this should never happen!
+      case Some(p:CompositeProcess) => { System.err.println("*** [" + id + "] Executor encountered composite process thread: " + name); false } // TODO this should never happen!
     }
-  }
+  } }
     
-  def postResult(id:Int,ref:Int, res:PiObject):Unit = store.synchronized {
-    System.err.println("*** Received result for ID:" + id + " Thread:" + ref + " : " + res)
-    store.get(id) match {
-      case None => System.err.println("*** No running instance! ***")
-      case Some(i) => 
-        if (i.id != id) System.err.println("*** Different instance ID encountered: " + i.id)
-        else {
-          run(i.postResult(ref, res))
-        }
-    }
+  def postResult(id:Int,ref:Int, res:PiObject):Unit = {
+    System.err.println("*** [" + id + "] Received result for thread " + ref + " : " + res)
+    run(id,{x => x.postResult(ref, res)})
   }
  
   override def execute(process:PiProcess,args:Seq[Any]):Future[Option[Any]] =
