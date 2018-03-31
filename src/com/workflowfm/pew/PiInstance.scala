@@ -21,9 +21,10 @@ case class PiInstance[T](final val id:T, called:Seq[Int], process:PiProcess, sta
 
   def reduce:PiInstance[T] = copy(state = state.fullReduce())
   
-  def handleThreads(handler:(Int,PiFuture)=>Boolean):PiInstance[T] = {
+  def handleThreads(handler:(Int,PiFuture)=>Boolean):(Seq[Int],PiInstance[T]) = {
     val newstate = state.handleThreads(THandler(handler))
-    copy(called=newstate.threads.keys.toSeq,state=newstate)
+    val newcalls = newstate.threads.keys.toSeq
+    (newcalls diff called,copy(called=newcalls,state=newstate))
   }
 
   /**
@@ -34,6 +35,8 @@ case class PiInstance[T](final val id:T, called:Seq[Int], process:PiProcess, sta
       if (called contains t._1) true
       else handler(t._1,t._2)
   }
+  
+  def piFutureOf(ref:Int):Option[PiFuture] = state.threads.get(ref)
 }
 object PiInstance {
   def apply[T](id:T,p:PiProcess,args:PiObject*):PiInstance[T] = PiInstance(id, Seq(), p, p.execState(args))

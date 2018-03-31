@@ -60,7 +60,7 @@ class SingleStateExecutor(processes:Map[String,PiProcess])(override implicit val
             case None => failure(ni)
             case Some(res) => success(res)        
         }} else {
-          instance = Some(ni.handleThreads(handleThread(ni.id)))
+          instance = Some(ni.handleThreads(handleThread(ni.id))._2)
         }
     }}
  

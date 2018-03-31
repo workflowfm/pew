@@ -32,7 +32,7 @@ class MultiStateExecutor(var store:PiInstanceStore[Int], processes:Map[String,Pi
 			  handler.success(ni, res)
 		  }
 	  } else {
-		  store = store.put(ni.handleThreads(handleThread(ni.id)))
+		  store = store.put(ni.handleThreads(handleThread(ni.id))._2)
 	  }
 	  ctr = ctr + 1
 	  ret
@@ -56,7 +56,7 @@ class MultiStateExecutor(var store:PiInstanceStore[Int], processes:Map[String,Pi
       			  store = store.del(ni.id)
       		  }
     		  } else {
-    			  store = store.put(ni.handleThreads(handleThread(ni.id)))
+    			  store = store.put(ni.handleThreads(handleThread(ni.id))._2)
     		  }
         }
 	  }

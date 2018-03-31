@@ -62,8 +62,10 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
 			  handler.success(ni, res)
 		  }
 	  } else {
-		  val res = ni.handleThreads(handleThread(ni.id))
+		  val (toCall,res) = ni.handleThreads(handleThread(ni.id))
       await(col.insertOne(res))
+      val futureCalls = toCall flatMap (res.piFutureOf)
+			(toCall zip futureCalls) map runThread(oid)
 	  }
 	  ret
   }
@@ -86,7 +88,8 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
         }
         case Seq(i:PiInstance[ObjectId]) => {
         System.err.println("*** [" + id + "] Got PiInstance: " + i)
-        postResult(i,ref,res,col,session) safeThen { //.recover({ case ex => handler.failure(i,ex)})
+        val (toCall,resobs) = postResult(i,ref,res,col,session) 
+        resobs safeThen { //.recover({ case ex => handler.failure(i,ex)})
           case Seq() => {
             System.err.println("*** [" + id + "] CAS (post): " + ref + " - Closing session")
             session.close()
@@ -96,19 +99,22 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
           case Seq(_) => {
             System.err.println("*** [" + id + "] Closing session: " + ref)
             session.close()
-            Future.successful(Unit)
+            Future.successful(toCall)
           }
         }
       }}
     }}
     obs.onComplete({
-      case Success(Unit) => System.err.println("*** [" + id + "] Success: " + ref)
+      case Success(toCall) => { 
+        System.err.println("*** [" + id + "] Success: " + ref)
+        toCall map runThread(id)
+      }
       case Failure(CASException) => System.err.println("*** [" + id + "] CAS Retry: " + ref + " - attempt: " + (attempt+1)); Thread.sleep(CAS_WAIT_MS); postResult(id,ref,res,attempt+1)
       case Failure(e) => System.err.println("*** [" + id + "] Failed: " + ref); handler.failure(id,e)
     })
   }
   
-  def postResult(i:PiInstance[ObjectId], ref:Int, res:PiObject, col:MongoCollection[PiInstance[ObjectId]], session:ClientSession):Observable[_] = {
+  def postResult(i:PiInstance[ObjectId], ref:Int, res:PiObject, col:MongoCollection[PiInstance[ObjectId]], session:ClientSession):(Seq[(Int,PiFuture)],Observable[_]) = {
     System.err.println("*** [" + i.id + "] Handling result for thread " + ref + " : " + res)
     val unique = i.called
 	  val ni = i.postResult(ref, res).reduce
@@ -116,18 +122,19 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
 		  case None => {   
 		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
 		    System.err.println("*** [" + i.id + "] Completed with no result!")
-		    col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen { case _ => handler.failure(ni,ProcessExecutor.NoResultException(ni.id.toString()))}
+		    (Seq(),(col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen { case _ => handler.failure(ni,ProcessExecutor.NoResultException(ni.id.toString()))}))
 		  }
 		  case Some(res) => {
 		    System.err.println("*** [" + i.id + "] Completed with result!")
 		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
-		    col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen {case _ => handler.success(i,res)}
+		    (Seq(),(col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen {case _ => handler.success(i,res)}))
 		  }
 		} else {
 		  System.err.println("*** [" + i.id + "] Handling threads after: " + ref)
-		  val resi = ni.handleThreads(handleThread(ni.id))
+		  val (toCall,resi) = ni.handleThreads(handleThread(ni.id))
+		  val futureCalls = toCall flatMap (resi.piFutureOf)
 		  System.err.println("*** [" + i.id + "] Updating state after: " + ref)
-			col.findOneAndReplace(session,and(equal("_id",i.id),equal("calls",unique)), resi)
+			(toCall zip futureCalls,col.findOneAndReplace(session,and(equal("_id",i.id),equal("calls",unique)), resi))
 		}
   }
  
@@ -139,18 +146,31 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
         System.err.println("*** [" + id + "] ERROR *** Unable to find process: " + name)
         false
       }
-      case Some(p:AtomicProcess) => {
-        p.run(args map (_.obj)).onComplete{ 
-          case Success(res) => Future { Thread.sleep(100); postResult(id,ref,res) } 
-          case Failure (ex) => handler.failure(id,ex)
-        }
-        System.err.println("*** [" + id + "] Called process: " + p.name + " ref:" + ref)
-        true
-      }
+      case Some(p:AtomicProcess) => true
       case Some(p:CompositeProcess) => { System.err.println("*** [" + id + "] Executor encountered composite process thread: " + name); false } // TODO this should never happen!
     }
   } }
   
+  def runThread(id:ObjectId)(t:(Int,PiFuture)):Unit = {
+    System.err.println("*** [" + id + "] Handling thread: " + t._1 + " (" + t._2.fun + ")")
+    t match {
+    case (ref,PiFuture(name, outChan, args)) => processes get name match {
+      case None => {
+        // This should never happen! We already checked!
+        System.err.println("*** [" + id + "] ERROR *** Unable to find process: " + name + " even though we checked already")
+      }
+      case Some(p:AtomicProcess) => {
+        p.run(args map (_.obj)).onComplete{ 
+          case Success(res) => postResult(id,ref,res) 
+          case Failure (ex) => handler.failure(id,ex)
+        }
+        System.err.println("*** [" + id + "] Called process: " + p.name + " ref:" + ref)
+      }
+      case Some(p:CompositeProcess) => {// This should never happen! We already checked! 
+        System.err.println("*** [" + id + "] Executor encountered composite process thread: " + name)
+      }
+    }
+  } }
   
   implicit class SafeObservable[T](obs: Observable[T])(implicit id:ObjectId) {
 //    def safeThen[U](f: Seq[T] => U): Future[U] = {
