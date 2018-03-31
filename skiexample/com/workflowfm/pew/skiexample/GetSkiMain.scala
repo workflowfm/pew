@@ -1,12 +1,15 @@
 package com.workflowfm.pew.skiexample
 
 import scala.concurrent._
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 import com.workflowfm.pew._
 import com.workflowfm.pew.execution._
 import com.workflowfm.pew.skiexample.SkiExampleTypes._
 import com.workflowfm.pew.skiexample.processes._
 import com.workflowfm.pew.skiexample.instances._
+import org.mongodb.scala.MongoClient
+import com.workflowfm.pew.mongodb.MongoDBExecutor
+import akka.actor.ActorSystem
 
 object GetSkiMain {
 	
@@ -20,15 +23,26 @@ object GetSkiMain {
 		
 		val getSki = new GetSki(cM2Inch , selectLength , selectModel , selectSki , uSD2NOK)
 		
+		implicit val system: ActorSystem = ActorSystem("GetSkiMain")
+    implicit val executionContext = system.dispatchers.lookup("akka.my-dispatcher") 
+		
 		//implicit val executor:FutureExecutor = SingleBlockingExecutor()
-		//println("*** Result 1: " + Await.result(getSki( "height" , "price" , "skill" , "weight" ),Duration.Inf))
-		//println("*** Result 2: " + Await.result(getSki( "h" , "p" , "s" , "w" ),Duration.Inf))
-
-   	implicit val executor:FutureExecutor = new MultiStateExecutor(selectModel, selectLength, cM2Inch, uSD2NOK, selectSki, getSki)
+   	//implicit val executor:FutureExecutor = new MultiStateExecutor(selectModel, selectLength, cM2Inch, uSD2NOK, selectSki, getSki)
+		
+		val client = MongoClient()
+    implicit val executor = new MongoDBExecutor(client, "pew", "test_exec_insts", selectModel, selectLength, cM2Inch, uSD2NOK, selectSki, getSki)
+		
     val f1 = getSki( "height" , "price" , "skill" , "weight" )
 		val f2 = getSki( "h" , "p" , "s" , "w" )
-		
-    println("*** Result 1: " + Await.result(f1,Duration.Inf))
-		println("*** Result 2: " + Await.result(f2,Duration.Inf))
+	
+		try {
+		  println("*** Result 1: " + Await.result(f1,10.seconds))
+		  println("*** Result 2: " + Await.result(f2,10.seconds))
+		} catch {
+		  case e:Throwable => e.printStackTrace()
+		}
+					
+		client.close()
+		Await.result(system.terminate(),10.seconds)
 	}
 }

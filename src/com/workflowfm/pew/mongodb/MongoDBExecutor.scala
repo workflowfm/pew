@@ -29,11 +29,13 @@ import scala.util.Success
 import scala.util.Failure
 import org.mongodb.scala.ReadConcern
 import org.mongodb.scala.WriteConcern
+import akka.dispatch.OnComplete
 
 class MongoDBExecutor(client:MongoClient, db:String, collection:String, processes:Map[String,PiProcess],timeout:Duration=10.seconds)(override implicit val context: ExecutionContext = ExecutionContext.global) extends FutureExecutor {
   def this(client:MongoClient, db:String, collection:String, l:PiProcess*) = this(client,db,collection,PiProcess.mapOf(l :_*))  
 
   final val CAS_MAX_ATTEMPTS = 10
+  final val CAS_WAIT_MS = 1
   
   val codecRegistry = fromRegistries(fromProviders(new PiCodecProvider(processes)),DEFAULT_CODEC_REGISTRY)
   val database: MongoDatabase = client.getDatabase(db).
@@ -45,7 +47,7 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
   val handler = new PromiseHandler[ObjectId]  
     
   def await[T](obs:Observable[T]) = Await.result(obs.toFuture,timeout)
-  def await[T](f:Future[T]) = Await.result(f,timeout)
+  //def await[T](f:Future[T]) = Await.result(f,timeout)
   
   def call(p:PiProcess,args:PiObject*) = {
     val oid = new ObjectId
@@ -100,8 +102,8 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
       }}
     }}
     obs.onComplete({
-      case Success(_) => System.err.println("*** [" + id + "] Success: " + ref); Unit
-      case Failure(CASException) => System.err.println("*** [" + id + "] CAS Retry: " + ref); Thread.sleep(1); postResult(id,ref,res,attempt+1)
+      case Success(Unit) => System.err.println("*** [" + id + "] Success: " + ref)
+      case Failure(CASException) => System.err.println("*** [" + id + "] CAS Retry: " + ref + " - attempt: " + (attempt+1)); Thread.sleep(CAS_WAIT_MS); postResult(id,ref,res,attempt+1)
       case Failure(e) => System.err.println("*** [" + id + "] Failed: " + ref); handler.failure(id,e)
     })
   }
@@ -113,14 +115,19 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
 	  if (ni.completed) ni.result match {
 		  case None => {   
 		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
+		    System.err.println("*** [" + i.id + "] Completed with no result!")
 		    col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen { case _ => handler.failure(ni,ProcessExecutor.NoResultException(ni.id.toString()))}
 		  }
 		  case Some(res) => {
+		    System.err.println("*** [" + i.id + "] Completed with result!")
 		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
 		    col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen {case _ => handler.success(i,res)}
 		  }
 		} else {
-			col.findOneAndReplace(session,and(equal("_id",i.id),equal("calls",unique)), ni.handleThreads(handleThread(ni.id)))
+		  System.err.println("*** [" + i.id + "] Handling threads after: " + ref)
+		  val resi = ni.handleThreads(handleThread(ni.id))
+		  System.err.println("*** [" + i.id + "] Updating state after: " + ref)
+			col.findOneAndReplace(session,and(equal("_id",i.id),equal("calls",unique)), resi)
 		}
   }
  
@@ -133,7 +140,10 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
         false
       }
       case Some(p:AtomicProcess) => {
-        p.run(args map (_.obj)).onSuccess{ case res => postResult(id,ref,res) }
+        p.run(args map (_.obj)).onComplete{ 
+          case Success(res) => Future { Thread.sleep(100); postResult(id,ref,res) } 
+          case Failure (ex) => handler.failure(id,ex)
+        }
         System.err.println("*** [" + id + "] Called process: " + p.name + " ref:" + ref)
         true
       }
