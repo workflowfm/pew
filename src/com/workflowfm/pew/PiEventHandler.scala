@@ -5,7 +5,8 @@ import scala.concurrent.{Promise,Future}
 trait PiEventHandler[KeyT,InitT] {
   def start(i:PiInstance[KeyT]):InitT
   def success(i:PiInstance[KeyT], res:Any):Unit = Unit
-  def failure(inst:PiInstance[KeyT],reason:Option[Throwable]=None):Unit  = Unit
+  def failure(i:KeyT, reason:Throwable):Unit = reason.printStackTrace()
+  def failure(i:PiInstance[KeyT], reason:Throwable):Unit = reason.printStackTrace()
 }
 
 class DefaultHandler[T] extends PiEventHandler[T,Unit] {  
@@ -18,10 +19,15 @@ class DefaultHandler[T] extends PiEventHandler[T,Unit] {
     System.err.println(" === RESULT FOR " + i.id + ": " + res)
   }
   
-  override def failure(i:PiInstance[T],reason:Option[Throwable]=None) = {	  
+  override def failure(i:PiInstance[T],reason:Throwable) = {	  
 	  System.err.println(" === FINAL STATE " + i.id + " === \n" + i.state + "\n === === === === === === === ===")
 	  System.err.println(" === FAILED: " + i.id + " ! === Exception: " + reason)
-	  reason map (_.printStackTrace())
+	  reason.printStackTrace()
+  }
+  
+  override def failure(i:T,reason:Throwable) = {	  
+	  System.err.println(" === FAILED: " + i + " ! === Exception: " + reason)
+	  reason.printStackTrace()
   }
 }
 
@@ -45,14 +51,11 @@ class PromiseHandler[T] extends PiEventHandler[T,Future[Option[Any]]]{
     promises = promises - i.id
   }
   
-  override def failure(i:PiInstance[T],reason:Option[Throwable]=None) = promises synchronized {
+  override def failure(i:PiInstance[T],reason:Throwable) = promises synchronized {
     default.failure(i,reason)
     promises.get(i.id) match {
       case None => Unit
-      case Some(p) => reason match {
-        case None => p.success(None)
-        case Some(ex) => p.failure(ex)
-      }
+      case Some(p) => p.failure(reason)
     }
   }
 }

@@ -2,7 +2,7 @@ package com.workflowfm.pew.execution
 
 import com.workflowfm.pew._
 import scala.concurrent._
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 
 /**
  * Executes an atomic process - blocking
@@ -40,6 +40,8 @@ object ProcessExecutor {
                     extends Exception("Unable to execute more than one process at a time", cause) 
   final case class UnknownProcessException(val process:String, private val cause: Throwable = None.orNull)
                     extends Exception("Unknown process: " + process, cause) 
+  final case class NoResultException(val id:String, private val cause: Throwable = None.orNull)
+                    extends Exception("Failed to get result for: " + id, cause) 
 }
 
 /**
@@ -47,5 +49,12 @@ object ProcessExecutor {
  */
 trait ProcessExecutorTester {
   def exe(e:FutureExecutor,p:PiProcess,args:Any*) = await(e.execute(p,args:Seq[Any]))
-  def await[A](f:Future[A]):A = Await.result(f,Duration.Inf)  
+  def await[A](f:Future[A]):A = try {
+    Await.result(f,15.seconds)
+  } catch {
+    case e:Throwable => {
+      System.out.println("=== RESULT FAILED! ===")
+      throw e
+    }
+  }
 }

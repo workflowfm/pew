@@ -37,28 +37,28 @@ class MongoExecutorTests extends FlatSpec with Matchers with ProcessExecutorTest
     r1 should be (Some("PbSleptFor2s"))
 	}
 
-  it should "execute atomic PbI twice concurrently" in {
-    val client = MongoClient()
-    val ex = new MongoDBExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
-    val f1 = ex.execute(pbi,Seq(2))
-    val f2 = ex.execute(pbi,Seq(1))
-   
-    val r1 = await(f1)
-    r1 should not be empty
-    r1 should be (Some("PbSleptFor2s"))
-    val r2 = await(f2)
-    r2 should not be empty
-    r2 should be (Some("PbSleptFor1s"))
-	}
-  
-  it should "execute Rexample once" in {
-    val client = MongoClient()
-    val ex = new MongoDBExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
-    val f1 = ex.execute(ri,Seq(21))
-   
-    val r1 = await(f1)
-    r1 should be (Some(("PbSleptFor2s","PcSleptFor1s")))
-	}
+//  it should "execute atomic PbI twice concurrently" in {
+//    val client = MongoClient()
+//    val ex = new MongoDBExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
+//    val f1 = ex.execute(pbi,Seq(2))
+//    val f2 = ex.execute(pbi,Seq(1))
+//   
+//    val r1 = await(f1)
+//    r1 should not be empty
+//    r1 should be (Some("PbSleptFor2s"))
+//    val r2 = await(f2)
+//    r2 should not be empty
+//    r2 should be (Some("PbSleptFor1s"))
+//	}
+//  
+//  it should "execute Rexample once" in {
+//    val client = MongoClient()
+//    val ex = new MongoDBExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
+//    val f1 = ex.execute(ri,Seq(21))
+//   
+//    val r1 = await(f1)
+//    r1 should be (Some(("PbSleptFor2s","PcSleptFor1s")))
+//	}
 	
 //  "MultiStateExecutor" should "execute Rexample twice concurrently" in {
 //    val ex = new MultiStateExecutor(pai,pbi,pci,ri)

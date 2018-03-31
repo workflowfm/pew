@@ -26,7 +26,7 @@ class MultiStateExecutor(var store:PiInstanceStore[Int], processes:Map[String,Pi
 	  val ni = inst.reduce
     if (ni.completed) ni.result match {
 		  case None => {
-			  handler.failure(ni)
+			  handler.failure(ni,ProcessExecutor.NoResultException(ni.id.toString()))
 		  }
 		  case Some(res) => {
 			  handler.success(ni, res)
@@ -48,7 +48,7 @@ class MultiStateExecutor(var store:PiInstanceStore[Int], processes:Map[String,Pi
           val ni = f(i).reduce
     		  if (ni.completed) ni.result match {
       		  case None => {
-      			  handler.failure(ni)
+      			  handler.failure(ni,ProcessExecutor.NoResultException(ni.id.toString()))
       			  store = store.del(ni.id)
       		  }
       		  case Some(res) => {

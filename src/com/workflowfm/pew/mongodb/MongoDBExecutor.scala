@@ -23,11 +23,22 @@ import org.mongodb.scala.model.Filters
 import org.mongodb.scala.MongoDatabase
 import org.mongodb.scala.MongoCollection
 import org.mongodb.scala.SingleObservable
+import org.mongodb.scala.Observer
+import scala.util.Try
+import scala.util.Success
+import scala.util.Failure
+import org.mongodb.scala.ReadConcern
+import org.mongodb.scala.WriteConcern
 
 class MongoDBExecutor(client:MongoClient, db:String, collection:String, processes:Map[String,PiProcess],timeout:Duration=10.seconds)(override implicit val context: ExecutionContext = ExecutionContext.global) extends FutureExecutor {
   def this(client:MongoClient, db:String, collection:String, l:PiProcess*) = this(client,db,collection,PiProcess.mapOf(l :_*))  
    
   val codecRegistry = fromRegistries(fromProviders(new PiCodecProvider(processes)),DEFAULT_CODEC_REGISTRY)
+  val database: MongoDatabase = client.getDatabase(db).
+    withCodecRegistry(codecRegistry).
+    withReadConcern(ReadConcern.LINEARIZABLE).
+    withWriteConcern(WriteConcern.MAJORITY);
+  val col:MongoCollection[PiInstance[ObjectId]] = database.getCollection(collection)
   
   val handler = new PromiseHandler[ObjectId]  
     
@@ -41,15 +52,13 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
 	  val ni = inst.reduce
     if (ni.completed) ni.result match {
 		  case None => {
-			  handler.failure(ni)
+			  handler.failure(ni,ProcessExecutor.NoResultException(ni.id.toString()))
 		  }
 		  case Some(res) => {
 			  handler.success(ni, res)
 		  }
 	  } else {
 		  val res = ni.handleThreads(handleThread(ni.id))
-		  val database: MongoDatabase = client.getDatabase(db).withCodecRegistry(codecRegistry);
-      val col:MongoCollection[PiInstance[ObjectId]] = database.getCollection(collection)
       await(col.insertOne(res))
 	  }
 	  ret
@@ -59,20 +68,27 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
   
   final def postResult(id:ObjectId, ref:Int, res:PiObject):Unit = {
 		System.err.println("*** [" + id + "] Got result for thread " + ref + " : " + res)
-    val database: MongoDatabase = client.getDatabase(db).withCodecRegistry(codecRegistry);
-    val col:MongoCollection[PiInstance[ObjectId]] = database.getCollection(collection)
-   
-    val sessionQ = client.startSession(ClientSessionOptions.builder.causallyConsistent(true).build())
-    sessionQ.head().map { session => { 
+    implicit val iid:ObjectId = id   
+    
+    val obs = client.startSession(ClientSessionOptions.builder.causallyConsistent(true).build()) safeThen { 
+      case Seq(session:ClientSession) => { 
       System.err.println("*** [" + id + "] Session started: " + ref)
-      val obs = col.find(session,Filters.equal("_id",id)).head().flatMap { i:PiInstance[ObjectId] => {
-        System.err.println("*** [" + id + "] Got PiInstance")
-        postResult(i,ref,res,col,session).recover({ case ex => handler.failure(i,Some(ex))}).toFuture()
+      col.find(session,Filters.equal("_id",id)) safeThen { 
+        case Seq(i:PiInstance[ObjectId]) => {
+        System.err.println("*** [" + id + "] Got PiInstance: " + i)
+        postResult(i,ref,res,col,session).recover({ case ex => handler.failure(i,ex)}) safeThen {
+          case Seq(_) => {
+                System.err.println("*** [" + id + "] Closing session: " + ref)
+                session.close()
+          }
+        }
       }}
-      await(obs)
-      System.err.println("*** [" + id + "] Closing session: " + ref)
-      session.close()
     }}
+    try {
+    	await(obs)
+    } catch {
+      case e:Throwable => handler.failure(id,e)
+    }
   }
   
   def postResult(i:PiInstance[ObjectId], ref:Int, res:PiObject, col:MongoCollection[PiInstance[ObjectId]], session:ClientSession):Observable[_] = {
@@ -81,7 +97,7 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
 	  if (ni.completed) ni.result match {
 		  case None => {   
 		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
-		    col.deleteOne(session,Filters.equal("_id",i.id)) andThen { case _ => handler.failure(ni)}
+		    col.deleteOne(session,Filters.equal("_id",i.id)) andThen { case _ => handler.failure(ni,ProcessExecutor.NoResultException(ni.id.toString()))}
 		  }
 		  case Some(res) => {
 		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
@@ -108,7 +124,34 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
       case Some(p:CompositeProcess) => { System.err.println("*** [" + id + "] Executor encountered composite process thread: " + name); false } // TODO this should never happen!
     }
   } }
- 
+  
+  
+  implicit class SafeObservable[T](obs: Observable[T])(implicit id:ObjectId) {
+    def safeThen[U](f: Seq[T] => U): Future[U] = {
+      val p = Promise[U]()
+      obs.toFuture().onComplete({
+        case Success(r:Seq[T]) => p.success(f(r))
+        case Failure(ex:Throwable) => p.failure(ex)
+      })
+      p.future
+    }
+  }
+//  implicit class SafeNestedObservable[T](f: Future[Observable[T]])(implicit id:ObjectId) {
+//    def safeThen[U](pf: PartialFunction[Try[Seq[T]], U]): Future[U] = {
+//      val p = Promise[U]()
+//      f.flatMap(x => x.toFuture()).onComplete(r => p.complete(Try(pf(r))))
+//      p.future
+//    }
+//  }
+  //implicit def flattenObservable[T](f:Future[Observable[T]]):Future[Seq[T]] = f.flatMap(x => x.toFuture())
+//  implicit class SafeObservable[T](obs:Observable[T])(implicit id:ObjectId) {
+//    def safeThen[U](f:T=>Observable[U]):Observable[U] = {
+//      obs.subscribe
+//      
+//      obs.toFuture().transform({ x:Seq[T] => f(x.head) }, { e:Throwable => handler.failure(id,e);e })
+//    }
+//  }
+  
   override def execute(process:PiProcess,args:Seq[Any]):Future[Option[Any]] =
     call(process,args map PiObject.apply :_*)
    
