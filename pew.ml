@@ -124,7 +124,7 @@ let scala_stateful_proc depth (proc:Proc.t) =
   common ^
   "override val dependencies = Seq(" ^ (String.concat "," (map mk_depparam deps)) ^ ")\n" ^ (nltab (depth + 1)) ^
   "override val body = " ^ (scala_of_pat (rhs proc.Proc.proc)) ^ (nltab (depth + 1)) ^ (nltab (depth + 1)) ^
-  "def apply(" ^(String.concat "," (map mk_arg intypes))^")(implicit executor:ProcessExecutor): Future[Option["^outtype^"]] =" ^ (nltab (depth + 2)) ^
+  "def apply(" ^(String.concat "," (map mk_arg intypes))^")(implicit executor:FutureExecutor): Future[Option["^outtype^"]] =" ^ (nltab (depth + 2)) ^
   "executor.execute(this,Seq("^(String.concat "," (map String.uncapitalize intypes))^")).map(_ map(_.asInstanceOf["^outtype^"]))(executor.context)" ^ (nltab depth) ^
   "}";;
 
@@ -134,7 +134,8 @@ let scala_stateful_proc_file separator path package project (proc:Proc.t) =
   (scala_file_path separator path (package ^ ".processes") (String.capitalize proc.Proc.name),
    "package " ^ package ^ ".processes\n\n" ^
       "import scala.concurrent._\n" ^
-      "import com.workflowfm.pappilib.stateful._\n" ^
+      "import com.workflowfm.pew._\n" ^
+      "import com.workflowfm.pew.execution._\n" ^
       "import " ^ package ^ "." ^  (String.capitalize project) ^ "Types._\n" ^ (nltab 0) ^ 
       (scala_stateful_proc 0 proc));;
  
@@ -170,8 +171,9 @@ let scala_stateful_main separator path package project proc deps =
     (scala_file_path separator path package ((String.capitalize proc.Proc.name)^"Main"),
      "package " ^ package ^ "\n\n" ^
        "import scala.concurrent._\n" ^
-       "import scala.concurrent.duration.Duration\n" ^
-       "import com.workflowfm.pappilib.stateful._\n" ^ 
+       "import scala.concurrent.duration._\n" ^
+       "import com.workflowfm.pew._\n" ^
+       "import com.workflowfm.pew.execution._\n" ^
        "import " ^ package ^ "." ^  (String.capitalize project) ^ "Types._\n" ^ 
        "import " ^ package ^ ".processes._\n" ^ 
        "import " ^ package ^ ".instances._\n" ^ (nltab 0) ^ 
@@ -180,9 +182,9 @@ let scala_stateful_main separator path package project proc deps =
        (itlist (^) (map scala_atomic_inst atomic) (nltab 2)) ^
        (itlist (^) (map scala_composite_inst composite) (nltab 2)) ^
        (scala_composite_inst proc) ^ (nltab 2) ^ 
-       "implicit val executor:ProcessExecutor = SimpleProcessExecutor()\n" ^ (nltab 2) ^
+       "implicit val executor:FutureExecutor = SimpleProcessExecutor()\n" ^ (nltab 2) ^
        "// TODO: Provide actual parameters:" ^ (nltab 2) ^
-       "val result = Await.result("^(String.uncapitalize proc.Proc.name)^"( "^(string_comma_list params)^" ),Duration.Inf)" ^ (nltab 1) ^
+       "val result = Await.result("^(String.uncapitalize proc.Proc.name)^"( "^(string_comma_list params)^" ),30.seconds)" ^ (nltab 1) ^
        "}" ^ (nltab 0) ^
        "}");;
 
