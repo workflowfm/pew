@@ -32,7 +32,9 @@ import org.mongodb.scala.WriteConcern
 
 class MongoDBExecutor(client:MongoClient, db:String, collection:String, processes:Map[String,PiProcess],timeout:Duration=10.seconds)(override implicit val context: ExecutionContext = ExecutionContext.global) extends FutureExecutor {
   def this(client:MongoClient, db:String, collection:String, l:PiProcess*) = this(client,db,collection,PiProcess.mapOf(l :_*))  
-   
+
+  final val CAS_MAX_ATTEMPTS = 10
+  
   val codecRegistry = fromRegistries(fromProviders(new PiCodecProvider(processes)),DEFAULT_CODEC_REGISTRY)
   val database: MongoDatabase = client.getDatabase(db).
     withCodecRegistry(codecRegistry).
@@ -66,7 +68,7 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
   
   
   //@tailrec
-  final def postResult(id:ObjectId, ref:Int, res:PiObject):Unit = {
+  final def postResult(id:ObjectId, ref:Int, res:PiObject, attempt:Int=0):Unit = {
 		System.err.println("*** [" + id + "] Got result for thread " + ref + " : " + res)
     implicit val iid:ObjectId = id   
     
@@ -75,20 +77,22 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
       System.err.println("*** [" + id + "] Session started: " + ref)
       col.find(session,equal("_id",id)) safeThen {
         case Seq() => {
-          System.err.println("*** [" + id + "] CAS: " + ref)
+          System.err.println("*** [" + id + "] CAS (pre): " + ref + " - Closing session")
           session.close()
-          Future.failed(CASException)
+          if (attempt < CAS_MAX_ATTEMPTS) Future.failed(CASException)
+          else throw ProcessExecutor.NoSuchInstanceException(id.toString())
         }
         case Seq(i:PiInstance[ObjectId]) => {
         System.err.println("*** [" + id + "] Got PiInstance: " + i)
-        postResult(i,ref,res,col,session).recover({ case ex => handler.failure(i,ex)}) safeThen {
+        postResult(i,ref,res,col,session) safeThen { //.recover({ case ex => handler.failure(i,ex)})
           case Seq() => {
-            System.err.println("*** [" + id + "] CAS: " + ref + " - Closing session")
+            System.err.println("*** [" + id + "] CAS (post): " + ref + " - Closing session")
             session.close()
-            Future.failed(CASException)
+            if (attempt < CAS_MAX_ATTEMPTS) Future.failed(CASException)
+            else throw CASFailureException(id.toString(),ref)
           }  
           case Seq(_) => {
-            System.err.println("*** [" + id + "] Closing session: " + ref + " - Closing session")
+            System.err.println("*** [" + id + "] Closing session: " + ref)
             session.close()
             Future.successful(Unit)
           }
@@ -97,7 +101,7 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
     }}
     obs.onComplete({
       case Success(_) => System.err.println("*** [" + id + "] Success: " + ref); Unit
-      case Failure(CASException) => System.err.println("*** [" + id + "] CAS Retry: " + ref); Thread.sleep(1); postResult(id,ref,res)
+      case Failure(CASException) => System.err.println("*** [" + id + "] CAS Retry: " + ref); Thread.sleep(1); postResult(id,ref,res,attempt+1)
       case Failure(e) => System.err.println("*** [" + id + "] Failed: " + ref); handler.failure(id,e)
     })
   }
@@ -109,14 +113,14 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
 	  if (ni.completed) ni.result match {
 		  case None => {   
 		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
-		    col.deleteOne(session,and(equal("_id",i.id),equal("calls",unique))) andThen { case _ => handler.failure(ni,ProcessExecutor.NoResultException(ni.id.toString()))}
+		    col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen { case _ => handler.failure(ni,ProcessExecutor.NoResultException(ni.id.toString()))}
 		  }
 		  case Some(res) => {
 		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
-		    col.deleteOne(session,and(equal("_id",i.id),equal("calls",unique))) andThen {case _ => handler.success(i,res)}
+		    col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen {case _ => handler.success(i,res)}
 		  }
 		} else {
-			col.replaceOne(session,and(equal("_id",i.id),equal("calls",unique)), ni.handleThreads(handleThread(ni.id)))
+			col.findOneAndReplace(session,and(equal("_id",i.id),equal("calls",unique)), ni.handleThreads(handleThread(ni.id)))
 		}
   }
  
@@ -161,7 +165,8 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
   }
 
   final case object CASException extends Exception("CAS")
-  
+  final case class CASFailureException(val id:String, val ref:Int, private val cause: Throwable = None.orNull)
+                    extends Exception("Compare-and-swap failed after " + CAS_MAX_ATTEMPTS + " attempts for id: " + id + " - call id: " + ref, cause)  
   override def execute(process:PiProcess,args:Seq[Any]):Future[Option[Any]] =
     call(process,args map PiObject.apply :_*)
    

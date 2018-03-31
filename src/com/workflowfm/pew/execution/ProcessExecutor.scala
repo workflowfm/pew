@@ -42,6 +42,8 @@ object ProcessExecutor {
                     extends Exception("Unknown process: " + process, cause) 
   final case class NoResultException(val id:String, private val cause: Throwable = None.orNull)
                     extends Exception("Failed to get result for: " + id, cause) 
+  final case class NoSuchInstanceException(val id:String, private val cause: Throwable = None.orNull)
+                    extends Exception("Failed to find instance with id: " + id, cause) 
 }
 
 /**
