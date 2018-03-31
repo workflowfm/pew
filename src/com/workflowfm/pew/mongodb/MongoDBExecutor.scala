@@ -19,7 +19,7 @@ import com.mongodb.session.ClientSession
 import org.mongodb.scala.MongoClient
 import org.mongodb.scala.Observable
 import org.mongodb.scala.ClientSessionOptions
-import org.mongodb.scala.model.Filters
+import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.MongoDatabase
 import org.mongodb.scala.MongoCollection
 import org.mongodb.scala.SingleObservable
@@ -36,7 +36,7 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
   val codecRegistry = fromRegistries(fromProviders(new PiCodecProvider(processes)),DEFAULT_CODEC_REGISTRY)
   val database: MongoDatabase = client.getDatabase(db).
     withCodecRegistry(codecRegistry).
-    withReadConcern(ReadConcern.LINEARIZABLE).
+    //withReadConcern(ReadConcern.LINEARIZABLE).
     withWriteConcern(WriteConcern.MAJORITY);
   val col:MongoCollection[PiInstance[ObjectId]] = database.getCollection(collection)
   
@@ -65,7 +65,7 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
   }
   
   
-  
+  //@tailrec
   final def postResult(id:ObjectId, ref:Int, res:PiObject):Unit = {
 		System.err.println("*** [" + id + "] Got result for thread " + ref + " : " + res)
     implicit val iid:ObjectId = id   
@@ -73,38 +73,50 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
     val obs = client.startSession(ClientSessionOptions.builder.causallyConsistent(true).build()) safeThen { 
       case Seq(session:ClientSession) => { 
       System.err.println("*** [" + id + "] Session started: " + ref)
-      col.find(session,Filters.equal("_id",id)) safeThen { 
+      col.find(session,equal("_id",id)) safeThen {
+        case Seq() => {
+          System.err.println("*** [" + id + "] CAS: " + ref)
+          session.close()
+          Future.failed(CASException)
+        }
         case Seq(i:PiInstance[ObjectId]) => {
         System.err.println("*** [" + id + "] Got PiInstance: " + i)
         postResult(i,ref,res,col,session).recover({ case ex => handler.failure(i,ex)}) safeThen {
+          case Seq() => {
+            System.err.println("*** [" + id + "] CAS: " + ref + " - Closing session")
+            session.close()
+            Future.failed(CASException)
+          }  
           case Seq(_) => {
-                System.err.println("*** [" + id + "] Closing session: " + ref)
-                session.close()
+            System.err.println("*** [" + id + "] Closing session: " + ref + " - Closing session")
+            session.close()
+            Future.successful(Unit)
           }
         }
       }}
     }}
-    try {
-    	await(obs)
-    } catch {
-      case e:Throwable => handler.failure(id,e)
-    }
+    obs.onComplete({
+      case Success(_) => System.err.println("*** [" + id + "] Success: " + ref); Unit
+      case Failure(CASException) => System.err.println("*** [" + id + "] CAS Retry: " + ref); Thread.sleep(1); postResult(id,ref,res)
+      case Failure(e) => System.err.println("*** [" + id + "] Failed: " + ref); handler.failure(id,e)
+    })
   }
   
   def postResult(i:PiInstance[ObjectId], ref:Int, res:PiObject, col:MongoCollection[PiInstance[ObjectId]], session:ClientSession):Observable[_] = {
     System.err.println("*** [" + i.id + "] Handling result for thread " + ref + " : " + res)
+    val unique = i.called
 	  val ni = i.postResult(ref, res).reduce
 	  if (ni.completed) ni.result match {
 		  case None => {   
 		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
-		    col.deleteOne(session,Filters.equal("_id",i.id)) andThen { case _ => handler.failure(ni,ProcessExecutor.NoResultException(ni.id.toString()))}
+		    col.deleteOne(session,and(equal("_id",i.id),equal("calls",unique))) andThen { case _ => handler.failure(ni,ProcessExecutor.NoResultException(ni.id.toString()))}
 		  }
 		  case Some(res) => {
 		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
-		    col.deleteOne(session,Filters.equal("_id",i.id)) andThen {case _ => handler.success(i,res)}
+		    col.deleteOne(session,and(equal("_id",i.id),equal("calls",unique))) andThen {case _ => handler.success(i,res)}
 		  }
 		} else {
-			col.replaceOne(session,Filters.equal("_id",i.id), ni.handleThreads(handleThread(ni.id)))
+			col.replaceOne(session,and(equal("_id",i.id),equal("calls",unique)), ni.handleThreads(handleThread(ni.id)))
 		}
   }
  
@@ -127,30 +139,28 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
   
   
   implicit class SafeObservable[T](obs: Observable[T])(implicit id:ObjectId) {
-    def safeThen[U](f: Seq[T] => U): Future[U] = {
+//    def safeThen[U](f: Seq[T] => U): Future[U] = {
+//      val p = Promise[U]()
+//      obs.toFuture().onComplete({
+//        case Success(r:Seq[T]) => p.success(f(r))
+//        case Failure(ex:Throwable) => p.failure(ex)
+//      })
+//      p.future
+//    }
+    def safeThen[U](f: Seq[T] => Future[U]): Future[U] = {
       val p = Promise[U]()
       obs.toFuture().onComplete({
-        case Success(r:Seq[T]) => p.success(f(r))
+        case Success(r:Seq[T]) => f(r).onComplete({
+          case Success(s:U) => p.success(s)
+          case Failure(e:Throwable) => p.failure(e)
+        })
         case Failure(ex:Throwable) => p.failure(ex)
       })
       p.future
     }
   }
-//  implicit class SafeNestedObservable[T](f: Future[Observable[T]])(implicit id:ObjectId) {
-//    def safeThen[U](pf: PartialFunction[Try[Seq[T]], U]): Future[U] = {
-//      val p = Promise[U]()
-//      f.flatMap(x => x.toFuture()).onComplete(r => p.complete(Try(pf(r))))
-//      p.future
-//    }
-//  }
-  //implicit def flattenObservable[T](f:Future[Observable[T]]):Future[Seq[T]] = f.flatMap(x => x.toFuture())
-//  implicit class SafeObservable[T](obs:Observable[T])(implicit id:ObjectId) {
-//    def safeThen[U](f:T=>Observable[U]):Observable[U] = {
-//      obs.subscribe
-//      
-//      obs.toFuture().transform({ x:Seq[T] => f(x.head) }, { e:Throwable => handler.failure(id,e);e })
-//    }
-//  }
+
+  final case object CASException extends Exception("CAS")
   
   override def execute(process:PiProcess,args:Seq[Any]):Future[Option[Any]] =
     call(process,args map PiObject.apply :_*)
