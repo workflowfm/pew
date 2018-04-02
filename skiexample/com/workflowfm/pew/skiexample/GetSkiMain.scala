@@ -23,14 +23,15 @@ object GetSkiMain {
 		
 		val getSki = new GetSki(cM2Inch , selectLength , selectModel , selectSki , uSD2NOK)
 		
-		//implicit val system: ActorSystem = ActorSystem("GetSkiMain")
-    //implicit val executionContext = system.dispatchers.lookup("akka.my-dispatcher") 
+		implicit val system: ActorSystem = ActorSystem("GetSkiMain")
+    implicit val executionContext = system.dispatchers.lookup("akka.my-dispatcher") 
 		
 		//implicit val executor:FutureExecutor = SingleBlockingExecutor()
    	//implicit val executor:FutureExecutor = new MultiStateExecutor(selectModel, selectLength, cM2Inch, uSD2NOK, selectSki, getSki)
-		
-		val client = MongoClient()
-    implicit val executor = new MongoDBExecutor(client, "pew", "test_exec_insts", selectModel, selectLength, cM2Inch, uSD2NOK, selectSki, getSki)
+		implicit val executor:FutureExecutor = new AkkaExecutor(system,executionContext,10.seconds,selectModel, selectLength, cM2Inch, uSD2NOK, selectSki, getSki)
+    
+		//val client = MongoClient()
+    //implicit val executor = new MongoDBExecutor(client, "pew", "test_exec_insts", selectModel, selectLength, cM2Inch, uSD2NOK, selectSki, getSki)
 		
 		val fs1 = 1 to 10 map { x => (x,getSki( "height" , "price" , "skill" , "weight" )) }
     val fs2 = 1 to 10 map { x => (x,getSki( "h" , "p" , "s" , "w" )) }
@@ -55,7 +56,7 @@ object GetSkiMain {
 //		}
 //	
 		
-		client.close()
-		//Await.result(system.terminate(),10.seconds)
+		//client.close()
+		Await.result(system.terminate(),10.seconds)
 	}
 }

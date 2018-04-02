@@ -32,7 +32,7 @@ object SimulationActor {
   case class Run(coordinator:ActorRef)
   case object AckRun
   
-  def props(s:Simulation): Props = Props(new SimulationActor(s)).withDispatcher("akka.my-dispatcher")
+  def props(s:Simulation): Props = Props(new SimulationActor(s))//.withDispatcher("akka.my-dispatcher")
   def mockExecProps:Props = Props(new MockExecutor) // TODO do this properly with props.of ?
 }
 class SimulationActor(s:Simulation)(implicit ec: ExecutionContext = ExecutionContext.global) extends Actor {

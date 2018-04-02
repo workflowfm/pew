@@ -1,7 +1,10 @@
 package com.workflowfm.pew.simulation
 
 import akka.actor._
+import akka.pattern.ask
+import akka.util.Timeout
 import scala.concurrent.Promise
+import scala.concurrent.duration._
 
 object Task {
   sealed trait Priority extends Ordered[Priority] {
@@ -30,6 +33,8 @@ class Task (val name:String, val simulation:String, val resources:Seq[String], r
   def createdTime :Int = creationTime
   
   def addTo(coordinator:ActorRef)(implicit system: ActorSystem) = {
+    //implicit val timeout = Timeout(1.second)
+    // use ? to require an acknowledgement
     coordinator ! Coordinator.AddTask(this)
     promise.future
   }

@@ -18,7 +18,7 @@ object Coordinator {
   case class AddTask(t:Task)
   case object AckTask
 
-  def props(scheduler :Scheduler, handler :MetricsOutput, resources :Seq[TaskResource], halfTickMillis:Int = 10)(implicit system: ActorSystem): Props = Props(new Coordinator(scheduler,handler,resources,halfTickMillis)(system)).withDispatcher("akka.my-dispatcher")
+  def props(scheduler :Scheduler, handler :MetricsOutput, resources :Seq[TaskResource], halfTickMillis:Int = 40)(implicit system: ActorSystem): Props = Props(new Coordinator(scheduler,handler,resources,halfTickMillis)(system))//.withDispatcher("akka.my-dispatcher")
 }
 class Coordinator(scheduler :Scheduler, handler :MetricsOutput, resources :Seq[TaskResource], halfTickMillis:Int)(implicit system: ActorSystem) extends Actor {
   import scala.collection.mutable.Queue
@@ -39,7 +39,8 @@ class Coordinator(scheduler :Scheduler, handler :MetricsOutput, resources :Seq[T
     if (t == ts) {
       println("["+ticks+"] Starting simulation: \"" + s.name +"\".") 
       s.simStart(ticks)
-      system.actorOf(SimulationActor.props(s)) ? SimulationActor.Run(self) // ,"SimulationActor:" + s.name // TODO need to escape actor name
+      // change to ? to require acknowledgement
+      system.actorOf(SimulationActor.props(s)) ! SimulationActor.Run(self) // ,"SimulationActor:" + s.name // TODO need to escape actor name
       true
     } else false
   }
@@ -76,10 +77,11 @@ class Coordinator(scheduler :Scheduler, handler :MetricsOutput, resources :Seq[T
   protected def tick :Unit = {
     ticks += 1
     println("["+ticks+"] ========= Tick! ========= ")
-    val res = simulations map {case (t,s) => startSimulation(ticks)(t,s)}
-    if (res.exists(_ == true)) 
+    //val res = simulations map {case (t,s) => startSimulation(ticks)(t,s)}
+    val res = simulations map {case (t,s) => (startSimulation(ticks)(t,s),s)}
+    if (res.exists(_._1 == true)) 
       Thread.sleep(halfTickMillis)
-//    val res = simulations map {case (t,s) => (startSimulation(ticks)(t,s),s)}
+    
 //    val startedActors = res filter (_._1 == true) map (_._2.executor)
 //    for (a <- startedActors)
 //      a ? AkkaExecutor.Ping
@@ -124,6 +126,7 @@ class Coordinator(scheduler :Scheduler, handler :MetricsOutput, resources :Seq[T
       println("["+ticks+"] Adding task " + t.name + " ("+t.simulation+").")
       t.created(ticks)
       queue += t
+      //sender() ! Coordinator.AckTask //uncomment this to acknowledge AddTask
     }
 
     case Coordinator.Start => start

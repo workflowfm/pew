@@ -122,8 +122,9 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:Map[String,PiProce
       case Some(p:AtomicProcess) => {
         implicit val tOut = Timeout(1.second)
         try {
+          // TODO Change from ! to ? to require an acknowledgement
           system.actorOf(AkkaExecutor.atomicprops()) ! AkkaExecutor.ACall(id,ref,p,args map (_.obj),self)
-          //println("OKOKOK")
+          //println("OKOKOK " + p.name)
         } catch {
           case _:Throwable => Unit //TODO specify timeout exception here! - also print a warning
         }
@@ -136,10 +137,10 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:Map[String,PiProce
   } }
  
   def receive = {
-    case AkkaExecutor.Call(p,args) => call(p,args) pipeTo sender() //sender() ! AkkaExecutor.AFuture()
+    case AkkaExecutor.Call(p,args) => call(p,args) pipeTo sender()
     case AkkaExecutor.Result(id,ref,res) => postResult(id,ref,res) 
     case AkkaExecutor.Error(id,ref,ex) => handler.failure(id,ex)
-    case AkkaExecutor.Ping => println("Ping!") ; sender() ! AkkaExecutor.Ping
+    case AkkaExecutor.Ping => sender() ! AkkaExecutor.Ping
     case AkkaExecutor.AckCall => Unit
     case m => System.err.println("!!! Received unknown message: " + m)
   }
