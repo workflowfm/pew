@@ -109,7 +109,7 @@ case class PiState(inputs:Map[Chan,Input], outputs:Map[Chan,Output], calls:List[
        inputs.get(k) flatMap { i => 
          if (!i.admits(outputValue)) None
          else {
-           System.err.println("*** Communicating [" + outputValue + "] through channel: " + k)
+           //System.err.println("*** Communicating [" + outputValue + "] through channel: " + k)
            val (iterms,newres) = inputs.get(k).get.receive(outputValue)
         	 Some(newstate withTerms oterms withTerms iterms withSubs newres removeIO k)
          }
