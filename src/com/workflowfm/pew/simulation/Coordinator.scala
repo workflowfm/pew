@@ -5,12 +5,13 @@ import akka.util.Timeout
 import akka.pattern.ask
 import scala.concurrent.duration._
 import com.workflowfm.pew.execution.AkkaExecutor
+import com.workflowfm.pew.execution.FutureExecutor
 
 
 object Coordinator {
   case object Start
   //TODO case object Stop
-  case class AddSim(t:Int,sim:Simulation)
+  case class AddSim(t:Int,sim:Simulation,exe:FutureExecutor)
   case class SimDone(s:Simulation)
   case object Tick
   case object Tack
@@ -24,7 +25,7 @@ class Coordinator(scheduler :Scheduler, handler :MetricsOutput, resources :Seq[T
   import scala.collection.mutable.Queue
   
   val resourceMap :Map[String,TaskResource] = (Map[String,TaskResource]() /: resources){ case (m,r) => m + (r.name -> r)}
-  val simulations :Queue[(Int,Simulation)] = Queue()
+  val simulations :Queue[(Int,Simulation,FutureExecutor)] = Queue()
   val queue = new Queue[Task]()
     
   var started = false
@@ -35,12 +36,12 @@ class Coordinator(scheduler :Scheduler, handler :MetricsOutput, resources :Seq[T
   
   implicit val timeout = Timeout(halfTickMillis.millis)
   
-  protected def startSimulation(t:Int)(ts:Int,s:Simulation) :Boolean = {
+  protected def startSimulation(t:Int)(ts:Int,s:Simulation,e:FutureExecutor) :Boolean = {
     if (t == ts) {
       println("["+ticks+"] Starting simulation: \"" + s.name +"\".") 
       s.simStart(ticks)
       // change to ? to require acknowledgement
-      system.actorOf(SimulationActor.props(s)) ! SimulationActor.Run(self) // ,"SimulationActor:" + s.name // TODO need to escape actor name
+      system.actorOf(SimulationActor.props(s)) ! SimulationActor.Run(self,e) // ,"SimulationActor:" + s.name // TODO need to escape actor name
       true
     } else false
   }
@@ -78,7 +79,7 @@ class Coordinator(scheduler :Scheduler, handler :MetricsOutput, resources :Seq[T
     ticks += 1
     println("["+ticks+"] ========= Tick! ========= ")
     //val res = simulations map {case (t,s) => startSimulation(ticks)(t,s)}
-    val res = simulations map {case (t,s) => (startSimulation(ticks)(t,s),s)}
+    val res = simulations map {case (t,s,e) => (startSimulation(ticks)(t,s,e),s)}
     if (res.exists(_._1 == true)) 
       Thread.sleep(halfTickMillis)
     
@@ -113,8 +114,8 @@ class Coordinator(scheduler :Scheduler, handler :MetricsOutput, resources :Seq[T
   def start = if (!started) { started = true ; tick }
 
   def receive = {
-    case Coordinator.AddSim(t,s) =>
-      simulations += ((t,s))
+    case Coordinator.AddSim(t,s,e) =>
+      simulations += ((t,s,e))
     case Coordinator.SimDone(s) => {
       simulationsDone += 1
       s.simDone(ticks)

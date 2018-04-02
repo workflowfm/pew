@@ -8,18 +8,20 @@ import com.workflowfm.pew.execution.AkkaExecutor
 import scala.util.Success
 import scala.util.Failure
 import scala.concurrent.ExecutionContext
+import com.workflowfm.pew.PiProcess
+import com.workflowfm.pew.execution.FutureExecutor
 
 
 abstract class Simulation(val name:String) extends SimulationMetricTracker {
-  def run():Future[Any]
-  def executor: ActorRef
+  def run(executor:FutureExecutor):Future[Any]
+  def getProcesses():Seq[PiProcess]
 }
 
 class TaskSimulation(simulationName:String, coordinator:ActorRef, resources:Seq[String], duration:ValueGenerator[Int]=new ConstantGenerator(1), val cost:ValueGenerator[Int]=new ConstantGenerator(1), interrupt:Int=(-1), priority:Task.Priority=Task.Medium)(implicit system: ActorSystem) extends Simulation(simulationName) {
-  override val executor = system.actorOf(SimulationActor.mockExecProps)
-  def run() = {
+  def run(executor:FutureExecutor) = {
     TaskGenerator(simulationName + "Task", simulationName, duration, cost, interrupt, priority).create(simulationName + "Result",resources :_*).addTo(coordinator)
 	}
+  override def getProcesses() = Seq()
 }
 
 class MockExecutor extends Actor {
@@ -29,7 +31,7 @@ class MockExecutor extends Actor {
 }
 
 object SimulationActor {
-  case class Run(coordinator:ActorRef)
+  case class Run(coordinator:ActorRef,executor:FutureExecutor)
   case object AckRun
   
   def props(s:Simulation): Props = Props(new SimulationActor(s))//.withDispatcher("akka.my-dispatcher")
@@ -37,9 +39,9 @@ object SimulationActor {
 }
 class SimulationActor(s:Simulation)(implicit ec: ExecutionContext = ExecutionContext.global) extends Actor {
   def receive = {
-    case SimulationActor.Run(coordinator) => { 
+    case SimulationActor.Run(coordinator,executor) => { 
       //val coordinator = sender()
-      s.run().onComplete({
+      s.run(executor).onComplete({
         case Success(res) => {
           s.setResult(res.toString)
           coordinator ! Coordinator.SimDone(s)
