@@ -9,7 +9,10 @@ import scala.concurrent.ExecutionContext
  * representing CLL types, paired with strings representing the channel names. * 
  */
 sealed trait PiProcess {
-  def name:String // Name of the process and all its instances.
+  def name:String // Name of the process 
+  def iname:String = name // This can be used to identify different instances of this process that run
+                          // on different workflows in the same executor.
+                          // Note that each workflow can only support one instance of a process.
   def output:(PiObject,String) // Type (as a PiObject pattern) and channel of the output.
   def inputs:Seq[(PiObject,String)] // List of (type,channel) for each input.
   def channels:Seq[String] = output._2 +: (inputs map (_._2)) // order of channels is important for correct process calls!
@@ -52,6 +55,16 @@ object PiProcess {
 	 * Shortcut to create name->PiProcess maps from a seq of processes.
 	 */
 	def mapOf(l:PiProcess*):Map[String,PiProcess] = (Map[String,PiProcess]() /: l)(_ + entryOf(_))
+	
+  /**
+   * Shortcut to create entries in name->PiProcess maps using the instance name	
+   */
+	def ientryOf(p:PiProcess):(String,PiProcess) = p.iname->p
+	/** 
+	 * Shortcut to create name->PiProcess maps from a seq of processes using the instance names
+	 */
+	def imapOf(l:PiProcess*):Map[String,PiProcess] = (Map[String,PiProcess]() /: l)(_ + ientryOf(_))
+
 }
 
 

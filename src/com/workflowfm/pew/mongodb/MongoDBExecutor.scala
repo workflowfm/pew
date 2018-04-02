@@ -32,7 +32,7 @@ import org.mongodb.scala.WriteConcern
 import akka.dispatch.OnComplete
 
 class MongoDBExecutor(client:MongoClient, db:String, collection:String, processes:Map[String,PiProcess],timeout:Duration=10.seconds)(override implicit val context: ExecutionContext = ExecutionContext.global) extends FutureExecutor {
-  def this(client:MongoClient, db:String, collection:String, l:PiProcess*) = this(client,db,collection,PiProcess.mapOf(l :_*))  
+  def this(client:MongoClient, db:String, collection:String, l:PiProcess*) = this(client,db,collection,PiProcess.imapOf(l :_*))  
 
   final val CAS_MAX_ATTEMPTS = 10
   final val CAS_WAIT_MS = 1
@@ -62,10 +62,10 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
 			  handler.success(ni, res)
 		  }
 	  } else {
-		  val (toCall,res) = ni.handleThreads(handleThread(ni.id))
+		  val (toCall,res) = ni.handleThreads(handleThread(ni))
       await(col.insertOne(res))
       val futureCalls = toCall flatMap (res.piFutureOf)
-			(toCall zip futureCalls) map runThread(oid)
+			(toCall zip futureCalls) map runThread(res)
 	  }
 	  ret
   }
@@ -99,15 +99,15 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
           case Seq(_) => {
             System.err.println("*** [" + id + "] Closing session: " + ref)
             session.close()
-            Future.successful(toCall)
+            Future.successful((toCall,i))
           }
         }
       }}
     }}
     obs.onComplete({
-      case Success(toCall) => { 
+      case Success((toCall,i)) => { 
         System.err.println("*** [" + id + "] Success: " + ref)
-        toCall map runThread(id)
+        toCall map runThread(i)
       }
       case Failure(CASException) => System.err.println("*** [" + id + "] CAS Retry: " + ref + " - attempt: " + (attempt+1)); Thread.sleep(CAS_WAIT_MS); postResult(id,ref,res,attempt+1)
       case Failure(e) => System.err.println("*** [" + id + "] Failed: " + ref); handler.failure(id,e)
@@ -131,43 +131,43 @@ class MongoDBExecutor(client:MongoClient, db:String, collection:String, processe
 		  }
 		} else {
 		  System.err.println("*** [" + i.id + "] Handling threads after: " + ref)
-		  val (toCall,resi) = ni.handleThreads(handleThread(ni.id))
+		  val (toCall,resi) = ni.handleThreads(handleThread(ni))
 		  val futureCalls = toCall flatMap (resi.piFutureOf)
 		  System.err.println("*** [" + i.id + "] Updating state after: " + ref)
 			(toCall zip futureCalls,col.findOneAndReplace(session,and(equal("_id",i.id),equal("calls",unique)), resi))
 		}
   }
  
-  def handleThread(id:ObjectId)(ref:Int,f:PiFuture):Boolean = {
-     System.err.println("*** [" + id + "] Handling thread: " + ref + " (" + f.fun + ")")
+  def handleThread(i:PiInstance[ObjectId])(ref:Int,f:PiFuture):Boolean = {
+     System.err.println("*** [" + i.id + "] Handling thread: " + ref + " (" + f.fun + ")")
     f match {
-    case PiFuture(name, outChan, args) => processes get name match {
+    case PiFuture(name, outChan, args) => i.getProc(name) match {
       case None => {
-        System.err.println("*** [" + id + "] ERROR *** Unable to find process: " + name)
+        System.err.println("*** [" + i.id + "] ERROR *** Unable to find process: " + name)
         false
       }
       case Some(p:AtomicProcess) => true
-      case Some(p:CompositeProcess) => { System.err.println("*** [" + id + "] Executor encountered composite process thread: " + name); false } // TODO this should never happen!
+      case Some(p:CompositeProcess) => { System.err.println("*** [" + i.id + "] Executor encountered composite process thread: " + name); false } // TODO this should never happen!
     }
   } }
   
-  def runThread(id:ObjectId)(t:(Int,PiFuture)):Unit = {
-    System.err.println("*** [" + id + "] Handling thread: " + t._1 + " (" + t._2.fun + ")")
+  def runThread(i:PiInstance[ObjectId])(t:(Int,PiFuture)):Unit = {
+    System.err.println("*** [" + i.id + "] Handling thread: " + t._1 + " (" + t._2.fun + ")")
     t match {
-    case (ref,PiFuture(name, outChan, args)) => processes get name match {
+    case (ref,PiFuture(name, outChan, args)) => i.getProc(name) match {
       case None => {
         // This should never happen! We already checked!
-        System.err.println("*** [" + id + "] ERROR *** Unable to find process: " + name + " even though we checked already")
+        System.err.println("*** [" + i.id + "] ERROR *** Unable to find process: " + name + " even though we checked already")
       }
       case Some(p:AtomicProcess) => {
         p.run(args map (_.obj)).onComplete{ 
-          case Success(res) => postResult(id,ref,res) 
-          case Failure (ex) => handler.failure(id,ex)
+          case Success(res) => postResult(i.id,ref,res) 
+          case Failure (ex) => handler.failure(i.id,ex)
         }
-        System.err.println("*** [" + id + "] Called process: " + p.name + " ref:" + ref)
+        System.err.println("*** [" + i.id + "] Called process: " + p.name + " ref:" + ref)
       }
       case Some(p:CompositeProcess) => {// This should never happen! We already checked! 
-        System.err.println("*** [" + id + "] Executor encountered composite process thread: " + name)
+        System.err.println("*** [" + i.id + "] Executor encountered composite process thread: " + name)
       }
     }
   } }

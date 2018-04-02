@@ -70,7 +70,7 @@ class PiStateCodec(registry:CodecRegistry,processes:Map[String,PiProcess]) exten
 	  
 	  writer.writeName("procs")
     writer.writeStartArray()
-	  for ((k,_) <- value.processes) writer.writeString(k)
+	  for ((_,p) <- value.processes) writer.writeString(p.iname)
 	  writer.writeEndArray()
 	  
 	  writer.writeName("map")

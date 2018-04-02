@@ -48,7 +48,7 @@ class MultiStateExecutorTests extends FlatSpec with Matchers with ProcessExecuto
     val f1 = ex.execute(ri,Seq(21))
    
     val r1 = await(f1)
-    r1 should be (Some(("PbSleptFor2s","PcSleptFor1s")))
+    r1 should be (Some(("PbISleptFor2s","PcISleptFor1s")))
 	}
 	
   "MultiStateExecutor" should "execute Rexample twice concurrently" in {
@@ -59,7 +59,7 @@ class MultiStateExecutorTests extends FlatSpec with Matchers with ProcessExecuto
     val r1 = await(f1)
     r1 should be (Some(("PbSleptFor3s","PcSleptFor1s")))
     val r2 = await(f2)
-    r2 should be (Some(("PbSleptFor1s","PcSleptFor2s")))
+    r2 should be (Some(("PbISleptFor1s","PcISleptFor2s")))
 	}
 
   "MultiStateExecutor" should "execute Rexample twice with same timings concurrently" in {
@@ -68,9 +68,9 @@ class MultiStateExecutorTests extends FlatSpec with Matchers with ProcessExecuto
     val f2 = ex.execute(ri,Seq(11))
     
     val r1 = await(f1)
-    r1 should be (Some(("PbSleptFor1s","PcSleptFor1s")))
+    r1 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
     val r2 = await(f2)
-    r2 should be (Some(("PbSleptFor1s","PcSleptFor1s")))
+    r2 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
 	}
   
   "MultiStateExecutor" should "execute Rexample thrice concurrently" in {
@@ -80,11 +80,11 @@ class MultiStateExecutorTests extends FlatSpec with Matchers with ProcessExecuto
     val f3 = ex.execute(ri,Seq(11))
     
     val r1 = await(f1)
-    r1 should be (Some(("PbSleptFor1s","PcSleptFor1s")))
+    r1 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
     val r2 = await(f2)
-    r2 should be (Some(("PbSleptFor1s","PcSleptFor1s")))
+    r2 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
     val r3 = await(f3)
-    r3 should be (Some(("PbSleptFor1s","PcSleptFor1s")))
+    r3 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
 	}
 }
 

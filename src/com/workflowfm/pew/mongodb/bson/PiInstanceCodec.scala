@@ -22,7 +22,7 @@ class PiInstanceCodec(registry:CodecRegistry,processes:Map[String,PiProcess]) ex
     writer.writeEndArray()
 
 	  writer.writeName("process")
-	  writer.writeString(value.process.name)
+	  writer.writeString(value.process.iname)
 	  
 	  writer.writeName("state")
     encoderContext.encodeWithChildContext(stateCodec,writer,value.state)
@@ -46,8 +46,8 @@ class PiInstanceCodec(registry:CodecRegistry,processes:Map[String,PiProcess]) ex
     reader.readEndArray()
 
     reader.readName("process")
-    val name = reader.readString()
-    val p = processes.getOrElse(name,throw new CodecConfigurationException("Unknown PiProcess: " + name))
+    val iname = reader.readString()
+    val p = processes.getOrElse(iname,throw new CodecConfigurationException("Unknown PiProcess: " + iname))
     
     reader.readName("state")
     val state = decoderContext.decodeWithChildContext(stateCodec,reader)

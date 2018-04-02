@@ -13,9 +13,9 @@ import akka.util.Timeout
 
 
 class AkkaExecutor(store:PiInstanceStore[Int], processes:Map[String,PiProcess])(implicit system: ActorSystem, override implicit val context: ExecutionContext = ExecutionContext.global, implicit val timeout:FiniteDuration = 10.seconds) extends FutureExecutor {
-  def this(store:PiInstanceStore[Int], l:PiProcess*)(implicit system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration) = this(store,PiProcess.mapOf(l :_*))
-  def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration,l:PiProcess*) = this(SimpleInstanceStore(),PiProcess.mapOf(l :_*))(system,context,timeout)
-  def this(l:PiProcess*)(implicit system: ActorSystem) = this(SimpleInstanceStore(),PiProcess.mapOf(l :_*))(system,ExecutionContext.global,10.seconds)
+  def this(store:PiInstanceStore[Int], l:PiProcess*)(implicit system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration) = this(store,PiProcess.imapOf(l :_*))
+  def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration,l:PiProcess*) = this(SimpleInstanceStore(),PiProcess.imapOf(l :_*))(system,context,timeout)
+  def this(l:PiProcess*)(implicit system: ActorSystem) = this(SimpleInstanceStore(),PiProcess.imapOf(l :_*))(system,ExecutionContext.global,10.seconds)
   
   val execActor = system.actorOf(AkkaExecutor.execprops(store,processes))
   implicit val tOut = Timeout(timeout) 
@@ -57,11 +57,11 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:Map[String,PiProce
 			  handler.success(ni, res)
 		  }
 	  } else {
-		  val (toCall,resi) = ni.handleThreads(handleThread(ni.id))
+		  val (toCall,resi) = ni.handleThreads(handleThread(ni))
 		  val futureCalls = toCall flatMap (resi.piFutureOf)
 			//System.err.println("*** [" + ctr + "] Updating state after init")
 			store = store.put(resi)
-			(toCall zip futureCalls) map runThread(ctr)
+			(toCall zip futureCalls) map runThread(resi)
 	  }
 	  ctr = ctr + 1
 	  //System.err.println("*** [" + (ctr-1) + "] Done init.")
@@ -87,43 +87,43 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:Map[String,PiProce
       			  store = store.del(ni.id)
       		  }
     		  } else {
-    		    val (toCall,resi) = ni.handleThreads(handleThread(ni.id))
+    		    val (toCall,resi) = ni.handleThreads(handleThread(ni))
 		        val futureCalls = toCall flatMap (resi.piFutureOf)
 		        //System.err.println("*** [" + i.id + "] Updating state after: " + ref)
 			      store = store.put(resi)
-		        (toCall zip futureCalls) map runThread(id)
+		        (toCall zip futureCalls) map runThread(resi)
     		  }
         }
 	  }
   }
  
-  def handleThread(id:Int)(ref:Int,f:PiFuture):Boolean = {
+  def handleThread(i:PiInstance[Int])(ref:Int,f:PiFuture):Boolean = {
     //System.err.println("*** [" + id + "] Checking thread: " + ref + " (" + f.fun + ")")
     f match {
-    case PiFuture(name, outChan, args) => processes get name match {
+    case PiFuture(name, outChan, args) => i.getProc(name) match {
       case None => {
         //System.err.println("*** [" + id + "] ERROR *** Unable to find process: " + name)
         false
       }
       case Some(p:AtomicProcess) => true
-      case Some(p:CompositeProcess) => { System.err.println("*** [" + id + "] Executor encountered composite process thread: " + name); false } // TODO this should never happen!
+      case Some(p:CompositeProcess) => { System.err.println("*** [" + i.id + "] Executor encountered composite process thread: " + name); false } // TODO this should never happen!
     }
   } }
     //
   
-  def runThread(id:Int)(t:(Int,PiFuture)):Unit = {
+  def runThread(i:PiInstance[Int])(t:(Int,PiFuture)):Unit = {
     //System.err.println("*** [" + id + "] Running thread: " + t._1 + " (" + t._2.fun + ")")
     t match {
-    case (ref,PiFuture(name, outChan, args)) => processes get name match {
+    case (ref,PiFuture(name, outChan, args)) => i.getProc(name) match {
       case None => {
         // This should never happen! We already checked!
-        System.err.println("*** [" + id + "] ERROR *** Unable to find process: " + name + " even though we checked already")
+        System.err.println("*** [" + i.id + "] ERROR *** Unable to find process: " + name + " even though we checked already")
       }
       case Some(p:AtomicProcess) => {
         implicit val tOut = Timeout(1.second)
         try {
           // TODO Change from ! to ? to require an acknowledgement
-          system.actorOf(AkkaExecutor.atomicprops()) ! AkkaExecutor.ACall(id,ref,p,args map (_.obj),self)
+          system.actorOf(AkkaExecutor.atomicprops()) ! AkkaExecutor.ACall(i.id,ref,p,args map (_.obj),self)
           //println("OKOKOK " + p.name)
         } catch {
           case _:Throwable => Unit //TODO specify timeout exception here! - also print a warning
@@ -131,7 +131,7 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:Map[String,PiProce
         //System.err.println("*** [" + id + "] Requested call of process: " + p.name + " ref:" + ref)
       }
       case Some(p:CompositeProcess) => {// This should never happen! We already checked! 
-        System.err.println("*** [" + id + "] Executor encountered composite process thread: " + name)
+        System.err.println("*** [" + i.id + "] Executor encountered composite process thread: " + name)
       }
     }
   } }

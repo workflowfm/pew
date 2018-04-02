@@ -181,21 +181,24 @@ package object RexampleTypes
 }
 }
 class PaI extends Pa {
+  override def iname = "PaI"
 	override def apply( arg0 :X ) :(A,B) = { 
 	  (arg0 / 10,arg0 % 10)
 	}
 }
 class PbI extends Pb {
+  override def iname = "PbI"
 	override def apply( arg0 :A ) :Y = {
-		System.out.println("Pb sleeping for: " + arg0 + "s")
+		System.out.println(iname + " sleeping for: " + arg0 + "s")
 		Thread.sleep(arg0 * 1000)
-		"PbSleptFor" + arg0 +"s"
+		iname + "SleptFor" + arg0 +"s"
 	}
 }
-class PcI extends Pc {
+class PcI(s:String="PcI") extends Pc {
+  override def iname = s 
 	override def apply( arg0 :B ) :Z = {
-		System.out.println("Pc sleeping for: " + arg0 + "s")
+		System.out.println(iname + " sleeping for: " + arg0 + "s")
 		Thread.sleep(arg0 * 1000)
-		"PcSleptFor" + arg0 +"s"
+		iname + "SleptFor" + arg0 +"s"
 	}
 }

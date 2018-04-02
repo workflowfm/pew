@@ -37,6 +37,8 @@ case class PiInstance[T](final val id:T, called:Seq[Int], process:PiProcess, sta
   }
   
   def piFutureOf(ref:Int):Option[PiFuture] = state.threads.get(ref)
+  
+  def getProc(p:String):Option[PiProcess] = state.processes.get(p)
 }
 object PiInstance {
   def apply[T](id:T,p:PiProcess,args:PiObject*):PiInstance[T] = PiInstance(id, Seq(), p, p.execState(args))
