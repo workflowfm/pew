@@ -182,7 +182,8 @@ class MetricsD3Timeline(path:String,name:String) extends MetricsOutput {
   import java.io._
   import sys.process._
   
-  val tick = 60*60*1000 // 1 hour
+  //val tick = 60*60*1000 // 1 hour
+  val tick = 1 // custom ticks
   
   def apply(totalTicks:Int,aggregator:MetricAggregator) = {
     val result = build(totalTicks,aggregator)

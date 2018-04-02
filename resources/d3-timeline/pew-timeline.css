@@ -1,5 +1,6 @@
 #resources,
 #simulations {
+  font-family: sans-serif;
   font-size: 11px;
 }
 
@@ -22,4 +23,5 @@
 .timeline-label {
   font-family: sans-serif;
   font-size: 12px;
+  font-weight: bold;
 }
