@@ -11,10 +11,10 @@ class MetricTracker[T <: Metrics](init :T) {
 }
 
 object TaskMetrics {
-  def header(sep:String) = List("Start","Delay","Duration","Cost","Simulation","Resources").mkString(sep)
+  def header(sep:String) = List("Task","Start","Delay","Duration","Cost","Simulation","Resources").mkString(sep)
 }
-case class TaskMetrics (start:Int, delay:Int, duration:Int, cost:Int, simulation:String, resources:Seq[String], counted:Boolean=false) extends Metrics {
-  val stringValues = List(start,delay,duration,cost,simulation,"\"" + resources.mkString(",") + "\"") map (_.toString)
+case class TaskMetrics (task:String, start:Int, delay:Int, duration:Int, cost:Int, simulation:String, resources:Seq[String], counted:Boolean=false) extends Metrics {
+  val stringValues = List(task,start,delay,duration,cost,simulation,"\"" + resources.mkString(",") + "\"") map (_.toString)
 //  def addDelay(d :Int) = copy(delay = delay + d)
 //  def addDuration(d :Int) = copy(duration = duration + d)
 //  def addCost(c:Int) = copy(cost = cost + c)
@@ -23,7 +23,7 @@ case class TaskMetrics (start:Int, delay:Int, duration:Int, cost:Int, simulation
   def add(dl:Int, dur:Int, c:Int) = copy(delay = delay + dl, duration = duration + dur, cost = cost + c, counted = true)
 }
 
-class TaskMetricTracker() extends MetricTracker[TaskMetrics](TaskMetrics(-1,0,0,0,"",Seq())) {
+class TaskMetricTracker(task:String) extends MetricTracker[TaskMetrics](TaskMetrics(task,-1,0,0,0,"",Seq())) {
   def taskStart(t:Int) = this <~ (_.setStart(t))
   def taskDone(t:Task, time:Int, cost:Int, costPerTick:Int) = if (metrics.start > 0) {
     this <~ (_.add(metrics.start - t.createdTime, time - metrics.start, cost + costPerTick * (time-metrics.start))) <~
@@ -32,21 +32,20 @@ class TaskMetricTracker() extends MetricTracker[TaskMetrics](TaskMetrics(-1,0,0,
 }
 
 object SimulationMetrics {
-  def header(sep:String) = List("Duration","Cost","Result").mkString(sep)
+  def header(sep:String) = List("Start","Duration","Cost","Result").mkString(sep)
 }
-case class SimulationMetrics (duration: Int, cost: Int, result :String) extends Metrics {
-  val stringValues = List(duration,cost,"\"" + result + "\"") map (_.toString)
+case class SimulationMetrics (start:Int, duration: Int, cost: Int, result :String) extends Metrics {
+  val stringValues = List(start,duration,cost,"\"" + result + "\"") map (_.toString)
+  def setStart(st:Int) = copy(start=st)
   def setResult(r:String) = copy(result = r) 
   def addDuration(d:Int) = copy(duration = duration + d)
   def addCost(c:Int) = copy(cost = cost + c)
 }
 
-class SimulationMetricTracker() extends MetricTracker[SimulationMetrics](SimulationMetrics(0,0,"None")) {
-  var timeStarted = -1
-  
-  def simStart(t:Int) = timeStarted = t
-  def simDone(t:Int) = if (timeStarted > 0) {
-    this <~ (_.addDuration(t - timeStarted)) 
+class SimulationMetricTracker() extends MetricTracker[SimulationMetrics](SimulationMetrics(-1,0,0,"None")) {
+  def simStart(t:Int) = this <~ (_.setStart(t))
+  def simDone(t:Int) = if (metrics.start > 0) {
+    this <~ (_.addDuration(t - metrics.start)) 
   }
   def taskDone(tm:TaskMetrics) = this <~ (_.addCost(tm.cost)) 
   def setResult(r:String) = this <~ (_.setResult(r)) 
@@ -54,17 +53,19 @@ class SimulationMetricTracker() extends MetricTracker[SimulationMetrics](Simulat
 
 
 object ResourceMetrics {
-  def header(sep:String) = List("Busy","Idle","Tasks","Cost").mkString(sep)
+  def header(sep:String) = List("Start","Busy","Idle","Tasks","Cost").mkString(sep)
 }
-case class ResourceMetrics (busy:Int, idle:Int, tasks:Int, cost:Int) extends Metrics {
-  val stringValues = List(busy,idle,tasks,cost) map (_.toString)
+case class ResourceMetrics (start:Int, busy:Int, idle:Int, tasks:Int, cost:Int) extends Metrics {
+  val stringValues = List(start,busy,idle,tasks,cost) map (_.toString)
+  def setStart(t:Int) = if (start < 0) copy(start=t) else this
   def addBusy(b:Int) = copy(busy = busy + b)
   def addIdle(i:Int) = copy(idle = idle + i)
   def addTask = copy(tasks = tasks + 1)
   def addCost(c:Int) = copy(cost = cost + c)
 }
 
-class ResourceMetricTracker() extends MetricTracker[ResourceMetrics](ResourceMetrics(0,0,0,0)) { 
+class ResourceMetricTracker() extends MetricTracker[ResourceMetrics](ResourceMetrics(-1,0,0,0,0)) { 
+  def resStart(t:Int) = this <~ (_.setStart(t))
   def idleTick() = this <~ (_.addIdle(1)) 
   def taskDone(tm:TaskMetrics,costPerTick:Int) = this <~ (_.addCost(tm.duration * costPerTick)) <~ (_.addBusy(tm.duration)) <~ (_.addTask)  
 }
@@ -174,5 +175,72 @@ class MetricsPythonGantt(path:String,name:String) extends MetricsOutput {
   } catch {
     case e:Exception => e.printStackTrace()
     None
+  }
+}
+
+class MetricsD3Timeline(path:String,name:String) extends MetricsOutput {  
+  import java.io._
+  import sys.process._
+  
+  val tick = 60*60*1000 // 1 hour
+  
+  def apply(totalTicks:Int,aggregator:MetricAggregator) = {
+    val result = build(totalTicks,aggregator)
+    println(result)
+    val dataFile = s"$path$name-data.js"
+    writeToFile(dataFile, result)
+  }
+  
+  def writeToFile(filePath:String,output:String) = try {
+    val file = new File(filePath)
+    val bw = new BufferedWriter(new FileWriter(file))
+    bw.write(output)
+    bw.close()
+  } catch {
+    case e:Exception => e.printStackTrace()
+  }
+  
+  def build(totalTicks:Int,aggregator:MetricAggregator) = {
+    var buf:StringBuilder = StringBuilder.newBuilder
+    buf.append("var widthPerTick = 60\n")
+    buf.append(s"var totalTicks = $totalTicks\n")
+    buf.append("\nvar tasks = [\n")
+    for (t <- aggregator.taskMetrics.values.map(_.task).toSet[String]) buf.append(s"""\t"$t",\n""")
+    buf.append("];\n\nvar resourceData = [\n")
+    for (r <- aggregator.resourceMetrics.keys.toSeq.sortWith(sortRes(aggregator))) buf.append(resourceEntry(r,aggregator))
+    buf.append("];\n\nvar simulationData = [\n")
+    for (s <- aggregator.simulationMetrics.keys.toSeq.sortWith(sortSim(aggregator))) buf.append(simulationEntry(s,aggregator))
+    buf.append("];\n")
+    buf.toString
+  }
+  
+  def sortSim(agg:MetricAggregator)(l:String,r:String) = {
+    (agg.simulationMetrics.get(l) map(_.start) getOrElse(Int.MaxValue)) < 
+    (agg.simulationMetrics.get(r) map(_.start) getOrElse(Int.MaxValue)) 
+  }
+  
+  def simulationEntry(sim:String,agg:MetricAggregator) = {
+    val tasks = agg.taskMetrics.filter(_._2.simulation==sim)
+    val times = ("" /: tasks)(_ + "\t" + taskEntry(_))
+    s"""{label: \"$sim\", times: [""" + "\n" + times + "]},\n"
+  }
+  
+  def sortRes(agg:MetricAggregator)(l:String,r:String) = {
+    (agg.resourceMetrics.get(l) map(_.start) getOrElse(Int.MaxValue)) < 
+    (agg.resourceMetrics.get(r) map(_.start) getOrElse(Int.MaxValue)) 
+  }
+  
+  def resourceEntry(res:String,agg:MetricAggregator) = {
+    val tasks = agg.taskMetrics.filter(_._2.resources.contains(res))
+    val times = ("" /: tasks)(_ + "\t" + taskEntry(_))
+    s"""{label: \"$res\", times: [""" + "\n" + times + "]},\n"
+  }
+  
+  def taskEntry(entry:(String,TaskMetrics)) = entry match { case (name,metrics) =>
+    val start = metrics.start * tick
+    val finish = (metrics.start + metrics.duration) * tick
+    val task = metrics.task
+    s"""{"label":"$name", task: "$task", "starting_time": $start, "ending_time": $finish},\n"""
+    
   }
 }

@@ -18,7 +18,7 @@ object Task {
   case object VeryLow extends Priority { val value = 1 }
 }
 
-class Task (val name:String, val simulation:String, val resources:Seq[String], result:Any, val duration:ValueGenerator[Int], costGenerator:ValueGenerator[Int], val interrupt:Int=Int.MaxValue, val priority:Task.Priority=Task.Medium) extends TaskMetricTracker() with Ordered[Task] {
+class Task (val name:String, val simulation:String, val resources:Seq[String], result:Any, val duration:ValueGenerator[Int], costGenerator:ValueGenerator[Int], val interrupt:Int=Int.MaxValue, val priority:Task.Priority=Task.Medium) extends TaskMetricTracker(name) with Ordered[Task] {
   
   val cost = costGenerator.get
   val promise:Promise[Any] = Promise()

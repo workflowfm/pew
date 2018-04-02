@@ -38,6 +38,7 @@ class TaskResource(val name:String,val costPerTick:Int) extends ResourceMetricTr
         val duration = task.duration.get -1
         println("["+currentTime+"] \"" + name + "\" is NOW attached to task \"" + task.name + " (" + task.simulation +")\" - " + duration + " ticks remaining.")
         currentTask = Some(currentTime,duration,task)
+        resStart(currentTime)
         true
       }
       case Some((_,_,currentTask)) => {
