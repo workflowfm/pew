@@ -24,7 +24,8 @@ object GetSkiMain {
 		val getSki = new GetSki(cM2Inch , selectLength , selectModel , selectSki , uSD2NOK)
 		
 		implicit val system: ActorSystem = ActorSystem("GetSkiMain")
-    implicit val executionContext = system.dispatchers.lookup("akka.my-dispatcher") 
+    implicit val executionContext = ExecutionContext.global
+      //system.dispatchers.lookup("akka.my-dispatcher") 
 		
 		//implicit val executor:FutureExecutor = SingleBlockingExecutor()
    	//implicit val executor:FutureExecutor = new MultiStateExecutor(selectModel, selectLength, cM2Inch, uSD2NOK, selectSki, getSki)

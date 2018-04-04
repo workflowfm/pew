@@ -1,24 +1,69 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
+	<classpathentry excluding="main/java/|main/resources/|test/java/|test/resources/" kind="src" path="src"/>
+	<classpathentry kind="src" path="test"/>
+	<classpathentry kind="src" path="skiexample/src"/>
 	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8">
+	<classpathentry kind="lib" path="/Users/petros/.ivy2/cache/com.typesafe.akka/akka-actor_2.12/jars/akka-actor_2.12-2.4.12.jar" sourcepath="/Users/petros/.ivy2/cache/com.typesafe.akka/akka-actor_2.12/srcs/akka-actor_2.12-2.4.12-sources.jar">
 		<attributes>
-			<attribute name="maven.pomderived" value="true"/>
+			<attribute name="javadoc_location" value="jar:file:/Users/petros/.ivy2/cache/com.typesafe.akka/akka-actor_2.12/docs/akka-actor_2.12-2.4.12-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" path="src">
+	<classpathentry kind="lib" path="/Users/petros/.ivy2/cache/com.typesafe/config/bundles/config-1.3.0.jar" sourcepath="/Users/petros/.ivy2/cache/com.typesafe/config/srcs/config-1.3.0-sources.jar">
 		<attributes>
-			<attribute name="optional" value="true"/>
-			<attribute name="maven.pomderived" value="true"/>
+			<attribute name="javadoc_location" value="jar:file:/Users/petros/.ivy2/cache/com.typesafe/config/docs/config-1.3.0-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" output="target/test-classes" path="test"/>
-	<classpathentry kind="src" path="resources"/>
-	<classpathentry kind="src" path="skiexample"/>
-	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
+	<classpathentry kind="lib" path="/Users/petros/.ivy2/cache/org.scala-lang.modules/scala-java8-compat_2.12/bundles/scala-java8-compat_2.12-0.8.0.jar" sourcepath="/Users/petros/.ivy2/cache/org.scala-lang.modules/scala-java8-compat_2.12/srcs/scala-java8-compat_2.12-0.8.0-sources.jar">
 		<attributes>
-			<attribute name="maven.pomderived" value="true"/>
+			<attribute name="javadoc_location" value="jar:file:/Users/petros/.ivy2/cache/org.scala-lang.modules/scala-java8-compat_2.12/docs/scala-java8-compat_2.12-0.8.0-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="output" path="target/classes"/>
+	<classpathentry kind="lib" path="/Users/petros/.ivy2/cache/org.mongodb.scala/mongo-scala-driver_2.12/jars/mongo-scala-driver_2.12-2.2.1.jar" sourcepath="/Users/petros/.ivy2/cache/org.mongodb.scala/mongo-scala-driver_2.12/srcs/mongo-scala-driver_2.12-2.2.1-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/Users/petros/.ivy2/cache/org.mongodb.scala/mongo-scala-driver_2.12/docs/mongo-scala-driver_2.12-2.2.1-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/petros/.ivy2/cache/org.mongodb.scala/mongo-scala-bson_2.12/jars/mongo-scala-bson_2.12-2.2.1.jar" sourcepath="/Users/petros/.ivy2/cache/org.mongodb.scala/mongo-scala-bson_2.12/srcs/mongo-scala-bson_2.12-2.2.1-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/Users/petros/.ivy2/cache/org.mongodb.scala/mongo-scala-bson_2.12/docs/mongo-scala-bson_2.12-2.2.1-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/petros/.ivy2/cache/org.mongodb/mongodb-driver-async/jars/mongodb-driver-async-3.6.3.jar" sourcepath="/Users/petros/.ivy2/cache/org.mongodb/mongodb-driver-async/srcs/mongodb-driver-async-3.6.3-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/Users/petros/.ivy2/cache/org.mongodb/mongodb-driver-async/docs/mongodb-driver-async-3.6.3-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/petros/.ivy2/cache/org.mongodb/bson/jars/bson-3.6.3.jar" sourcepath="/Users/petros/.ivy2/cache/org.mongodb/bson/srcs/bson-3.6.3-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/Users/petros/.ivy2/cache/org.mongodb/bson/docs/bson-3.6.3-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/petros/.ivy2/cache/org.mongodb/mongodb-driver-core/jars/mongodb-driver-core-3.6.3.jar" sourcepath="/Users/petros/.ivy2/cache/org.mongodb/mongodb-driver-core/srcs/mongodb-driver-core-3.6.3-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/Users/petros/.ivy2/cache/org.mongodb/mongodb-driver-core/docs/mongodb-driver-core-3.6.3-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/petros/.ivy2/cache/junit/junit/jars/junit-4.8.2.jar" sourcepath="/Users/petros/.ivy2/cache/junit/junit/srcs/junit-4.8.2-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/Users/petros/.ivy2/cache/junit/junit/docs/junit-4.8.2-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/petros/.ivy2/cache/org.scalatest/scalatest_2.12/bundles/scalatest_2.12-3.2.0-SNAP10.jar" sourcepath="/Users/petros/.ivy2/cache/org.scalatest/scalatest_2.12/srcs/scalatest_2.12-3.2.0-SNAP10-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/Users/petros/.ivy2/cache/org.scalatest/scalatest_2.12/docs/scalatest_2.12-3.2.0-SNAP10-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/petros/.ivy2/cache/org.scalactic/scalactic_2.12/bundles/scalactic_2.12-3.2.0-SNAP10.jar" sourcepath="/Users/petros/.ivy2/cache/org.scalactic/scalactic_2.12/srcs/scalactic_2.12-3.2.0-SNAP10-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/Users/petros/.ivy2/cache/org.scalactic/scalactic_2.12/docs/scalactic_2.12-3.2.0-SNAP10-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/petros/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/bundles/scala-xml_2.12-1.0.6.jar" sourcepath="/Users/petros/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/srcs/scala-xml_2.12-1.0.6-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/Users/petros/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/docs/scala-xml_2.12-1.0.6-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="bin"/>
 </classpath>
