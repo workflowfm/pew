@@ -34,9 +34,8 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
     val f1 = ex.execute(pbi,Seq(1))
    
-    val r1 = await(f1)
-    r1 should not be empty
-    r1 should be (Some("PbISleptFor1s"))
+    val r1 = awaitf(f1)
+    r1 should be ("PbISleptFor1s")
 	}
 
   it should "execute atomic PbI twice concurrently" in {
@@ -44,28 +43,26 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     val f1 = ex.execute(pbi,Seq(2))
     val f2 = ex.execute(pbi,Seq(1))
    
-    val r1 = await(f1)
-    r1 should not be empty
-    r1 should be (Some("PbISleptFor2s"))
-    val r2 = await(f2)
-    r2 should not be empty
-    r2 should be (Some("PbISleptFor1s"))
+    val r1 = awaitf(f1)
+    r1 should be ("PbISleptFor2s")
+    val r2 = awaitf(f2)
+    r2 should be ("PbISleptFor1s")
 	}
   
   it should "execute Rexample once" in {
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
     val f1 = ex.execute(ri,Seq(21))
    
-    val r1 = await(f1)
-    r1 should be (Some(("PbISleptFor2s","PcISleptFor1s")))
+    val r1 = awaitf(f1)
+    r1 should be (("PbISleptFor2s","PcISleptFor1s"))
 	}
 
   it should "execute Rexample once with same timings" in {
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
     val f1 = ex.execute(ri,Seq(11))
    
-    val r1 = await(f1)
-    r1 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
+    val r1 = awaitf(f1)
+    r1 should be (("PbISleptFor1s","PcISleptFor1s"))
 	}
  
   it should "execute Rexample twice concurrently" in {
@@ -73,10 +70,10 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     val f1 = ex.execute(ri,Seq(31))
     val f2 = ex.execute(ri,Seq(12))
     
-    val r1 = await(f1)
-    r1 should be (Some(("PbISleptFor3s","PcISleptFor1s")))
-    val r2 = await(f2)
-    r2 should be (Some(("PbISleptFor1s","PcISleptFor2s"))) 
+    val r1 = awaitf(f1)
+    r1 should be (("PbISleptFor3s","PcISleptFor1s"))
+    val r2 = awaitf(f2)
+    r2 should be (("PbISleptFor1s","PcISleptFor2s"))
 	}
 
   it should "execute Rexample twice with same timings concurrently" in {
@@ -84,10 +81,10 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri,Seq(11))
     
-    val r1 = await(f1)
-    r1 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
-    val r2 = await(f2)
-    r2 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
+    val r1 = awaitf(f1)
+    r1 should be (("PbISleptFor1s","PcISleptFor1s"))
+    val r2 = awaitf(f2)
+    r2 should be (("PbISleptFor1s","PcISleptFor1s"))
 	}
   
   it should "execute Rexample thrice concurrently" in {
@@ -96,12 +93,12 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     val f2 = ex.execute(ri,Seq(11))
     val f3 = ex.execute(ri,Seq(11))
     
-    val r1 = await(f1)
-    r1 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
-    val r2 = await(f2)
-    r2 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
-    val r3 = await(f3)
-    r3 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
+    val r1 = awaitf(f1)
+    r1 should be (("PbISleptFor1s","PcISleptFor1s"))
+    val r2 = awaitf(f2)
+    r2 should be (("PbISleptFor1s","PcISleptFor1s"))
+    val r3 = awaitf(f3)
+    r3 should be (("PbISleptFor1s","PcISleptFor1s"))
 	}
   
     it should "execute Rexample twice, each with a differnt component" in {
@@ -109,10 +106,10 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri2,Seq(11))
     
-    val r1 = await(f1)
-    r1 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
-    val r2 = await(f2)
-    r2 should be (Some(("PbISleptFor1s","PcXSleptFor1s")))
+    val r1 = awaitf(f1)
+    r1 should be (("PbISleptFor1s","PcISleptFor1s"))
+    val r2 = awaitf(f2)
+    r2 should be (("PbISleptFor1s","PcXSleptFor1s"))
 	}
 }
 

@@ -84,6 +84,6 @@ class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStor
     run(id,{x => x.postResult(ref, res)})
   }
  
-  override def execute(process:PiProcess,args:Seq[Any]):Future[Option[Any]] =
-    call(process,args map PiObject.apply :_*)
+  override def execute(process:PiProcess,args:Seq[Any]):Future[Future[Any]] =
+    Future.successful(call(process,args map PiObject.apply :_*))
 }

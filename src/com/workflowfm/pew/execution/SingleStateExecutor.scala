@@ -92,6 +92,6 @@ class SingleStateExecutor(processes:PiProcessStore)(override implicit val contex
     }
   }
  
-  override def execute(process:PiProcess,args:Seq[Any]):Future[Option[Any]] =
-    call(process,args map PiObject.apply :_*)
+  override def execute(process:PiProcess,args:Seq[Any]):Future[Future[Option[Any]]] =
+    Future.successful(call(process,args map PiObject.apply :_*))
 }

@@ -15,9 +15,15 @@ import com.workflowfm.pew.mongodb._
 import org.mongodb.scala.MongoClient
 import com.workflowfm.pew.execution._
 import RexampleTypes._
+import org.bson.types.ObjectId
+import scala.concurrent.Promise
+import scala.util.Success
+import scala.util.Failure
+import scala.concurrent.duration._
+import org.scalatest.BeforeAndAfterAll
 
 @RunWith(classOf[JUnitRunner])
-class MongoExecutorTests extends FlatSpec with Matchers with ProcessExecutorTester {
+class MongoExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll with ProcessExecutorTester {
   implicit val system: ActorSystem = ActorSystem("MongoExecutorTests")
   //implicit val executionContext = system.dispatchers.lookup("akka.my-dispatcher")  
   
@@ -27,106 +33,111 @@ class MongoExecutorTests extends FlatSpec with Matchers with ProcessExecutorTest
   val pci2 = new PcI("PcX")
   val ri = new R(pai,pbi,pci)
   val ri2 = new R(pai,pbi,pci2)
-
-  it should "execute atomic PbI once" in {
-    val client = MongoClient()
+  val badri = new R(pai,pbi,pci)
+  
+  val client = MongoClient()
+  override def afterAll:Unit = {
+    client.close()
+  }
+  
+  it should "execute atomic PbI once" in {  
     val ex = MongoFutureExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
     val f1 = ex.execute(pbi,Seq(2))
    
-    val r1 = await(f1)
-    client.close()
-    r1 should not be empty
-    r1 should be (Some("PbISleptFor2s"))
+    val r1 = awaitf(f1)
+    r1 should be ("PbISleptFor2s")
 	}
 
   it should "execute atomic PbI twice concurrently" in {
-    val client = MongoClient()
     val ex = MongoFutureExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
     val f1 = ex.execute(pbi,Seq(2))
     val f2 = ex.execute(pbi,Seq(1))
    
-    val r1 = await(f1)
-    r1 should not be empty
-    r1 should be (Some("PbISleptFor2s"))
-    val r2 = await(f2)
-    r2 should not be empty
-    r2 should be (Some("PbISleptFor1s"))
-    client.close()  
+    val r1 = awaitf(f1)
+    r1 should be ("PbISleptFor2s")
+    val r2 = awaitf(f2)
+    r2 should be ("PbISleptFor1s")
 	}
   
   it should "execute Rexample once" in {
-    val client = MongoClient()
     val ex = MongoFutureExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
     val f1 = ex.execute(ri,Seq(21))
    
-    val r1 = await(f1)
-    client.close()
-    r1 should be (Some(("PbISleptFor2s","PcISleptFor1s")))
+    val r1 = awaitf(f1)
+    r1 should be (("PbISleptFor2s","PcISleptFor1s"))
 	}
 
   it should "execute Rexample once with same timings" in {
-    val client = MongoClient()
     val ex = MongoFutureExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
     val f1 = ex.execute(ri,Seq(11))
    
-    val r1 = await(f1)
-    client.close()
-    r1 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
+    val r1 = awaitf(f1)
+    r1 should be (("PbISleptFor1s","PcISleptFor1s"))
 	}
  
   it should "execute Rexample twice concurrently" in {
-    val client = MongoClient()
     val ex = MongoFutureExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
     val f1 = ex.execute(ri,Seq(31))
     val f2 = ex.execute(ri,Seq(12))
     
-    val r1 = await(f1)
-    r1 should be (Some(("PbISleptFor3s","PcISleptFor1s")))
-    val r2 = await(f2)
-    r2 should be (Some(("PbISleptFor1s","PcISleptFor2s")))
-    client.close()    
+    val r1 = awaitf(f1)
+    r1 should be (("PbISleptFor3s","PcISleptFor1s"))
+    val r2 = awaitf(f2)
+    r2 should be (("PbISleptFor1s","PcISleptFor2s")) 
 	}
 
   it should "execute Rexample twice with same timings concurrently" in {
-    val client = MongoClient()
     val ex = MongoFutureExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri,Seq(11))
     
-    val r1 = await(f1)
-    r1 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
-    val r2 = await(f2)
-    r2 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
-    client.close()  
+    val r1 = awaitf(f1)
+    r1 should be (("PbISleptFor1s","PcISleptFor1s"))
+    val r2 = awaitf(f2)
+    r2 should be (("PbISleptFor1s","PcISleptFor1s"))
 	}
   
   it should "execute Rexample thrice concurrently" in {
-    val client = MongoClient()
     val ex = MongoFutureExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri,Seq(11))
     val f3 = ex.execute(ri,Seq(11))
     
-    val r1 = await(f1)
-    r1 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
-    val r2 = await(f2)
-    r2 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
-    val r3 = await(f3)
-    r3 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
-    client.close()  
+    val r1 = awaitf(f1)
+    r1 should be (("PbISleptFor1s","PcISleptFor1s"))
+    val r2 = awaitf(f2)
+    r2 should be (("PbISleptFor1s","PcISleptFor1s"))
+    val r3 = awaitf(f3)
+    r3 should be (("PbISleptFor1s","PcISleptFor1s")) 
 	}
   
   it should "execute Rexample twice, each with a differnt component" in {
-    val client = MongoClient()
     val ex = MongoFutureExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,pci2,ri,ri2)
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri2,Seq(11))
     
-    val r1 = await(f1)
-    r1 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
-    val r2 = await(f2)
-    r2 should be (Some(("PbISleptFor1s","PcXSleptFor1s")))
-    client.close()  
+    val r1 = awaitf(f1)
+    r1 should be (("PbISleptFor1s","PcISleptFor1s"))
+    val r2 = awaitf(f2)
+    r2 should be (("PbISleptFor1s","PcXSleptFor1s"))
 	}
+  
+  it should "fail properly when a workflow doesn't exist" in {
+    val ex = MongoFutureExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,pci2,ri,ri2)
+    val f1 = ex.postResult(new ObjectId(), 0, PiObject(0))
+    
+    a [ProcessExecutor.NoSuchInstanceException] should be thrownBy await(f1)
+	}
+  
+//  it should "fail properly when a process doesn't exist" in {
+//    val ex = MongoFutureExecutor(client, "pew", "test_exec_insts",pai,pci,pci2,badri)
+//    val f1 = ex.execute(ri,Seq(11))
+//    
+//    val a1 = await(f1)
+//    println(a1)
+//    val a2 = await(a1)
+//    println(a2)
+//    a [ProcessExecutor.NoSuchInstanceException] should be thrownBy await(f1)
+//	}
 }
 

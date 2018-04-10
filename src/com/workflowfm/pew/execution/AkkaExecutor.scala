@@ -20,8 +20,8 @@ class AkkaExecutor(store:PiInstanceStore[Int], processes:PiProcessStore)(implici
   val execActor = system.actorOf(AkkaExecutor.execprops(store,processes))
   implicit val tOut = Timeout(timeout) 
   
-  override def execute(process:PiProcess,args:Seq[Any]):Future[Option[Any]] = 
-    (execActor ? AkkaExecutor.Call(process,args map PiObject.apply)) map (_.asInstanceOf[Option[Any]])
+  override def execute(process:PiProcess,args:Seq[Any]):Future[Future[Any]] = 
+    Future.successful((execActor ? AkkaExecutor.Call(process,args map PiObject.apply)))
 }
 
 object AkkaExecutor {
@@ -32,7 +32,7 @@ object AkkaExecutor {
   case class ACall(id:Int,ref:Int,p:AtomicProcess,args:Seq[PiObject],actor:ActorRef)
   case object AckCall
   
-  case class AFuture(f:Future[Option[Any]])
+  case class AFuture(f:Future[Any])
   
   case object Ping
   

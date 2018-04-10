@@ -25,12 +25,12 @@ case class AtomicProcessExecutor(process:AtomicProcess) {
  * Trait representing the ability to execute any PiProcess
  */
 trait ProcessExecutor[R] {
-	def execute(process:PiProcess,args:Seq[Any]):R
+	def execute(process:PiProcess,args:Seq[Any]):Future[R]
 }
 
-trait FutureExecutor extends ProcessExecutor[Future[Option[Any]]] {
+trait FutureExecutor extends ProcessExecutor[PromiseHandler.ResultT] {
   implicit val context: ExecutionContext = ExecutionContext.global
-	def execute(process:PiProcess,args:Seq[Any]):Future[Option[Any]]
+	def execute(process:PiProcess,args:Seq[Any]):Future[PromiseHandler.ResultT]
 }
 object ProcessExecutor {
   def default = SingleBlockingExecutor(Map[String,PiProcess]())
@@ -39,6 +39,8 @@ object ProcessExecutor {
                     extends Exception("Unable to execute more than one process at a time", cause) 
   final case class UnknownProcessException(val process:String, private val cause: Throwable = None.orNull)
                     extends Exception("Unknown process: " + process, cause) 
+  final case class AtomicProcessIsCompositeException(val process:String, private val cause: Throwable = None.orNull)
+                    extends Exception("Executor encountered composite process thread: " + process + " (this should never happen!)", cause)
   final case class NoResultException(val id:String, private val cause: Throwable = None.orNull)
                     extends Exception("Failed to get result for: " + id, cause) 
   final case class NoSuchInstanceException(val id:String, private val cause: Throwable = None.orNull)
@@ -49,9 +51,18 @@ object ProcessExecutor {
  * Shortcut methods for unit testing
  */
 trait ProcessExecutorTester {
-  def exe(e:FutureExecutor,p:PiProcess,args:Any*) = await(e.execute(p,args:Seq[Any]))
+  def exe(e:FutureExecutor,p:PiProcess,args:Any*) = awaitf(e.execute(p,args:Seq[Any]))
   def await[A](f:Future[A]):A = try {
     Await.result(f,15.seconds)
+  } catch {
+    case e:Throwable => {
+      System.out.println("=== RESULT FAILED! ===")
+      throw e
+    }
+  }
+  
+  def awaitf[A](f:Future[Future[A]]):A = try {
+    Await.result(Await.result(f,15.seconds),15.seconds)
   } catch {
     case e:Throwable => {
       System.out.println("=== RESULT FAILED! ===")

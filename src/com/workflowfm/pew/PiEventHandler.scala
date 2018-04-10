@@ -31,13 +31,13 @@ class DefaultHandler[T] extends PiEventHandler[T,Unit] {
   }
 }
 
-class PromiseHandler[T] extends PiEventHandler[T,Future[Option[Any]]]{
+class PromiseHandler[T] extends PiEventHandler[T,Future[Any]]{
   val default = new DefaultHandler[T]
-  var promises:Map[T,Promise[Option[Any]]] = Map()
+  var promises:Map[T,Promise[Any]] = Map()
  
   override def start(i:PiInstance[T]) = promises synchronized {
     default.start(i)
-    val promise = Promise[Option[Any]]()
+    val promise = Promise[Any]()
     promises += (i.id -> promise)
     promise.future
   }
@@ -46,7 +46,7 @@ class PromiseHandler[T] extends PiEventHandler[T,Future[Option[Any]]]{
     default.success(i,res)
     promises.get(i.id) match {
       case None => Unit
-      case Some(p) => p.success(Some(res))
+      case Some(p) => p.success(res)
     }
     promises = promises - i.id
   }
@@ -61,5 +61,5 @@ class PromiseHandler[T] extends PiEventHandler[T,Future[Option[Any]]]{
 }
 
 object PromiseHandler {
-  type ResultT = Future[Option[Any]]
+  type ResultT = Future[Any]
 }
