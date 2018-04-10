@@ -7,6 +7,9 @@ import com.workflowfm.pew.mongodb.bson.PiCodecProvider
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.annotation.tailrec
+import scala.util.Try
+import scala.util.Success
+import scala.util.Failure
 
 import org.bson.types._
 import org.bson._
@@ -15,23 +18,19 @@ import org.bson.codecs.configuration.{CodecProvider, CodecRegistry, CodecRegistr
 import org.bson.codecs.configuration.CodecRegistries.{fromRegistries, fromProviders, fromCodecs}
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 
-import com.mongodb.session.ClientSession
 import org.mongodb.scala.MongoClient
-import org.mongodb.scala.Observable
-import org.mongodb.scala.ClientSessionOptions
-import org.mongodb.scala.model.Filters._
 import org.mongodb.scala.MongoDatabase
 import org.mongodb.scala.MongoCollection
+import com.mongodb.session.ClientSession
+import org.mongodb.scala.ClientSessionOptions
+import org.mongodb.scala.model.Filters._
+import org.mongodb.scala.Observable
 import org.mongodb.scala.SingleObservable
 import org.mongodb.scala.Observer
-import scala.util.Try
-import scala.util.Success
-import scala.util.Failure
 import org.mongodb.scala.ReadConcern
 import org.mongodb.scala.WriteConcern
-import akka.dispatch.OnComplete
 
-class MongoDBExecutor(client:MongoClient, db:String, collection:String, processes:Map[String,PiProcess],timeout:Duration=10.seconds)(override implicit val context: ExecutionContext = ExecutionContext.global) extends FutureExecutor {
+class MongoExecutor(client:MongoClient, db:String, collection:String, processes:Map[String,PiProcess],timeout:Duration=10.seconds)(override implicit val context: ExecutionContext = ExecutionContext.global) extends FutureExecutor {
   def this(client:MongoClient, db:String, collection:String, l:PiProcess*) = this(client,db,collection,PiProcess.imapOf(l :_*))  
 
   final val CAS_MAX_ATTEMPTS = 10

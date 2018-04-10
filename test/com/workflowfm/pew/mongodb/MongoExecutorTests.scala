@@ -30,7 +30,7 @@ class MongoExecutorTests extends FlatSpec with Matchers with ProcessExecutorTest
 
   it should "execute atomic PbI once" in {
     val client = MongoClient()
-    val ex = new MongoDBExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
+    val ex = new MongoExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
     val f1 = ex.execute(pbi,Seq(2))
    
     val r1 = await(f1)
@@ -41,7 +41,7 @@ class MongoExecutorTests extends FlatSpec with Matchers with ProcessExecutorTest
 
   it should "execute atomic PbI twice concurrently" in {
     val client = MongoClient()
-    val ex = new MongoDBExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
+    val ex = new MongoExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
     val f1 = ex.execute(pbi,Seq(2))
     val f2 = ex.execute(pbi,Seq(1))
    
@@ -56,7 +56,7 @@ class MongoExecutorTests extends FlatSpec with Matchers with ProcessExecutorTest
   
   it should "execute Rexample once" in {
     val client = MongoClient()
-    val ex = new MongoDBExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
+    val ex = new MongoExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
     val f1 = ex.execute(ri,Seq(21))
    
     val r1 = await(f1)
@@ -66,7 +66,7 @@ class MongoExecutorTests extends FlatSpec with Matchers with ProcessExecutorTest
 
   it should "execute Rexample once with same timings" in {
     val client = MongoClient()
-    val ex = new MongoDBExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
+    val ex = new MongoExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
     val f1 = ex.execute(ri,Seq(11))
    
     val r1 = await(f1)
@@ -76,7 +76,7 @@ class MongoExecutorTests extends FlatSpec with Matchers with ProcessExecutorTest
  
   it should "execute Rexample twice concurrently" in {
     val client = MongoClient()
-    val ex = new MongoDBExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
+    val ex = new MongoExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
     val f1 = ex.execute(ri,Seq(31))
     val f2 = ex.execute(ri,Seq(12))
     
@@ -89,7 +89,7 @@ class MongoExecutorTests extends FlatSpec with Matchers with ProcessExecutorTest
 
   it should "execute Rexample twice with same timings concurrently" in {
     val client = MongoClient()
-    val ex = new MongoDBExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
+    val ex = new MongoExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri,Seq(11))
     
@@ -102,7 +102,7 @@ class MongoExecutorTests extends FlatSpec with Matchers with ProcessExecutorTest
   
   it should "execute Rexample thrice concurrently" in {
     val client = MongoClient()
-    val ex = new MongoDBExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
+    val ex = new MongoExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,ri)
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri,Seq(11))
     val f3 = ex.execute(ri,Seq(11))
@@ -118,7 +118,7 @@ class MongoExecutorTests extends FlatSpec with Matchers with ProcessExecutorTest
   
   it should "execute Rexample twice, each with a differnt component" in {
     val client = MongoClient()
-    val ex = new MongoDBExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,pci2,ri,ri2)
+    val ex = new MongoExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,pci2,ri,ri2)
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri2,Seq(11))
     
