@@ -37,5 +37,5 @@ lazy val root = project
 		commonSettings,
 		scalaSource in Compile := baseDirectory.value / "src",
 		scalaSource in Test := baseDirectory.value / "test"
-	).aggregate(skiexample)
+	)
 lazy val rootRef = LocalProject("root")
