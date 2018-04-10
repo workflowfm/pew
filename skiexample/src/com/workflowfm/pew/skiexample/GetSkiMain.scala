@@ -8,7 +8,7 @@ import com.workflowfm.pew.skiexample.SkiExampleTypes._
 import com.workflowfm.pew.skiexample.processes._
 import com.workflowfm.pew.skiexample.instances._
 import org.mongodb.scala.MongoClient
-import com.workflowfm.pew.mongodb.MongoDBExecutor
+import com.workflowfm.pew.mongodb.MongoExecutor
 import akka.actor.ActorSystem
 
 object GetSkiMain {

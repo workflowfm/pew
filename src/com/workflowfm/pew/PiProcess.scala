@@ -41,30 +41,21 @@ sealed trait PiProcess {
   def inputFrees() = inputs map (_._1.frees)
   
   override def toString = "[|" + name + "|]"
+  
+  /**
+   * Shortcut to create entries in name->PiProcess maps	
+   */
+	def toEntry:(String,PiProcess) = name->this 
+	
+	/**
+   * * Shortcut to create entries in name->PiProcess maps using the instance name	
+   */
+	def toIEntry:(String,PiProcess) = iname->this 
 }
 object PiProcess {
   def allDependenciesOf(p:PiProcess):Seq[PiProcess] =
     if (p.dependencies.isEmpty) Seq():Seq[PiProcess] 
     else p.dependencies ++ (p.dependencies flatMap allDependenciesOf)
-  
-  /**
-   * Shortcut to create entries in name->PiProcess maps	
-   */
-	def entryOf(p:PiProcess):(String,PiProcess) = p.name->p
-	/** 
-	 * Shortcut to create name->PiProcess maps from a seq of processes.
-	 */
-	def mapOf(l:PiProcess*):Map[String,PiProcess] = (Map[String,PiProcess]() /: l)(_ + entryOf(_))
-	
-  /**
-   * Shortcut to create entries in name->PiProcess maps using the instance name	
-   */
-	def ientryOf(p:PiProcess):(String,PiProcess) = p.iname->p
-	/** 
-	 * Shortcut to create name->PiProcess maps from a seq of processes using the instance names
-	 */
-	def imapOf(l:PiProcess*):Map[String,PiProcess] = (Map[String,PiProcess]() /: l)(_ + ientryOf(_))
-
 }
 
 
@@ -115,4 +106,37 @@ case class DummyComposition(override val name:String, i:String, o:String, n:Stri
   override val channels = Seq(i,o)
   override val body = PiId(i,o,n)
   override val dependencies:Seq[PiProcess] = Seq()
+}
+
+
+trait PiProcessStore {
+  /**
+   * Get a PiProcess by its *instance* name.
+   */
+  def get(name:String):Option[PiProcess]
+  def getAll:Seq[PiProcess]
+  
+  def getOrElse[B >: PiProcess](name:String,default: => B):B = get(name) match {
+    case None => default
+    case Some(r) => r
+  }
+  def entryOf(name:String):Option[(String,PiProcess)] = get(name) map (_.toEntry)
+  def toMap:Map[String,PiProcess] = Map(getAll map (_.toEntry) :_*)
+  def toIMap:Map[String,PiProcess] = Map(getAll map (_.toIEntry) :_*)
+}
+object PiProcessStore {
+  /** 
+	 * Shortcut to create name->PiProcess maps from a seq of processes.
+	 * These are used within PiState.
+	 */
+	def mapOf(l:PiProcess*):Map[String,PiProcess] = (Map[String,PiProcess]() /: l)(_ + _.toEntry)
+}
+
+case class SimpleProcessStore(m:Map[String,PiProcess]) extends PiProcessStore {
+  override def get(name:String):Option[PiProcess] = m.get(name)
+  override def getAll:Seq[PiProcess] = m.values.toSeq
+}
+object SimpleProcessStore {
+  def apply(l:PiProcess*):SimpleProcessStore = SimpleProcessStore((Map[String,PiProcess]() /: l) (_ + _.toIEntry))
+  //def procs(l:PiProcess*):SimpleProcessStore = SimpleProcessStore((Map[String,PiProcess]() /: l) (_ + _.toEntry))
 }

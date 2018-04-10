@@ -13,8 +13,8 @@ import scala.annotation.tailrec
  * promises/futures from the first workflow can trigger changes on the state!
  */
 
-class SingleStateExecutor(processes:Map[String,PiProcess])(override implicit val context: ExecutionContext = ExecutionContext.global) extends FutureExecutor {
-  def this(l:PiProcess*) = this(PiProcess.mapOf(l :_*))
+class SingleStateExecutor(processes:PiProcessStore)(override implicit val context: ExecutionContext = ExecutionContext.global) extends FutureExecutor {
+  def this(l:PiProcess*) = this(SimpleProcessStore(l :_*))
   
   var ctr:Int = 0
   var instance:Option[PiInstance[Int]] = None

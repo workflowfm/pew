@@ -12,10 +12,10 @@ import akka.pattern.pipe
 import akka.util.Timeout
 
 
-class AkkaExecutor(store:PiInstanceStore[Int], processes:Map[String,PiProcess])(implicit system: ActorSystem, override implicit val context: ExecutionContext = ExecutionContext.global, implicit val timeout:FiniteDuration = 10.seconds) extends FutureExecutor {
-  def this(store:PiInstanceStore[Int], l:PiProcess*)(implicit system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration) = this(store,PiProcess.imapOf(l :_*))
-  def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration,l:PiProcess*) = this(SimpleInstanceStore(),PiProcess.imapOf(l :_*))(system,context,timeout)
-  def this(l:PiProcess*)(implicit system: ActorSystem) = this(SimpleInstanceStore(),PiProcess.imapOf(l :_*))(system,ExecutionContext.global,10.seconds)
+class AkkaExecutor(store:PiInstanceStore[Int], processes:PiProcessStore)(implicit system: ActorSystem, override implicit val context: ExecutionContext = ExecutionContext.global, implicit val timeout:FiniteDuration = 10.seconds) extends FutureExecutor {
+  def this(store:PiInstanceStore[Int], l:PiProcess*)(implicit system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration) = this(store,SimpleProcessStore(l :_*))
+  def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration,l:PiProcess*) = this(SimpleInstanceStore(),SimpleProcessStore(l :_*))(system,context,timeout)
+  def this(l:PiProcess*)(implicit system: ActorSystem) = this(SimpleInstanceStore(),SimpleProcessStore(l :_*))(system,ExecutionContext.global,10.seconds)
   
   val execActor = system.actorOf(AkkaExecutor.execprops(store,processes))
   implicit val tOut = Timeout(timeout) 
@@ -37,10 +37,10 @@ object AkkaExecutor {
   case object Ping
   
   def atomicprops(implicit context: ExecutionContext = ExecutionContext.global): Props = Props(new AkkaAtomicProcessExecutor())
-  def execprops(store:PiInstanceStore[Int], processes:Map[String,PiProcess])(implicit system: ActorSystem, exc: ExecutionContext): Props = Props(new AkkaExecActor(store,processes))
+  def execprops(store:PiInstanceStore[Int], processes:PiProcessStore)(implicit system: ActorSystem, exc: ExecutionContext): Props = Props(new AkkaExecActor(store,processes))
 }
 
-class AkkaExecActor(var store:PiInstanceStore[Int], processes:Map[String,PiProcess])(implicit system: ActorSystem, implicit val exc: ExecutionContext = ExecutionContext.global) extends Actor {
+class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(implicit system: ActorSystem, implicit val exc: ExecutionContext = ExecutionContext.global) extends Actor {
   var ctr:Int = 0
   val handler = new PromiseHandler[Int]
    

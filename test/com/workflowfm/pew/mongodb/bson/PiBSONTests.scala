@@ -122,7 +122,7 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
   
   "PiStateCodec" should "encode/decode PiStates" in {
 	  val proc1 = DummyProcess("PROC", Seq("C","R"), "R", Seq((Chan("INPUT"),"C")))
-	  val procs = PiProcess.mapOf(proc1)
+	  val procs = SimpleProcessStore(proc1)
     
     val reg = fromRegistries(fromProviders(new PiCodecProvider(procs)),DEFAULT_CODEC_REGISTRY)
 	  val codec = reg.get(classOf[PiState])
@@ -135,7 +135,7 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
 
   "PiInstanceCodec" should "encode/decode PiInstances" in {
 	  val proc1 = DummyProcess("PROC", Seq("C","R"), "R", Seq((Chan("INPUT"),"C")))
-	  val procs = PiProcess.mapOf(proc1)
+	  val procs = SimpleProcessStore(proc1)
     
     val reg = fromRegistries(fromProviders(new PiCodecProvider(procs)),DEFAULT_CODEC_REGISTRY)
 	  val codec = reg.get(classOf[PiInstance[ObjectId]])

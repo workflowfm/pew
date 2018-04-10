@@ -8,7 +8,7 @@ import org.bson.codecs.configuration.CodecRegistry
 import scala.collection.mutable.Queue
 import org.bson.codecs.configuration.CodecConfigurationException
 
-class PiInstanceCodec(registry:CodecRegistry,processes:Map[String,PiProcess]) extends Codec[PiInstance[ObjectId]] { 
+class PiInstanceCodec(registry:CodecRegistry,processes:PiProcessStore) extends Codec[PiInstance[ObjectId]] { 
   val stateCodec:Codec[PiState] = registry.get(classOf[PiState])
   
   override def encode(writer: BsonWriter, value: PiInstance[ObjectId], encoderContext: EncoderContext): Unit = { 

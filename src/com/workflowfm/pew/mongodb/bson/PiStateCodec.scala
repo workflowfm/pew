@@ -10,7 +10,7 @@ import org.bson.codecs.configuration.CodecRegistry
 import scala.collection.mutable.Queue
 import org.bson.codecs.configuration.CodecConfigurationException
 
-class PiStateCodec(registry:CodecRegistry,processes:Map[String,PiProcess]) extends Codec[PiState] { 
+class PiStateCodec(registry:CodecRegistry,processes:PiProcessStore) extends Codec[PiState] { 
   val chanCodec:Codec[Chan] = registry.get(classOf[Chan])
   val termCodec:Codec[Term] = registry.get(classOf[Term])
   val futureCodec:Codec[PiFuture] = registry.get(classOf[PiFuture])
@@ -159,6 +159,6 @@ class PiStateCodec(registry:CodecRegistry,processes:Map[String,PiProcess]) exten
     val cMap = decoderContext.decodeWithChildContext(cmapCodec,reader)
     
 	  reader.readEndDocument()
-	  PiState(Map(inputs:_*),Map(outputs:_*),calls.toList,Map(threads:_*),tCtr,fCtr,PiProcess.mapOf(procs:_*),cMap)
+	  PiState(Map(inputs:_*),Map(outputs:_*),calls.toList,Map(threads:_*),tCtr,fCtr,PiProcessStore.mapOf(procs:_*),cMap)
   }
 }

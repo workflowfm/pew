@@ -13,9 +13,9 @@ import scala.annotation.tailrec
  * promises/futures from the first workflow can trigger changes on the state!
  */
 
-class MultiStateExecutor(var store:PiInstanceStore[Int], processes:Map[String,PiProcess])(override implicit val context: ExecutionContext = ExecutionContext.global) extends FutureExecutor {
-  def this(store:PiInstanceStore[Int], l:PiProcess*) = this(store,PiProcess.mapOf(l :_*))
-  def this(l:PiProcess*) = this(SimpleInstanceStore(),PiProcess.mapOf(l :_*))
+class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStore)(override implicit val context: ExecutionContext = ExecutionContext.global) extends FutureExecutor {
+  def this(store:PiInstanceStore[Int], l:PiProcess*) = this(store,SimpleProcessStore(l :_*))
+  def this(l:PiProcess*) = this(SimpleInstanceStore(),SimpleProcessStore(l :_*))
   
   var ctr:Int = 0
   val handler = new PromiseHandler[Int]

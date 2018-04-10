@@ -68,7 +68,7 @@ class MongoDBTests extends FlatSpec with Matchers with PiBSONTestHelper with Mon
   
   it should "put new PiInstances as Documents and read them back" in {
     val proc1 = DummyProcess("PROC", Seq("C","R"), "R", Seq((Chan("INPUT"),"C")))
-	  val procs = PiProcess.mapOf(proc1)
+	  val procs = SimpleProcessStore(proc1)
     
     val reg = fromRegistries(fromProviders(new PiCodecProvider(procs)),DEFAULT_CODEC_REGISTRY)
     val oid = new ObjectId
@@ -94,7 +94,7 @@ class MongoDBTests extends FlatSpec with Matchers with PiBSONTestHelper with Mon
   
   it should "put/get new PiInstances directly" in {
     val proc1 = DummyProcess("PROC", Seq("C","R"), "R", Seq((Chan("INPUT"),"C")))
-	  val procs = PiProcess.mapOf(proc1)
+	  val procs = SimpleProcessStore(proc1)
     
     val reg = fromRegistries(fromProviders(new PiCodecProvider(procs)),DEFAULT_CODEC_REGISTRY)
     val oid = new ObjectId
@@ -121,7 +121,7 @@ class MongoDBTests extends FlatSpec with Matchers with PiBSONTestHelper with Mon
   
   it should "update PiInstances directly" in {
     val proc1 = DummyProcess("PROC", Seq("C","R"), "R", Seq((Chan("INPUT"),"C")))
-	  val procs = PiProcess.mapOf(proc1)
+	  val procs = SimpleProcessStore(proc1)
     
     val reg = fromRegistries(fromProviders(new PiCodecProvider(procs)),DEFAULT_CODEC_REGISTRY)
     val oid = new ObjectId
@@ -155,7 +155,7 @@ class MongoDBTests extends FlatSpec with Matchers with PiBSONTestHelper with Mon
   
   it should "update PiInstances with chained observables" in {
     val proc1 = DummyProcess("PROC", Seq("C","R"), "R", Seq((Chan("INPUT"),"C")))
-	  val procs = PiProcess.mapOf(proc1)
+	  val procs = SimpleProcessStore(proc1)
     
     val reg = fromRegistries(fromProviders(new PiCodecProvider(procs)),DEFAULT_CODEC_REGISTRY)
     val oid = new ObjectId

@@ -12,7 +12,7 @@ import org.bson.types.ObjectId
  * Created using this as an example:
  * https://github.com/mongodb/mongo-scala-driver/blob/master/bson/src/main/scala/org/mongodb/scala/bson/codecs/DocumentCodecProvider.scala
  */
-class PiCodecProvider(processes:Map[String,PiProcess] = Map()) extends CodecProvider { //bsonTypeClassMap:BsonTypeClassMap
+class PiCodecProvider(processes:PiProcessStore = SimpleProcessStore()) extends CodecProvider { //bsonTypeClassMap:BsonTypeClassMap
   val OBJCLASS:Class[PiObject] =  classOf[PiObject]
   val CHANCLASS:Class[Chan] =  classOf[Chan]
   val CHANMAPCLASS:Class[ChanMap] =  classOf[ChanMap]
