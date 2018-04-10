@@ -30,8 +30,7 @@ import org.mongodb.scala.Observer
 import org.mongodb.scala.ReadConcern
 import org.mongodb.scala.WriteConcern
 
-class MongoExecutor(client:MongoClient, db:String, collection:String, processes:PiProcessStore,timeout:Duration=10.seconds)(override implicit val context: ExecutionContext = ExecutionContext.global) extends FutureExecutor {
-  def this(client:MongoClient, db:String, collection:String, l:PiProcess*) = this(client,db,collection,SimpleProcessStore(l :_*))  
+class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, handler: PiEventHandler[ObjectId,ResultT], processes:PiProcessStore,timeout:Duration=10.seconds)(implicit val context: ExecutionContext = ExecutionContext.global) extends ProcessExecutor[ResultT] { 
 
   final val CAS_MAX_ATTEMPTS = 10
   final val CAS_WAIT_MS = 1
@@ -42,13 +41,11 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
     //withReadConcern(ReadConcern.LINEARIZABLE).
     withWriteConcern(WriteConcern.MAJORITY);
   val col:MongoCollection[PiInstance[ObjectId]] = database.getCollection(collection)
-  
-  val handler = new PromiseHandler[ObjectId]  
     
   def await[T](obs:Observable[T]) = Await.result(obs.toFuture,timeout)
   //def await[T](f:Future[T]) = Await.result(f,timeout)
   
-  def call(p:PiProcess,args:PiObject*) = {
+  def call(p:PiProcess,args:PiObject*):ResultT = {
     val oid = new ObjectId
 	  val inst = PiInstance(oid,p,args:_*)
 	  val ret = handler.start(inst)
@@ -109,7 +106,7 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
         toCall map runThread(i)
       }
       case Failure(CASException) => System.err.println("*** [" + id + "] CAS Retry: " + ref + " - attempt: " + (attempt+1)); Thread.sleep(CAS_WAIT_MS); postResult(id,ref,res,attempt+1)
-      case Failure(e) => System.err.println("*** [" + id + "] Failed: " + ref); handler.failure(id,e)
+      case Failure(e) => System.err.println("*** [" + id + "] Failed: " + ref); throw e
     })
   }
   
@@ -196,10 +193,18 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
   final case object CASException extends Exception("CAS")
   final case class CASFailureException(val id:String, val ref:Int, private val cause: Throwable = None.orNull)
                     extends Exception("Compare-and-swap failed after " + CAS_MAX_ATTEMPTS + " attempts for id: " + id + " - call id: " + ref, cause)  
-  override def execute(process:PiProcess,args:Seq[Any]):Future[Option[Any]] =
+
+  override def execute(process:PiProcess,args:Seq[Any]):ResultT =
     call(process,args map PiObject.apply :_*)
-   
 }
 
+
+
+class MongoFutureExecutor(client:MongoClient, db:String, collection:String, processes:PiProcessStore,timeout:Duration=10.seconds)(override implicit val context: ExecutionContext = ExecutionContext.global) 
+  extends MongoExecutor[PromiseHandler.ResultT](client, db, collection, new PromiseHandler[ObjectId], processes:PiProcessStore,timeout)(context) with FutureExecutor 
+    
+object MongoFutureExecutor {
+  def apply(client:MongoClient, db:String, collection:String, l:PiProcess*) = new MongoFutureExecutor(client,db,collection,SimpleProcessStore(l :_*))  
+}
 
     

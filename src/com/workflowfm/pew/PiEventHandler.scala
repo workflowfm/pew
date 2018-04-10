@@ -59,3 +59,7 @@ class PromiseHandler[T] extends PiEventHandler[T,Future[Option[Any]]]{
     }
   }
 }
+
+object PromiseHandler {
+  type ResultT = Future[Option[Any]]
+}
