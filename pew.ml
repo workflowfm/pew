@@ -126,7 +126,7 @@ let scala_stateful_proc depth (proc:Proc.t) =
   "override val body = " ^ (scala_of_pat (rhs proc.Proc.proc)) ^ (nltab (depth + 1)) ^ (nltab (depth + 1)) ^
   "def apply(" ^(String.concat "," (map mk_arg intypes))^")(implicit executor:FutureExecutor): Future["^outtype^"] = {" ^ (nltab (depth + 2)) ^
   "implicit val context:ExecutionContext = executor.context" ^ (nltab (depth + 2)) ^  
-   "executor.execute(this,Seq("^(String.concat "," (map String.uncapitalize intypes))^")).flatMap(_ map(_.asInstanceOf["^outtype^"]))" ^ (nltab (depth + 1) ^
+   "executor.execute(this,Seq("^(String.concat "," (map String.uncapitalize intypes))^")).flatMap(_ map(_.asInstanceOf["^outtype^"]))" ^ (nltab (depth + 1)) ^
   "}" ^ (nltab depth) ^				   
   "}";;
 
