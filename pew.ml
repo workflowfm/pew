@@ -124,8 +124,10 @@ let scala_stateful_proc depth (proc:Proc.t) =
   common ^
   "override val dependencies = Seq(" ^ (String.concat "," (map mk_depparam deps)) ^ ")\n" ^ (nltab (depth + 1)) ^
   "override val body = " ^ (scala_of_pat (rhs proc.Proc.proc)) ^ (nltab (depth + 1)) ^ (nltab (depth + 1)) ^
-  "def apply(" ^(String.concat "," (map mk_arg intypes))^")(implicit executor:FutureExecutor): Future[Option["^outtype^"]] =" ^ (nltab (depth + 2)) ^
-  "executor.execute(this,Seq("^(String.concat "," (map String.uncapitalize intypes))^")).map(_ map(_.asInstanceOf["^outtype^"]))(executor.context)" ^ (nltab depth) ^
+  "def apply(" ^(String.concat "," (map mk_arg intypes))^")(implicit executor:FutureExecutor): Future["^outtype^"] = {" ^ (nltab (depth + 2)) ^
+  "implicit val context:ExecutionContext = executor.context" ^ (nltab (depth + 2)) ^  
+   "executor.execute(this,Seq("^(String.concat "," (map String.uncapitalize intypes))^")).flatMap(_ map(_.asInstanceOf["^outtype^"]))" ^ (nltab (depth + 1) ^
+  "}" ^ (nltab depth) ^				   
   "}";;
 
 
