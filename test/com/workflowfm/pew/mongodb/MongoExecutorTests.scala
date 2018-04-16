@@ -129,6 +129,18 @@ class MongoExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     a [ProcessExecutor.NoSuchInstanceException] should be thrownBy await(f1)
 	}
   
+  it should "handle a failing atomic process" in {
+    val p = new FailP
+    val ex = MongoFutureExecutor(client, "pew", "test_exec_insts",p)
+    val f1 = ex.execute(p,Seq(1))
+    
+    try {
+      await(f1)
+    } catch {
+      case (e:Exception) => e.getMessage should be ("FailP")
+    }
+	}
+  
 //  it should "fail properly when a process doesn't exist" in {
 //    val ex = MongoFutureExecutor(client, "pew", "test_exec_insts",pai,pci,pci2,badri)
 //    val f1 = ex.execute(ri,Seq(11))

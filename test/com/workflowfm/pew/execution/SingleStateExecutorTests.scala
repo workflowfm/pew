@@ -215,3 +215,14 @@ class PcI(s:String="PcI") extends Pc {
 		iname + "SleptFor" + arg0 +"s"
 	}
 }
+
+class FailP extends AtomicProcess {
+  override val name = "FailP"
+	override val output = (Chan("Pc__a_Z"),"oPc_Z_")
+	override val inputs = Seq((Chan("Pc__a_B"),"cPc_B_1"))
+	override val channels = Seq("cPc_B_1","oPc_Z_")
+
+	def run(args:Seq[PiObject])(implicit ec:ExecutionContext):Future[PiObject] = args match {
+			case Seq(o1) => Future.failed(new Exception("FailP"))
+	}
+}

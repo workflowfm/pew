@@ -101,7 +101,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     r3 should be (("PbISleptFor1s","PcISleptFor1s"))
 	}
   
-    it should "execute Rexample twice, each with a differnt component" in {
+  it should "execute Rexample twice, each with a differnt component" in {
     val ex = new AkkaExecutor(pai,pbi,pci,pci2,ri,ri2)
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri2,Seq(11))
@@ -110,6 +110,18 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     r1 should be (("PbISleptFor1s","PcISleptFor1s"))
     val r2 = awaitf(f2)
     r2 should be (("PbISleptFor1s","PcXSleptFor1s"))
+	}
+  
+  it should "handle a failing atomic process" in {
+    val p = new FailP
+    val ex = new AkkaExecutor(p)
+    val f1 = ex.execute(p,Seq(1))
+    
+    try {
+      await(f1)
+    } catch {
+      case (e:Exception) => e.getMessage should be ("FailP")
+    }
 	}
 }
 
