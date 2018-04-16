@@ -128,7 +128,7 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
 	  val codec = reg.get(classOf[PiState])
 	  //xcodec should be an[PiStateCodec]
 	  
-	  roundTrip(PiState(In("A","C",PiCall<("PROC","C","R")),Out("A",Chan("X"))) withProc proc1 withCalls proc1.getFuture(Chan("X"),Chan("R")) withSub ("INPUT",PiItem("OHHAI!")), codec)
+	  roundTrip(PiState(In("A","C",PiCall<("PROC","C","R")),Out("A",Chan("X"))) withProc proc1 withCalls proc1.getFuture(0,Chan("X"),Chan("R")) withSub ("INPUT",PiItem("OHHAI!")), codec)
 	  roundTrip(PiState(WithIn("X","L","R",Devour("L","AAA"),WithIn("R","LL","RR",Devour("LL","BBB"),Devour("RR","CCC"))),LeftOut("X","A",Out("A",PiItem("aaa")))) withProc proc1 withThread (0,"PROC","R",Seq(PiResource(PiItem("OHHAI!"),Chan("X")))) incTCtr() withFCtr(5), codec)
 	  roundTrip(PiState() withProc proc1 withSub ("RESULT",PiItem("ResultString")) incTCtr() , codec)
   }
@@ -141,7 +141,7 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
 	  val codec = reg.get(classOf[PiInstance[ObjectId]])
 	  //xcodec should be an[PiStateCodec]
 	  
-	  roundTrip(PiInstance(new ObjectId,Seq(), proc1, PiState(In("A","C",PiCall<("PROC","C","R")),Out("A",Chan("X"))) withProc proc1 withCalls proc1.getFuture(Chan("X"),Chan("R")) withSub ("INPUT",PiItem("OHHAI!"))), codec)
+	  roundTrip(PiInstance(new ObjectId,Seq(), proc1, PiState(In("A","C",PiCall<("PROC","C","R")),Out("A",Chan("X"))) withProc proc1 withCalls proc1.getFuture(0,Chan("X"),Chan("R")) withSub ("INPUT",PiItem("OHHAI!"))), codec)
 	  roundTrip(PiInstance(new ObjectId,Seq(1), proc1, PiState(WithIn("X","L","R",Devour("L","AAA"),WithIn("R","LL","RR",Devour("LL","BBB"),Devour("RR","CCC"))),LeftOut("X","A",Out("A",PiItem("aaa")))) withProc proc1 withThread (0,"PROC","R",Seq(PiResource(PiItem("OHHAI!"),Chan("X")))) incTCtr() withFCtr(5)), codec)
 	  roundTrip(PiInstance(new ObjectId,Seq(1,2,3), proc1, PiState() withProc proc1 withSub ("RESULT",PiItem("ResultString")) incTCtr()) , codec)
   }

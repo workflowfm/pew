@@ -10,32 +10,28 @@ class AtomicCallTests extends FlatSpec with Matchers with PiStateTester {
   it should "reduce a call after a simple input" in { 
     val proc1 = DummyProcess("PROC", Seq("C","R"), "R", Seq((Chan("INPUT"),"C")))
     
-    System.out.println("1")
     reduceOnce(In("A","C",PiCall<("PROC","C","R")),Out("A",Chan("X"))) should be( Some(PiState()) ) // no process information throws away the call
     
-    System.out.println("2")
     PiState(In("A","C",PiCall<("PROC","C","R")),Out("A",Chan("X"))) withProc proc1 reduce() should be (Some(
         PiState() withProc proc1 handleCall(PiCall<("PROC","X","R")) ))//proc1.getFuture(Chan("X"),Chan("R")) ))
     
-    System.out.println("3")
     PiState(In("A","C",PiCall<("PROC","C","R")),Out("A",Chan("X"))) withProc proc1 reduce() should be (Some(
-        PiState() withProc proc1 withCalls proc1.getFuture(Chan("X"),Chan("R")) withTerms proc1.getInputs(Chan("X"),Chan("R"))))
+        PiState() withProc proc1 withCalls proc1.getFuture(0,Chan("X"),Chan("R")) withTerms proc1.getInputs(0,Chan("X"),Chan("R")) incFCtr() ))
     
-    System.out.println("4")
     PiState(In("A","C",PiCall<("PROC","C","R")),Out("A",Chan("X"))) withProc proc1 reduce() should be (Some(
-        PiState(Devour("X","INPUT")) withProc proc1 withCalls proc1.getFuture(Chan("X"),Chan("R")) ))
+        PiState(Devour("X","INPUT#0")) withProc proc1 withCalls proc1.getFuture(0,Chan("X"),Chan("R")) incFCtr() ))
   }
 
   it should "reduce a input -> call -> processInput" in { 
     val proc1 = DummyProcess("PROC", Seq("C","R"), "R", Seq((Chan("INPUT"),"C")))
-    
-    PiState() withProc proc1 withCalls proc1.getFuture(Chan("X"),Chan("R")) withSub ("INPUT",PiItem("OHHAI!")) reduce() should be (Some(
-        PiState() withProc proc1 withThread (0,"PROC","R",Seq(PiResource(PiItem("OHHAI!"),Chan("X")))) incTCtr ))
-    
-    PiState(Devour("X","INPUT"),Out("X",PiItem("OHHAI!"))) withProc proc1 withCalls proc1.getFuture(Chan("X"),Chan("R")) reduce() should be (Some(
-    		PiState() withProc proc1 withCalls proc1.getFuture(Chan("X"),Chan("R")) withSub ("INPUT",PiItem("OHHAI!")) ))
 
-    PiState(Devour("X","INPUT"),Out("X",PiItem("OHHAI!"))) withProc proc1 withCalls proc1.getFuture(Chan("X"),Chan("R")) fullReduce() should be (
+    PiState() withProc proc1 withCalls proc1.getFuture(0,Chan("X"),Chan("R")) withSub ("INPUT#0",PiItem("OHHAI!")) reduce() should be (Some(
+        PiState() withProc proc1 withThread (0,"PROC","R",Seq(PiResource(PiItem("OHHAI!"),Chan("X")))) incTCtr ))
+
+    PiState(Devour("X","INPUT"),Out("X",PiItem("OHHAI!"))) withProc proc1 withCalls proc1.getFuture(0,Chan("X"),Chan("R")) reduce() should be (Some(
+    		PiState() withProc proc1 withCalls proc1.getFuture(0,Chan("X"),Chan("R")) withSub ("INPUT",PiItem("OHHAI!")) ))
+
+    PiState(Devour("X","INPUT#0"),Out("X",PiItem("OHHAI!"))) withProc proc1 withCalls proc1.getFuture(0,Chan("X"),Chan("R")) fullReduce() should be (
     		PiState() withProc proc1 withThread (0,"PROC","R",Seq(PiResource(PiItem("OHHAI!"),Chan("X")))) incTCtr )
   } 
   
@@ -55,8 +51,8 @@ class AtomicCallTests extends FlatSpec with Matchers with PiStateTester {
   it should "fully execute a simple process" in {
     val proc1 = DummyProcess("PROC", Seq("C","R"), "R", Seq((Chan("INPUT"),"C")))
     
-    PiState(Out("C",PiItem("INPUT")),Devour("R","RESULT")) withProc proc1 withTerm (PiCall<("PROC","C","R")) fullReduce() result(0,PiObject("ResultString")) map (_.fullReduce) should be (Some(
-        PiState() withProc proc1 withSub ("RESULT",PiItem("ResultString")) incTCtr() ))
+    PiState(Out("C",PiItem("INPUT")),Devour("R","RESULT#0")) withProc proc1 withTerm (PiCall<("PROC","C","R")) fullReduce() result(0,PiObject("ResultString")) map (_.fullReduce) should be (Some(
+        PiState() withProc proc1 withSub ("RESULT#0",PiItem("ResultString")) incTCtr() incFCtr() ))
   }
 }
 

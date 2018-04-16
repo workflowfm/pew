@@ -79,4 +79,5 @@ case class TaskGenerator (name :String, simulation:String, duration:ValueGenerat
   def withPriority(p:Task.Priority) = copy(priority = p)
   def withInterrupt(int:Int) = copy(interrupt = int)
   def withDuration(dur:ValueGenerator[Int]) = copy(duration = dur)
+  def withName(n:String) = copy(name = n)
 }

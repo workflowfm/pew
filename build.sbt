@@ -23,6 +23,8 @@ libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.2.1"
 
 libraryDependencies += "junit" % "junit" % "4.8.2"
 
+EclipseKeys.preTasks := Seq(compile in Compile, compile in Test)
+
 lazy val skiexample = project 
 	.in(file("skiexample"))
 	.settings(

@@ -12,6 +12,7 @@ object Coordinator {
   case object Start
   //TODO case object Stop
   case class AddSim(t:Int,sim:Simulation,exe:FutureExecutor)
+  case class AddRes(r:TaskResource)
   case class SimDone(s:Simulation)
   case object Tick
   case object Tack
@@ -21,10 +22,10 @@ object Coordinator {
 
   def props(scheduler :Scheduler, handler :MetricsOutput, resources :Seq[TaskResource], halfTickMillis:Int = 40)(implicit system: ActorSystem): Props = Props(new Coordinator(scheduler,handler,resources,halfTickMillis)(system))//.withDispatcher("akka.my-dispatcher")
 }
-class Coordinator(scheduler :Scheduler, handler :MetricsOutput, resources :Seq[TaskResource], halfTickMillis:Int)(implicit system: ActorSystem) extends Actor {
+class Coordinator(scheduler :Scheduler, handler :MetricsOutput, var resources :Seq[TaskResource], halfTickMillis:Int)(implicit system: ActorSystem) extends Actor {
   import scala.collection.mutable.Queue
   
-  val resourceMap :Map[String,TaskResource] = (Map[String,TaskResource]() /: resources){ case (m,r) => m + (r.name -> r)}
+  var resourceMap :Map[String,TaskResource] = (Map[String,TaskResource]() /: resources){ case (m,r) => m + (r.name -> r)}
   val simulations :Queue[(Int,Simulation,FutureExecutor)] = Queue()
   val queue = new Queue[Task]()
     
@@ -35,6 +36,13 @@ class Coordinator(scheduler :Scheduler, handler :MetricsOutput, resources :Seq[T
   val metrics = new MetricAggregator()
   
   implicit val timeout = Timeout(halfTickMillis.millis)
+  
+  def addResource(r:TaskResource) = if (!resourceMap.contains(r.name)) {
+    println("["+ticks+"] Adding resource " + r.name)
+    resources = r +: resources
+    resourceMap += r.name -> r
+    1 to ticks foreach {_ => r.idleTick() }
+  }
   
   protected def startSimulation(t:Int)(ts:Int,s:Simulation,e:FutureExecutor) :Boolean = {
     if (t == ts) {
@@ -116,6 +124,7 @@ class Coordinator(scheduler :Scheduler, handler :MetricsOutput, resources :Seq[T
   def receive = {
     case Coordinator.AddSim(t,s,e) =>
       simulations += ((t,s,e))
+    case Coordinator.AddRes(r) => addResource(r)
     case Coordinator.SimDone(s) => {
       simulationsDone += 1
       s.simDone(ticks)

@@ -31,6 +31,7 @@ package com.workflowfm.pew
 sealed trait PiObject {
   def isGround:Boolean = frees.isEmpty
   def frees:Seq[Chan] = Seq()
+  def fresh(i:Int): PiObject
 }
 object PiObject {
   def apply(a:Any):PiObject = a match {
@@ -55,27 +56,33 @@ object PiObject {
 case class Chan(s:String) extends PiObject {
   override def isGround:Boolean = false
   override def frees:Seq[Chan] = Seq(this)
+  override def fresh(i:Int) = Chan(s + "#" + i)
 }
 case class PiItem[+A](i:A) extends PiObject {
   override def isGround:Boolean = true
   override val frees:Seq[Chan] = Seq()
+  override def fresh(i:Int) = this
 }
 case class PiPair(l:PiObject,r:PiObject) extends PiObject {
   override def isGround:Boolean = l.isGround && r.isGround
   override def frees:Seq[Chan] = l.frees ++ r.frees
+  override def fresh(i:Int) = PiPair(l.fresh(i),r.fresh(i))
 }
 
 case class PiOpt(l:PiObject,r:PiObject) extends PiObject {
   override def isGround:Boolean = l.isGround || r.isGround
   override def frees:Seq[Chan] = l.frees ++ r.frees
+  override def fresh(i:Int) = PiOpt(l.fresh(i),r.fresh(i))
 }
 case class PiLeft(l:PiObject) extends PiObject {
   override def isGround:Boolean = l.isGround
   override def frees:Seq[Chan] = l.frees
+  override def fresh(i:Int) = PiLeft(l.fresh(i))
 }
 case class PiRight(r:PiObject) extends PiObject {
   override def isGround:Boolean = r.isGround
   override def frees:Seq[Chan] = r.frees
+  override def fresh(i:Int) = PiRight(r.fresh(i))
 }
 
 

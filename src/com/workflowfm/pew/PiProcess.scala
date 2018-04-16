@@ -37,6 +37,7 @@ sealed trait PiProcess {
    *  Used when a process is called to map argument channels to the given values.
    */
   def mapArgs(args:Chan*) = ChanMap(channels map Chan zip args:_*)
+  def mapFreshArgs(i:Int,args:Chan*) = ChanMap(channels map (_ + "#" + i) map Chan zip args:_*)
 
   def inputFrees() = inputs map (_._1.frees)
   
@@ -69,14 +70,14 @@ trait AtomicProcess extends PiProcess {
   /**
    * This constructs a PiFuture to be added to the state when the process is called.
    */
-  def getFuture(m:ChanMap):PiFuture = PiFuture(name,m.resolve(Chan(output._2)),inputs map { case (o,c) => PiResource.of(o,c,m) })
-  def getFuture(args:Chan*):PiFuture = getFuture(mapArgs(args:_*))
+  def getFuture(i:Int,m:ChanMap):PiFuture = PiFuture(name,m.resolve(Chan(output._2).fresh(i)),inputs map { case (o,c) => PiResource.of(o.fresh(i),c + "#" + i,m) })
+  def getFuture(i:Int,args:Chan*):PiFuture = getFuture(i,mapFreshArgs(i,args:_*))
 
   /** 
    *  This constructs the Input terms needed to appopriately receive the process inputs.
    */
-  def getInputs(m:ChanMap):Seq[Input] = inputs map { case (o,c) => Input.of(m.sub(o),m.resolve(c)) }
-  def getInputs(args:Chan*):Seq[Input] = getInputs(mapArgs(args:_*))
+  def getInputs(i:Int,m:ChanMap):Seq[Input] = inputs map { case (o,c) => Input.of(m.sub(o.fresh(i)),m.resolve(c+"#"+i)) }
+  def getInputs(i:Int,args:Chan*):Seq[Input] = getInputs(i,mapFreshArgs(i,args:_*))
   
   override val dependencies:Seq[PiProcess] = Seq()
 }
