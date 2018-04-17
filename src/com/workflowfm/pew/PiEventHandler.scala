@@ -51,6 +51,14 @@ class PromiseHandler[T] extends PiEventHandler[T,Future[Any]]{
     promises = promises - i.id
   }
   
+  override def failure(i:T, reason:Throwable) = promises synchronized {
+    default.failure(i,reason)
+    promises.get(i) match {
+      case None => Unit
+      case Some(p) => p.failure(reason)
+    }
+  }
+  
   override def failure(i:PiInstance[T],reason:Throwable) = promises synchronized {
     default.failure(i,reason)
     promises.get(i.id) match {

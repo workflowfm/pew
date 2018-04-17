@@ -23,8 +23,10 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   val pbi = new PbI
   val pci = new PcI
   val pci2 = new PcI("PcX")
+  val pcif = new PcIF
   val ri = new R(pai,pbi,pci)
   val ri2 = new R(pai,pbi,pci2)
+  val rif = new R(pai,pbi,pcif)
 
   override def afterAll:Unit = {
     Await.result(system.terminate(),10.seconds)
@@ -121,6 +123,17 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
       await(f1)
     } catch {
       case (e:Exception) => e.getMessage should be ("FailP")
+    }
+	}
+  
+  it should "handle a failing composite process" in {
+    val ex = new AkkaExecutor(pai,pbi,pcif,rif)
+    val f1 = rif(21)(ex)//ex.execute(rif,Seq(21))
+   
+    try {
+      await(f1)
+    } catch {
+      case (e:Exception) => e.getMessage should be ("Fail")
     }
 	}
 }
