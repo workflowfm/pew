@@ -90,8 +90,8 @@ let scala_stateful_proc depth (proc:Proc.t) =
   let name = proc.Proc.name in
   let ins = map fix_param proc.Proc.inputs
   and out = fix_param proc.Proc.output in
-  let toObj ty = linprop_to_piobj Cllpi.linprop_to_name (name ^ "_") ty in
-  let toObjPair (c,ty) = "(" ^ (toObj ty) ^ ",\"" ^ c ^ "\")" in
+  let toObj i ty = linprop_to_piobj Cllpi.linprop_to_name (name ^ "_" ^ (string_of_int i) ^ "_") ty in
+  let toObjPair (i,(c,ty)) = "(" ^ (toObj i ty) ^ ",\"" ^ c ^ "\")" in
   let intypes = (map (fst o scala_type o snd) ins)
   and outtype = (fst o scala_type o snd) out in
   let typarams = string_fun_ty intypes ("Future[" ^ outtype ^"]") in
@@ -104,8 +104,8 @@ let scala_stateful_proc depth (proc:Proc.t) =
 
   let common =
     "override val name = \""^name^"\"" ^ (nltab (depth + 1)) ^
-    "override val output = " ^ toObjPair out  ^ (nltab (depth + 1)) ^
-    "override val inputs = Seq(" ^ (String.concat "," (map toObjPair ins)) ^ ")" ^ (nltab (depth + 1)) ^
+    "override val output = " ^ toObjPair (0,out)  ^ (nltab (depth + 1)) ^
+    "override val inputs = Seq(" ^ (String.concat "," (map toObjPair (zip (0--(length ins - 1)) ins))) ^ ")" ^ (nltab (depth + 1)) ^
     "override val channels = Seq(" ^ (String.concat "," (map quot channels)) ^ ")\n" ^ (nltab (depth + 1)) in
 
   if (proc.Proc.actions = []) then
