@@ -20,6 +20,8 @@ class AkkaExecutor(store:PiInstanceStore[Int], processes:PiProcessStore)(implici
   val execActor = system.actorOf(AkkaExecutor.execprops(store,processes))
   implicit val tOut = Timeout(timeout) 
   
+  override def simulationReady = Await.result(execActor ? AkkaExecutor.SimReady,timeout).asInstanceOf[Boolean]
+  
   override def execute(process:PiProcess,args:Seq[Any]):Future[Future[Any]] = 
     Future.successful((execActor ? AkkaExecutor.Call(process,args map PiObject.apply)))
 }
@@ -35,6 +37,7 @@ object AkkaExecutor {
   case class AFuture(f:Future[Any])
   
   case object Ping
+  case object SimReady
   
   def atomicprops(implicit context: ExecutionContext = ExecutionContext.global): Props = Props(new AkkaAtomicProcessExecutor())
   def execprops(store:PiInstanceStore[Int], processes:PiProcessStore)(implicit system: ActorSystem, exc: ExecutionContext): Props = Props(new AkkaExecActor(store,processes))
@@ -136,12 +139,15 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(im
     }
   } }
  
+  def simulationReady():Boolean = store.simulationReady
+  
   def receive = {
     case AkkaExecutor.Call(p,args) => call(p,args) pipeTo sender()
     case AkkaExecutor.Result(id,ref,res) => postResult(id,ref,res) 
     case AkkaExecutor.Error(id,ref,ex) => handler.failure(id,ex)
     case AkkaExecutor.Ping => sender() ! AkkaExecutor.Ping
     case AkkaExecutor.AckCall => Unit
+    case AkkaExecutor.SimReady => sender() ! simulationReady()
     case m => System.err.println("!!! Received unknown message: " + m)
   }
 

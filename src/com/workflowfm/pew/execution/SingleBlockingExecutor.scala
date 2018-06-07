@@ -54,6 +54,8 @@ case class SingleBlockingExecutor(processes:Map[String,PiProcess]) extends Futur
   def withProc(p:PiProcess):SingleBlockingExecutor = copy(processes = processes + (p.name->p)) withProcs (p.dependencies :_*)
   def withProcs(l:PiProcess*):SingleBlockingExecutor = (this /: l)(_ withProc _)
   
+  override def simulationReady:Boolean = true
+  
   override def execute(process:PiProcess,args:Seq[Any]):Future[Future[Option[Any]]] =
     Future.successful(Future.successful(this withProc process call(process.name,args map PiObject.apply :_*)))
 }

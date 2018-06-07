@@ -83,13 +83,15 @@ class Coordinator(scheduler :Scheduler, handler :MetricsOutput, var resources :S
     }
   }
   
+  protected def workflowsReady = simulations forall (_._3.simulationReady)
+  
   protected def tick :Unit = {
     ticks += 1
     println("["+ticks+"] ========= Tick! ========= ")
     //val res = simulations map {case (t,s) => startSimulation(ticks)(t,s)}
     val res = simulations map {case (t,s,e) => (startSimulation(ticks)(t,s,e),s)}
-    if (res.exists(_._1 == true)) 
-      Thread.sleep(halfTickMillis)
+    //if (res.exists(_._1 == true)) 
+    //  Thread.sleep(halfTickMillis)
     
 //    val startedActors = res filter (_._1 == true) map (_._2.executor)
 //    for (a <- startedActors)
@@ -99,7 +101,12 @@ class Coordinator(scheduler :Scheduler, handler :MetricsOutput, var resources :S
   
   protected def tack :Unit = {
     resources map (resourceTick(_))
-    Thread.sleep(halfTickMillis)
+    
+    for (i <- 1 to 100 if !workflowsReady) {
+      println("["+ticks+"] Waiting for workflow progress...")
+      Thread.sleep(halfTickMillis)
+    }
+      
 //    val simActors = simulations map (_._2.executor)
 //    for (a <- simActors)
 //      a ? AkkaExecutor.Ping

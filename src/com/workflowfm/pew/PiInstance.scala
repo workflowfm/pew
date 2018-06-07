@@ -39,6 +39,18 @@ case class PiInstance[T](final val id:T, called:Seq[Int], process:PiProcess, sta
   def piFutureOf(ref:Int):Option[PiFuture] = state.threads.get(ref)
   
   def getProc(p:String):Option[PiProcess] = state.processes.get(p)
+  
+  /**
+   * Should the simulator wait for the workflow?
+   */
+  def simulationReady:Boolean = 
+    if (completed) true // workflow is done
+    else {
+      val procs = state.threads flatMap { f => getProc(f._2.fun) }
+      if (procs.isEmpty) false // workflow is not completed, so we either couldn't find a process with getProc or 
+                               // calls have not been converted to threads yet (so no fullreduce) for whatever reason
+      else procs.forall(_.isSimulatedProcess) // are all open threads simulated processes?
+    }
 }
 object PiInstance {
   def apply[T](id:T,p:PiProcess,args:PiObject*):PiInstance[T] = PiInstance(id, Seq(), p, p.execState(args))
@@ -51,18 +63,21 @@ trait PiInstanceStore[T] {
   def get(id:T):Option[PiInstance[T]]
   def put(i:PiInstance[T]):PiInstanceStore[T]
   def del(id:T):PiInstanceStore[T]
+  def simulationReady:Boolean
 }
 
 trait PiInstanceMutableStore[T] {
   def get(id:T):Option[PiInstance[T]]
   def put(i:PiInstance[T]):Unit
   def del(id:T):Unit
+  def simulationReady:Boolean
 }
 
 case class SimpleInstanceStore(m:Map[Int,PiInstance[Int]]) extends PiInstanceStore[Int] {
   def get(id:Int) = m.get(id)
   def put(i:PiInstance[Int]) = copy(m = m + (i.id->i))
   def del(id:Int) = copy(m = m - id)
+  def simulationReady:Boolean = m.values.forall(_.simulationReady)
 }
 object SimpleInstanceStore {
   def apply(l:PiInstance[Int]*):SimpleInstanceStore = (SimpleInstanceStore(Map[Int,PiInstance[Int]]()) /: l) (_.put(_))

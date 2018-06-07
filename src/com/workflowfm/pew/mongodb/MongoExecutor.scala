@@ -237,6 +237,8 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
   final case class CASFailureException(val id:String, val ref:Int, private val cause: Throwable = None.orNull)
                     extends Exception("Compare-and-swap failed after " + CAS_MAX_ATTEMPTS + " attempts for id: " + id + " - call id: " + ref, cause)  
 
+  override def simulationReady:Boolean = false
+  
   override def execute(process:PiProcess,args:Seq[Any]):Future[ResultT] =
     call(process,args map PiObject.apply :_*)
 }

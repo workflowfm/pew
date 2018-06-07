@@ -92,6 +92,11 @@ class SingleStateExecutor(processes:PiProcessStore)(override implicit val contex
     }
   }
  
+  def simulationReady:Boolean = instance match {
+    case None => true
+    case Some(i) => i.simulationReady
+  }
+  
   override def execute(process:PiProcess,args:Seq[Any]):Future[Future[Option[Any]]] =
     Future.successful(call(process,args map PiObject.apply :_*))
 }

@@ -26,6 +26,7 @@ case class AtomicProcessExecutor(process:AtomicProcess) {
  */
 trait ProcessExecutor[R] {
 	def execute(process:PiProcess,args:Seq[Any]):Future[R]
+	def simulationReady:Boolean
 }
 
 trait FutureExecutor extends ProcessExecutor[PromiseHandler.ResultT] {

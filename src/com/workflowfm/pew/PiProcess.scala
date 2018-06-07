@@ -52,6 +52,13 @@ sealed trait PiProcess {
    * * Shortcut to create entries in name->PiProcess maps using the instance name	
    */
 	def toIEntry:(String,PiProcess) = iname->this 
+	
+	/**
+   * This is used to identify simulation processes that need (virtual) time to complete. 
+   * If a process is not a simulation process, then the simulator needs to wait for it to complete before 
+   * the next virtual tick.
+   */
+  def isSimulatedProcess = false
 }
 object PiProcess {
   def allDependenciesOf(p:PiProcess):Seq[PiProcess] =
@@ -80,6 +87,7 @@ trait AtomicProcess extends PiProcess {
   def getInputs(i:Int,args:Chan*):Seq[Input] = getInputs(i,mapFreshArgs(i,args:_*))
   
   override val dependencies:Seq[PiProcess] = Seq()
+  
 }
 
 case class DummyProcess(override val name:String, override val channels:Seq[String], outChan:String, override val inputs:Seq[(PiObject,String)]) extends AtomicProcess {

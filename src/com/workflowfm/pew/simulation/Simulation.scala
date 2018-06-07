@@ -61,6 +61,7 @@ class SimulationActor(s:Simulation)(implicit ec: ExecutionContext = ExecutionCon
   }
 }
 
-trait SimulatedProcess {
+trait SimulatedProcess { this:PiProcess =>
    def simulationName:String
+   override def isSimulatedProcess = true
 }
