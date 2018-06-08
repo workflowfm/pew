@@ -74,8 +74,8 @@ class Task (val name:String, val simulation:String, val resources:Seq[String], r
   }
 }
 
-case class TaskGenerator (name :String, simulation:String, duration:ValueGenerator[Int]=new ConstantGenerator(1), val cost:ValueGenerator[Int]=new ConstantGenerator(1), interrupt:Int=(-1), priority:Task.Priority=Task.Medium) {
-  def create[T](result:T, resources:String*) = new Task(name,simulation,resources,result,duration,cost,interrupt,priority)
+case class TaskGenerator (name :String, duration:ValueGenerator[Int]=new ConstantGenerator(1), val cost:ValueGenerator[Int]=new ConstantGenerator(1), interrupt:Int=(-1), priority:Task.Priority=Task.Medium) {
+  def create[T](simulation:String, result:T, resources:String*) = new Task(name,simulation,resources,result,duration,cost,interrupt,priority)
   def withPriority(p:Task.Priority) = copy(priority = p)
   def withInterrupt(int:Int) = copy(interrupt = int)
   def withDuration(dur:ValueGenerator[Int]) = copy(duration = dur)
