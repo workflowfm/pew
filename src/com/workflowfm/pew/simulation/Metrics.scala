@@ -72,10 +72,10 @@ class ResourceMetricTracker() extends MetricTracker[ResourceMetrics](ResourceMet
 
 
 class MetricAggregator() {
-  import scala.collection.mutable.Map
-  val taskMetrics = Map[String,TaskMetrics]()
-  val simulationMetrics = Map[String,SimulationMetrics]()
-  val resourceMetrics = Map[String,ResourceMetrics]()
+  import scala.collection.mutable.Queue
+  val taskMetrics = Queue[(String,TaskMetrics)]()
+  val simulationMetrics = Queue[(String,SimulationMetrics)]()
+  val resourceMetrics = Queue[(String,ResourceMetrics)]()
   
   def +=(s:String,m:TaskMetrics) = taskMetrics += (s->m)
   def +=(s:String,m:SimulationMetrics) = simulationMetrics += (s->m)
@@ -206,19 +206,16 @@ class MetricsD3Timeline(path:String,name:String) extends MetricsOutput {
     buf.append("var widthPerTick = 60\n")
     buf.append(s"var totalTicks = $totalTicks\n")
     buf.append("\nvar tasks = [\n")
-    for (t <- aggregator.taskMetrics.values.map(_.task).toSet[String]) buf.append(s"""\t"$t",\n""")
+    for (t <- aggregator.taskMetrics.map(_._2.task).toSet[String]) buf.append(s"""\t"$t",\n""")
     buf.append("];\n\nvar resourceData = [\n")
-    for (r <- aggregator.resourceMetrics.keys.toSeq.sortWith(sortRes(aggregator))) buf.append(resourceEntry(r,aggregator))
+    for (r <- aggregator.resourceMetrics.sortWith(sortRes)) buf.append(resourceEntry(r._1,aggregator))
     buf.append("];\n\nvar simulationData = [\n")
-    for (s <- aggregator.simulationMetrics.keys.toSeq.sortWith(sortSim(aggregator))) buf.append(simulationEntry(s,aggregator))
+    for (s <- aggregator.simulationMetrics.sortWith(sortSim)) buf.append(simulationEntry(s._1,aggregator))
     buf.append("];\n")
     buf.toString
   }
   
-  def sortSim(agg:MetricAggregator)(l:String,r:String) = {
-    (agg.simulationMetrics.get(l) map(_.start) getOrElse(Int.MaxValue)) < 
-    (agg.simulationMetrics.get(r) map(_.start) getOrElse(Int.MaxValue)) 
-  }
+  def sortSim(l:(String,SimulationMetrics),r:(String,SimulationMetrics)) = l._2.start < r._2.start
   
   def simulationEntry(sim:String,agg:MetricAggregator) = {
     val tasks = agg.taskMetrics.filter(_._2.simulation==sim)
@@ -226,10 +223,7 @@ class MetricsD3Timeline(path:String,name:String) extends MetricsOutput {
     s"""{label: \"$sim\", times: [""" + "\n" + times + "]},\n"
   }
   
-  def sortRes(agg:MetricAggregator)(l:String,r:String) = {
-    (agg.resourceMetrics.get(l) map(_.start) getOrElse(Int.MaxValue)) < 
-    (agg.resourceMetrics.get(r) map(_.start) getOrElse(Int.MaxValue)) 
-  }
+  def sortRes(l:(String,ResourceMetrics),r:(String,ResourceMetrics)) = l._2.start < r._2.start
   
   def resourceEntry(res:String,agg:MetricAggregator) = {
     val tasks = agg.taskMetrics.filter(_._2.resources.contains(res))
