@@ -215,7 +215,12 @@ class MetricsD3Timeline(path:String,name:String) extends MetricsOutput {
     buf.toString
   }
   
-  def sortSim(l:(String,SimulationMetrics),r:(String,SimulationMetrics)) = l._2.start < r._2.start
+  def sortSim(l:(String,SimulationMetrics),r:(String,SimulationMetrics)) = 
+    (l._2.start.compareTo(r._2.start)) match {
+    case 0 => l._1.compareTo(r._1) < 0
+    case c => c < 0
+  }
+
   
   def simulationEntry(sim:String,agg:MetricAggregator) = {
     val tasks = agg.taskMetrics.filter(_._2.simulation==sim)
@@ -223,7 +228,11 @@ class MetricsD3Timeline(path:String,name:String) extends MetricsOutput {
     s"""{label: \"$sim\", times: [""" + "\n" + times + "]},\n"
   }
   
-  def sortRes(l:(String,ResourceMetrics),r:(String,ResourceMetrics)) = l._2.start < r._2.start
+  def sortRes(l:(String,ResourceMetrics),r:(String,ResourceMetrics)) =
+		(l._2.start.compareTo(r._2.start)) match {
+    case 0 => l._1.compareTo(r._1) < 0
+    case c => c < 0
+  }
   
   def resourceEntry(res:String,agg:MetricAggregator) = {
     val tasks = agg.taskMetrics.filter(_._2.resources.contains(res))
