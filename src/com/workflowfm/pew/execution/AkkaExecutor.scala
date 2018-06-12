@@ -144,7 +144,10 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(im
   def receive = {
     case AkkaExecutor.Call(p,args) => call(p,args) pipeTo sender()
     case AkkaExecutor.Result(id,ref,res) => postResult(id,ref,res) 
-    case AkkaExecutor.Error(id,ref,ex) => handler.failure(id,ex)
+    case AkkaExecutor.Error(id,ref,ex) => {
+      handler.failure(id,ex)
+      store = store.del(id)
+    }
     case AkkaExecutor.Ping => sender() ! AkkaExecutor.Ping
     case AkkaExecutor.AckCall => Unit
     case AkkaExecutor.SimReady => sender() ! simulationReady()
