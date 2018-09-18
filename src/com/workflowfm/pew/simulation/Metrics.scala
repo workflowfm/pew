@@ -66,7 +66,7 @@ case class ResourceMetrics (start:Int, busy:Int, idle:Int, tasks:Int, cost:Int) 
 
 class ResourceMetricTracker() extends MetricTracker[ResourceMetrics](ResourceMetrics(-1,0,0,0,0)) { 
   def resStart(t:Int) = this <~ (_.setStart(t))
-  def idleTick() = this <~ (_.addIdle(1)) 
+  def idle(t:Int) = this <~ (_.addIdle(t)) 
   def taskDone(tm:TaskMetrics,costPerTick:Int) = this <~ (_.addCost(tm.duration * costPerTick)) <~ (_.addBusy(tm.duration)) <~ (_.addTask)  
 }
 
