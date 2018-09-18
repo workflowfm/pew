@@ -40,6 +40,7 @@ class Coordinator(scheduler :Scheduler, handler :MetricsOutput, var resources :S
   var resourceMap :Map[String,TaskResource] = (Map[String,TaskResource]() /: resources){ case (m,r) => m + (r.name -> r)}
   //val simulations :Queue[(Int,Simulation,FutureExecutor)] = Queue()
   val simulations :Queue[(Simulation,FutureExecutor)] = Queue()
+  val tasks :Queue[Task] = Queue()
   
   val queue = new PriorityQueue[Event]()
     
@@ -80,7 +81,7 @@ class Coordinator(scheduler :Scheduler, handler :MetricsOutput, var resources :S
 //    }
 //  }
   
-//  protected def resourceTick(r:TaskResource) :TaskResource.State = {
+//  protected def resourceUpdate(r:TaskResource) :TaskResource.State = {
 //    r.tick(ticks) match {
 //      case TaskResource.Idle => TaskResource.Idle
 //      case TaskResource.Busy => TaskResource.Busy
@@ -131,8 +132,8 @@ class Coordinator(scheduler :Scheduler, handler :MetricsOutput, var resources :S
   
 protected def tack :Unit = {
     // TODO resources map (resourceIdle(_))
-    if (queue.isEmpty && workflowsReady && resources.forall(_.isIdle)) {
-      println("["+time+"] Queue empty. All workflows idle. All resources idle.")
+    if (queue.isEmpty && tasks.isEmpty && workflowsReady) { //&& resources.forall(_.isIdle)
+      println("["+time+"] Queue empty. All tasks done. All workflows idle. All resources idle.")
       resources map (metrics += _)
       system.terminate() // TODO consider not doing this here
       handler(time,metrics)
@@ -157,7 +158,7 @@ protected def tack :Unit = {
     case Coordinator.AddTask(t) => {
       println("["+time+"] Adding task " + t.name + " ("+t.simulation+").")
       t.created(time)
-      queue += t
+      tasks += t
       //sender() ! Coordinator.AckTask //uncomment this to acknowledge AddTask
     }
 
