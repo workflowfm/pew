@@ -23,24 +23,50 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
 
   "A Coordinator" must {
   
-    val executor = new AkkaExecutor()
-    
-    "execute a simple task" in { 
-  
-    val resA = new TaskResource("A",1)
-    val resB = new TaskResource("B",1)
-      		
+    val executor = new AkkaExecutor()  		
     //val handler = MetricsOutputs(new MetricsPrinter())
+   
+            //expectNoMessage(200.millis)
+    "execute a simple task" in {   
+      val resA = new TaskResource("A",1)
+      val resB = new TaskResource("B",1)
+
+      val coordinator = system.actorOf(Coordinator.props(DefaultScheduler,Seq(resA,resB)))      
+      val s = new TaskSimulation("S", coordinator, Seq("A","B"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
+      
+      coordinator ! Coordinator.AddSim(0,s,executor)
+      coordinator ! Coordinator.Start
+      
+      expectMsgType[Coordinator.Done](20.seconds).time should be (2)
+    }
     
-    val coordinator = system.actorOf(Coordinator.props(DefaultScheduler,Seq(resA,resB)))
-    
-    val superevent = new TaskSimulation("SuperSim", coordinator, Seq("A","B"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
-    
-    coordinator ! Coordinator.AddSim(1,superevent,executor)
-    coordinator ! Coordinator.Start
-    
-    expectMsgType[Coordinator.Done](20.seconds).time should be (3)
-      //expectNoMessage(200.millis)
+    "execute two independent tasks in parallel" in {   
+      val resA = new TaskResource("A",1)
+      val resB = new TaskResource("B",1)
+
+      val coordinator = system.actorOf(Coordinator.props(DefaultScheduler,Seq(resA,resB)))      
+      val s1 = new TaskSimulation("S1", coordinator, Seq("A"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
+      val s2 = new TaskSimulation("S2", coordinator, Seq("B"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
+      
+      coordinator ! Coordinator.AddSim(0,s1,executor)
+      coordinator ! Coordinator.AddSim(0,s2,executor)
+      coordinator ! Coordinator.Start
+      
+      expectMsgType[Coordinator.Done](20.seconds).time should be (2)
+    }
+
+    "queue two tasks with the same resource" in {   
+      val resA = new TaskResource("A",1)
+
+      val coordinator = system.actorOf(Coordinator.props(DefaultScheduler,Seq(resA)))      
+      val s1 = new TaskSimulation("S1", coordinator, Seq("A"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
+      val s2 = new TaskSimulation("S2", coordinator, Seq("A"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
+      
+      coordinator ! Coordinator.AddSim(0,s1,executor)
+      coordinator ! Coordinator.AddSim(0,s2,executor)
+      coordinator ! Coordinator.Start
+      
+      expectMsgType[Coordinator.Done](20.seconds).time should be (4)
     }
   }
 }

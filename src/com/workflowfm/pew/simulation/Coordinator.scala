@@ -31,7 +31,7 @@ class Coordinator(scheduler :Scheduler, var resources :Seq[TaskResource], timeou
   sealed trait Event extends Ordered[Event] { 
     def time:Int
     def compare(that:Event) = {
-      time.compare(that.time)
+      that.time.compare(time)
     }
   }
   case class FinishingTask(override val time:Int,task:Task) extends Event
