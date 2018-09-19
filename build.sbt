@@ -1,6 +1,6 @@
 name := "PEW"
 
-sbtVersion := "0.13"
+sbtVersion := "1.2.3"
 
 lazy val commonSettings = Seq (
 	version := "0.1-SNAPSHOT",
@@ -16,9 +16,10 @@ lazy val commonSettings = Seq (
 // For instance, this will actually download scalatest_2.9.2
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.0-SNAP10" % "test"
+libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.4.12"
-libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.5.16" % Test
+libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.5.16" % "test"
     
 libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.2.1"
 

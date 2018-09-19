@@ -133,7 +133,7 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
       val resA = new TaskResource("A",1)
 
       val coordinator = system.actorOf(Coordinator.props(DefaultScheduler,Seq(resA)))      
-      val s = new TaskSimulation("S", coordinator, Seq("A"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
+      val s = new TaskSimulation("S", coordinator, Seq("A"), new ConstantGenerator(1), new ConstantGenerator(2), -1, Task.Highest)
       
       coordinator ! Coordinator.AddSim(1,s,executor)
       
