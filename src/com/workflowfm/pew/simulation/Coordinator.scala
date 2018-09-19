@@ -134,7 +134,6 @@ protected def tack :Unit = {
     if (events.isEmpty && tasks.isEmpty && workflowsReady) { //&& resources.forall(_.isIdle)
       println("["+time+"] All events done. All tasks done. All workflows idle. All resources idle.")
       resources map (metrics += _)
-      system.terminate() // TODO consider not doing this here
       starter map { a => a ! Coordinator.Done(time,metrics) }
     } else {
       //Thread.sleep(halfTickMillis)
