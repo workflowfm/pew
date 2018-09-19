@@ -38,7 +38,6 @@ class Coordinator(scheduler :Scheduler, val resources :Seq[TaskResource], timeou
   case class StartingSim(override val time:Int,simulation:Simulation,executor:FutureExecutor) extends Event
   
   var resourceMap :Map[String,TaskResource] = (Map[String,TaskResource]() /: resources){ case (m,r) => m + (r.name -> r)}
-  //val simulations :Queue[(Int,Simulation,FutureExecutor)] = Queue()
   var simulations :Queue[(String,SimulationMetricTracker,FutureExecutor)] = Queue()
   val tasks :Queue[Task] = Queue()
   
@@ -54,7 +53,7 @@ class Coordinator(scheduler :Scheduler, val resources :Seq[TaskResource], timeou
   def addResource(r:TaskResource) = if (!resourceMap.contains(r.name)) {
     println("["+time+"] Adding resource " + r.name)
     resourceMap += r.name -> r
-    r.idle(time)
+    //r.idle(time)
   }
   
   protected def startSimulation(t:Int, s:Simulation, e:FutureExecutor) :Boolean = {

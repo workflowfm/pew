@@ -72,13 +72,13 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
       done.time should be (5)
     }
     
-    "manage idling resources appropriately" in {   
+    "measure delays and idling appropriately" in {   
       val resA = new TaskResource("A",1)
       val resB = new TaskResource("B",1)
 
       val coordinator = system.actorOf(Coordinator.props(DefaultScheduler,Seq(resA,resB)))      
       val s1 = new TaskSimulation("S1", coordinator, Seq("A"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
-      val s2 = new TaskSimulation("S2", coordinator, Seq("A","B"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
+      val s2 = new TaskSimulation("S2", coordinator, Seq("A","B"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Medium)
       
       coordinator ! Coordinator.AddSim(1,s1,executor)
       coordinator ! Coordinator.AddSim(1,s2,executor)
@@ -89,9 +89,12 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
       val metricB = done.metrics.resourceMetrics.find { x => x._1.equals("B") } 
       metricB should not be empty 
       metricB map { x => x._2.idle should be (2) }
+      val metricS2T = done.metrics.taskMetrics.find { x => x._1.equals("S2Task(S2)") } 
+      metricS2T should not be empty
+      metricS2T map { x => x._2.delay should be (2) }
     }
     
-    "manage idling resources appropriately even if they do some work first" in {   
+    "measure intermediate delays and idling appropriately" in {   
       val resA = new TaskResource("A",1)
       val resB = new TaskResource("B",1)
 
@@ -112,7 +115,9 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
       val metricA = done.metrics.resourceMetrics.find { x => x._1.equals("A") } 
       metricA should not be empty 
       metricA map { x => x._2.idle should be (1) }
-      
+      val metricS3T = done.metrics.taskMetrics.find { x => x._1.equals("S3Task(S3)") } 
+      metricS3T should not be empty
+      metricS3T map { x => x._2.delay should be (2) }
     }
   }
 }
