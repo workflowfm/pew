@@ -13,7 +13,7 @@ import com.workflowfm.pew.execution._
 
 
 @RunWith(classOf[JUnitRunner])
-class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with WordSpecLike with Matchers with BeforeAndAfterAll {
+class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with WordSpecLike with Matchers with BeforeAndAfterAll with ImplicitSender {
   implicit val executionContext = ExecutionContext.global //system.dispatchers.lookup("akka.my-dispatcher")  
   implicit val timeout:FiniteDuration = 10.seconds
 
@@ -23,21 +23,24 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
 
   "A Coordinator" must {
   
+    val executor = new AkkaExecutor()
+    
     "execute a simple task" in { 
   
     val resA = new TaskResource("A",1)
     val resB = new TaskResource("B",1)
       		
-    val handler = MetricsOutputs(new MetricsPrinter())
+    //val handler = MetricsOutputs(new MetricsPrinter())
     
-    val coordinator = system.actorOf(Coordinator.props(DefaultScheduler,handler,Seq(resA,resB)))
+    val coordinator = system.actorOf(Coordinator.props(DefaultScheduler,Seq(resA,resB)))
     
     val superevent = new TaskSimulation("SuperSim", coordinator, Seq("A","B"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
-    val executor = new AkkaExecutor()
-  
+    
     coordinator ! Coordinator.AddSim(1,superevent,executor)
     coordinator ! Coordinator.Start
-    expectNoMessage(200.millis)
+    
+    expectMsgType[Coordinator.Done](20.seconds).time should be (3)
+      //expectNoMessage(200.millis)
     }
   }
 }

@@ -11,33 +11,36 @@ object TaskResource {
 
 class TaskResource(val name:String,val costPerTick:Int) extends ResourceMetricTracker { 
   var currentTask :Option[(Int,Int,Task)] = None
+  var lastUpdate :Int = 0
   
   def isIdle :Boolean = currentTask == None 
   
-  def tick(t:Int) :TaskResource.State = currentTask match {
+  def finishTask(currentTime:Int) :Option[Task] = currentTask match {
     case None => {
-        println("["+t+"] \"" + name + "\" is idle.")
-        TaskResource.Idle
+        println("["+currentTime+"] \"" + name + "\" is idle.")
+        None
     }
     case Some((startTime,duration,task)) => 
-      if (t > startTime + duration) {
-        println("["+t+"] \"" + name + "\" detached from task \"" + task.name + " (" + task.simulation +")\".")
-        task.execute(t)
+      if (currentTime >= startTime + duration) {
+        println("["+currentTime+"] \"" + name + "\" detached from task \"" + task.name + " (" + task.simulation +")\".")
+        task.execute(currentTime)
         currentTask = None
-        TaskResource.Finished(task)
+        lastUpdate = currentTime
+        Some(task)
       }
       else {
-        println("["+t+"] \"" + name + "\" is attached to task \"" + task.name + " (" + task.simulation +")\" - " + (startTime + duration - t) + " ticks remaining.")
-        TaskResource.Busy
+        println("["+currentTime+"] \"" + name + "\" is attached to task \"" + task.name + " (" + task.simulation +")\" - " + (startTime + duration - currentTime) + " ticks remaining.")
+        None
       }
   }
   
-  def startTask(task:Task,currentTime:Int) = {
+  def startTask(task:Task,currentTime:Int,duration:Int) = {
     currentTask match {
       case None => {
-        val duration = task.duration.get -1
         println("["+currentTime+"] \"" + name + "\" is NOW attached to task \"" + task.name + " (" + task.simulation +")\" - " + duration + " ticks remaining.")
         currentTask = Some(currentTime,duration,task)
+        idle(currentTime-lastUpdate)
+        lastUpdate = currentTime
         resStart(currentTime)
         true
       }

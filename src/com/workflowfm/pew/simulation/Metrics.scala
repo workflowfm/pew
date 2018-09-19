@@ -14,7 +14,7 @@ object TaskMetrics {
   def header(sep:String) = List("Task","Start","Delay","Duration","Cost","Simulation","Resources").mkString(sep)
 }
 case class TaskMetrics (task:String, start:Int, delay:Int, duration:Int, cost:Int, simulation:String, resources:Seq[String], counted:Boolean=false) extends Metrics {
-  val stringValues = List(task,start,delay,duration,cost,simulation,"\"" + resources.mkString(",") + "\"") map (_.toString)
+  override def stringValues = List(task,start,delay,duration,cost,simulation,"\"" + resources.mkString(",") + "\"") map (_.toString)
 //  def addDelay(d :Int) = copy(delay = delay + d)
 //  def addDuration(d :Int) = copy(duration = duration + d)
 //  def addCost(c:Int) = copy(cost = cost + c)
@@ -35,7 +35,7 @@ object SimulationMetrics {
   def header(sep:String) = List("Start","Duration","Cost","Result").mkString(sep)
 }
 case class SimulationMetrics (start:Int, duration: Int, cost: Int, result :String) extends Metrics {
-  val stringValues = List(start,duration,cost,"\"" + result + "\"") map (_.toString)
+  override def stringValues = List(start,duration,cost,"\"" + result + "\"") map (_.toString)
   def setStart(st:Int) = copy(start=st)
   def setResult(r:String) = copy(result = r) 
   def addDuration(d:Int) = copy(duration = duration + d)
@@ -56,7 +56,7 @@ object ResourceMetrics {
   def header(sep:String) = List("Start","Busy","Idle","Tasks","Cost").mkString(sep)
 }
 case class ResourceMetrics (start:Int, busy:Int, idle:Int, tasks:Int, cost:Int) extends Metrics {
-  val stringValues = List(start,busy,idle,tasks,cost) map (_.toString)
+  override def stringValues = List(start,busy,idle,tasks,cost) map (_.toString)
   def setStart(t:Int) = if (start < 0) copy(start=t) else this
   def addBusy(b:Int) = copy(busy = busy + b)
   def addIdle(i:Int) = copy(idle = idle + i)
