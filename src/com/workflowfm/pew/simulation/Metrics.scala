@@ -46,7 +46,7 @@ class SimulationMetricTracker() extends MetricTracker[SimulationMetrics](Simulat
   def simStart(t:Int) = this <~ (_.setStart(t))
   def simDone(t:Int) = if (metrics.start > 0) {
     this <~ (_.addDuration(t - metrics.start)) 
-  }
+  } else this
   def taskDone(tm:TaskMetrics) = this <~ (_.addCost(tm.cost)) 
   def setResult(r:String) = this <~ (_.setResult(r)) 
 }
@@ -82,7 +82,7 @@ class MetricAggregator() {
   def +=(s:String,m:ResourceMetrics) = resourceMetrics += (s->m)
   
   def +=(t:Task) = taskMetrics += ((t.name + "(" + t.simulation + ")")->t.metrics)
-  def +=(s:Simulation) = simulationMetrics += (s.name->s.metrics)
+  //def +=(s:Simulation) = simulationMetrics += (s.name->s.metrics)
   def +=(r:TaskResource) = resourceMetrics += (r.name->r.metrics)
   
   def values(sep:String)(e:(String,Metrics)) = e._1 + sep + e._2.values(sep)

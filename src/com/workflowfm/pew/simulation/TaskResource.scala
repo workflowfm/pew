@@ -11,7 +11,7 @@ object TaskResource {
 
 class TaskResource(val name:String,val costPerTick:Int) extends ResourceMetricTracker { 
   var currentTask :Option[(Int,Int,Task)] = None
-  var lastUpdate :Int = 0
+  var lastUpdate :Int = 1
   
   def isIdle :Boolean = currentTask == None 
   

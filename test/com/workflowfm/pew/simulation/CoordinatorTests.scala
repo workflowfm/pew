@@ -34,11 +34,11 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
       val coordinator = system.actorOf(Coordinator.props(DefaultScheduler,Seq(resA,resB)))      
       val s = new TaskSimulation("S", coordinator, Seq("A","B"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
       
-      coordinator ! Coordinator.AddSim(0,s,executor)
+      coordinator ! Coordinator.AddSim(1,s,executor)
       coordinator ! Coordinator.Start
       
       val done = expectMsgType[Coordinator.Done](20.seconds)
-      done.time should be (2)
+      done.time should be (3)
     }
     
     "execute two independent tasks in parallel" in {   
@@ -49,12 +49,12 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
       val s1 = new TaskSimulation("S1", coordinator, Seq("A"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
       val s2 = new TaskSimulation("S2", coordinator, Seq("B"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
       
-      coordinator ! Coordinator.AddSim(0,s1,executor)
-      coordinator ! Coordinator.AddSim(0,s2,executor)
+      coordinator ! Coordinator.AddSim(1,s1,executor)
+      coordinator ! Coordinator.AddSim(1,s2,executor)
       coordinator ! Coordinator.Start
       
       val done = expectMsgType[Coordinator.Done](20.seconds)
-      done.time should be (2)
+      done.time should be (3)
     }
 
     "queue two tasks with the same resource" in {   
@@ -64,12 +64,12 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
       val s1 = new TaskSimulation("S1", coordinator, Seq("A"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
       val s2 = new TaskSimulation("S2", coordinator, Seq("A"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
       
-      coordinator ! Coordinator.AddSim(0,s1,executor)
-      coordinator ! Coordinator.AddSim(0,s2,executor)
+      coordinator ! Coordinator.AddSim(1,s1,executor)
+      coordinator ! Coordinator.AddSim(1,s2,executor)
       coordinator ! Coordinator.Start
       
       val done = expectMsgType[Coordinator.Done](20.seconds)
-      done.time should be (4)
+      done.time should be (5)
     }
     
     "manage idling resources appropriately" in {   
@@ -80,16 +80,15 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
       val s1 = new TaskSimulation("S1", coordinator, Seq("A"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
       val s2 = new TaskSimulation("S2", coordinator, Seq("A","B"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
       
-      coordinator ! Coordinator.AddSim(0,s1,executor)
-      coordinator ! Coordinator.AddSim(0,s2,executor)
+      coordinator ! Coordinator.AddSim(1,s1,executor)
+      coordinator ! Coordinator.AddSim(1,s2,executor)
       coordinator ! Coordinator.Start
       
       val done = expectMsgType[Coordinator.Done](20.seconds)
-      done.time should be (4)
+      done.time should be (5)
       val metricB = done.metrics.resourceMetrics.find { x => x._1.equals("B") } 
       metricB should not be empty 
       metricB map { x => x._2.idle should be (2) }
-      handler(done.time,done.metrics)
     }
     
     "manage idling resources appropriately even if they do some work first" in {   
@@ -101,17 +100,19 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
       val s2 = new TaskSimulation("S2", coordinator, Seq("B"), new ConstantGenerator(3), new ConstantGenerator(2), -1, Task.Highest)
       val s3 = new TaskSimulation("S3", coordinator, Seq("A","B"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Medium)
       
-      coordinator ! Coordinator.AddSim(0,s1,executor)
-      coordinator ! Coordinator.AddSim(0,s2,executor)
-      coordinator ! Coordinator.AddSim(0,s3,executor)
+      coordinator ! Coordinator.AddSim(1,s1,executor)
+      coordinator ! Coordinator.AddSim(1,s2,executor)
+      coordinator ! Coordinator.AddSim(2,s3,executor)
       coordinator ! Coordinator.Start
       
       val done = expectMsgType[Coordinator.Done](20.seconds)
-      done.time should be (5)
+      handler(done.time,done.metrics)
+      
+      done.time should be (6)
       val metricA = done.metrics.resourceMetrics.find { x => x._1.equals("A") } 
       metricA should not be empty 
       metricA map { x => x._2.idle should be (1) }
-      handler(done.time,done.metrics)
+      
     }
   }
 }

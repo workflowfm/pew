@@ -12,7 +12,7 @@ import com.workflowfm.pew.PiProcess
 import com.workflowfm.pew.execution.FutureExecutor
 
 
-abstract class Simulation(val name:String) extends SimulationMetricTracker {
+abstract class Simulation(val name:String)  { //extends SimulationMetricTracker
   def run(executor:FutureExecutor):Future[Any]
   def getProcesses():Seq[PiProcess]
 }
@@ -43,14 +43,12 @@ class SimulationActor(s:Simulation)(implicit ec: ExecutionContext = ExecutionCon
       //val coordinator = sender()
       s.run(executor).onComplete({
         case Success(res) => {
-          s.setResult(res.toString)
-          coordinator ! Coordinator.SimDone(s)
+          coordinator ! Coordinator.SimDone(s.name,res.toString)
           println("*** Result of " + s.name + ": " + res)
           context.stop(self) 
         }
         case Failure(ex) => {
-          s.setResult(ex.getLocalizedMessage)
-          coordinator ! Coordinator.SimDone(s)
+          coordinator ! Coordinator.SimDone(s.name,ex.getLocalizedMessage)
           println("*** Exception in " + s.name + ": ")
           ex.printStackTrace()
           context.stop(self)  

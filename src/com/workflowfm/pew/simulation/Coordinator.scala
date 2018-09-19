@@ -14,7 +14,7 @@ object Coordinator {
   //TODO case object Stop
   case class AddSim(t:Int,sim:Simulation,exe:FutureExecutor)
   case class AddRes(r:TaskResource)
-  case class SimDone(s:Simulation)
+  case class SimDone(name:String,result:String)
   case object Tick
   case object Tack
   case object Tock
@@ -25,7 +25,7 @@ object Coordinator {
   def props(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMillis:Int = 40)(implicit system: ActorSystem): Props = Props(new Coordinator(scheduler,resources,timeoutMillis)(system))//.withDispatcher("akka.my-dispatcher")
 }
 
-class Coordinator(scheduler :Scheduler, var resources :Seq[TaskResource], timeoutMillis:Int)(implicit system: ActorSystem) extends Actor {
+class Coordinator(scheduler :Scheduler, val resources :Seq[TaskResource], timeoutMillis:Int)(implicit system: ActorSystem) extends Actor {
   import scala.collection.mutable.Queue
   
   sealed trait Event extends Ordered[Event] { 
@@ -39,13 +39,13 @@ class Coordinator(scheduler :Scheduler, var resources :Seq[TaskResource], timeou
   
   var resourceMap :Map[String,TaskResource] = (Map[String,TaskResource]() /: resources){ case (m,r) => m + (r.name -> r)}
   //val simulations :Queue[(Int,Simulation,FutureExecutor)] = Queue()
-  val simulations :Queue[(Simulation,FutureExecutor)] = Queue()
+  var simulations :Queue[(String,SimulationMetricTracker,FutureExecutor)] = Queue()
   val tasks :Queue[Task] = Queue()
   
   val events = new PriorityQueue[Event]()
     
   var starter:Option[ActorRef] = None
-  var time = 0
+  var time = 1
   
   val metrics = new MetricAggregator()
   
@@ -53,7 +53,6 @@ class Coordinator(scheduler :Scheduler, var resources :Seq[TaskResource], timeou
   
   def addResource(r:TaskResource) = if (!resourceMap.contains(r.name)) {
     println("["+time+"] Adding resource " + r.name)
-    resources = r +: resources
     resourceMap += r.name -> r
     r.idle(time)
   }
@@ -61,12 +60,17 @@ class Coordinator(scheduler :Scheduler, var resources :Seq[TaskResource], timeou
   protected def startSimulation(t:Int, s:Simulation, e:FutureExecutor) :Boolean = {
     if (t == time) {
       println("["+time+"] Starting simulation: \"" + s.name +"\".") 
-      s.simStart(time)
+      val metrics = new SimulationMetricTracker().simStart(time)
       // change to ? to require acknowledgement
       system.actorOf(SimulationActor.props(s)) ! SimulationActor.Run(self,e) // ,"SimulationActor:" + s.name // TODO need to escape actor name
-      simulations += ((s,e))
+      simulations += ((s.name,metrics,e))
       true
     } else false
+  }
+  
+  protected def updateSimulation(s:String, f:SimulationMetricTracker=>SimulationMetricTracker) = simulations = simulations map { 
+    case (n,m,e) if n.equals(s) => (n,f(m),e) 
+    case x => x
   }
   
   def resourceAssign(r:TaskResource) = 
@@ -89,7 +93,7 @@ class Coordinator(scheduler :Scheduler, var resources :Seq[TaskResource], timeou
           val res = t.resources.map(resourceMap.get(_)).flatten
           t.taskDone(t,time,t.cost,(0 /: res)(_+_.costPerTick))
           res map {r=>r.taskDone(t.metrics,r.costPerTick)}
-          simulations.find(_._1.name == t.simulation) map (_._1.taskDone(t.metrics))
+          updateSimulation(t.simulation,_.taskDone(t.metrics))
           metrics += t
         }
         true
@@ -97,7 +101,7 @@ class Coordinator(scheduler :Scheduler, var resources :Seq[TaskResource], timeou
     }
   }
   
-  protected def workflowsReady = simulations forall (_._2.simulationReady)
+  protected def workflowsReady = simulations forall (_._3.simulationReady)
   
   protected def tick :Unit = {
     if (!events.isEmpty) { 
@@ -109,7 +113,7 @@ class Coordinator(scheduler :Scheduler, var resources :Seq[TaskResource], timeou
     			println("["+time+"] ========= Event! ========= ")
 
     			event match {
-    			  case FinishingTask(time,task) => resources map resourceUpdate
+    			  case FinishingTask(time,task) => resourceMap map { case (n,r) => (n,resourceUpdate(r)) }
     			  case StartingSim(time,sim,exec) => startSimulation(time,sim,exec)
     	    }
       }
@@ -130,10 +134,10 @@ class Coordinator(scheduler :Scheduler, var resources :Seq[TaskResource], timeou
   }
   
 protected def tack :Unit = {
-    resources map resourceAssign
+    resourceMap map { case (n,r) => (n,resourceAssign(r)) }
     if (events.isEmpty && tasks.isEmpty && workflowsReady) { //&& resources.forall(_.isIdle)
       println("["+time+"] All events done. All tasks done. All workflows idle. All resources idle.")
-      resources map (metrics += _)
+      resourceMap.values map (metrics += _)
       starter map { a => a ! Coordinator.Done(time,metrics) }
     } else {
       //Thread.sleep(halfTickMillis)
@@ -147,10 +151,9 @@ protected def tack :Unit = {
     case Coordinator.AddSim(t,s,e) =>
       events += StartingSim(t,s,e)
     case Coordinator.AddRes(r) => addResource(r)
-    case Coordinator.SimDone(s) => {
-      s.simDone(time)
-      metrics += s
-      println("["+time+"] Simulation " + s.name + " reported done.")
+    case Coordinator.SimDone(name,result) => {
+      simulations.dequeueFirst(_._1.equals(name)) map { x => metrics += (x._1,x._2.setResult(result).simDone(time).metrics) }
+      println("["+time+"] Simulation " + name + " reported done.")
     }
     
     case Coordinator.AddTask(t) => {
