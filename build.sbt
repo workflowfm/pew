@@ -18,7 +18,8 @@ lazy val commonSettings = Seq (
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.0-SNAP10" % "test"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.4.12"
-
+libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.5.16" % Test
+    
 libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.2.1"
 
 libraryDependencies += "junit" % "junit" % "4.8.2"
