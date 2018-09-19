@@ -120,5 +120,28 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
       metricS3T map { x => x._2.delay should be (2) }
     }
   }
+  
+  "The MetricsActor" must {
+  
+    val executor = new AkkaExecutor()  		
+    val handler = MetricsOutputs(new MetricsPrinter())
+   
+            //expectNoMessage(200.millis)
+    "work properly" in {   
+      println ("*** MetricsActor results should appear here:")
+      
+      val resA = new TaskResource("A",1)
+
+      val coordinator = system.actorOf(Coordinator.props(DefaultScheduler,Seq(resA)))      
+      val s = new TaskSimulation("S", coordinator, Seq("A"), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
+      
+      coordinator ! Coordinator.AddSim(1,s,executor)
+      
+      val metricsActor = system.actorOf(MetricsActor.props(handler))
+      metricsActor ! MetricsActor.Start(coordinator)
+      
+      expectNoMessage(200.millis)
+    }
+  }
 }
 

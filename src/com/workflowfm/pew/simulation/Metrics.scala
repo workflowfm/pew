@@ -1,5 +1,9 @@
 package com.workflowfm.pew.simulation
 
+import akka.actor.Props
+import akka.actor.Actor
+import akka.actor.ActorRef
+
 trait Metrics {
   def stringValues :List[String]
   def values(sep:String=",") = stringValues.mkString(sep)
@@ -97,6 +101,29 @@ class MetricAggregator() {
     "Name" + sep + SimulationMetrics.header(sep) + "\n" + simulationValues(sep) + "\n"
   def resourceTable(sep:String) =
     "Name" + sep + ResourceMetrics.header(sep) + "\n" + resourceValues(sep) + "\n"
+}
+
+
+object MetricsActor {
+  case class Start(coordinator:ActorRef)
+  
+  def props(m:MetricsOutput): Props = Props(new MetricsActor(m))
+}
+
+class MetricsActor(m:MetricsOutput) extends Actor {
+  var coordinator:Option[ActorRef] = None
+  
+  def receive = {
+    case MetricsActor.Start(coordinator) if this.coordinator.isEmpty => {
+      this.coordinator = Some(coordinator)
+      coordinator ! Coordinator.Start
+    }
+    
+    case Coordinator.Done(t:Int,ma:MetricAggregator) if this.coordinator == Some(sender) => {
+      this.coordinator = None
+      m(t,ma)
+    }
+  }
 }
 
 
