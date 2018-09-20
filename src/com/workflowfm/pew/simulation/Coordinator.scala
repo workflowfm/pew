@@ -81,27 +81,38 @@ class Coordinator(scheduler :Scheduler, val resources :Seq[TaskResource], timeou
     case None => 
     case Some(task) => {
       tasks.dequeueFirst (_.compare(task) == 0) // TODO This should remove the correct task right?
-      task.taskStart(time)
-      val duration = task.duration.get
-      (task.resources map (resourceMap.get(_)) flatten) map (_.startTask(task, time, duration))
-      events += FinishingTask(time+duration,task)
+      startTask(task)
     }
   }
   
+  protected def startTask(task:Task) {
+    task.taskStart(time)
+    val duration = task.duration.get
+    (task.resources map (resourceMap.get(_)) flatten) map (_.startTask(task, time, duration))
+    events += FinishingTask(time+duration,task)
+  }
+  
+  protected def runNoResourceTasks() {
+    tasks.dequeueAll(_.resources.isEmpty).map(startTask)
+  }
+   
   protected def resourceUpdate(r:TaskResource) :Boolean = {
     r.finishTask(time) match {
       case None => false
       case Some(t) => {
-        if (!t.metrics.counted) {
-          val res = t.resources.map(resourceMap.get(_)).flatten
-          t.taskDone(t,time,t.cost,(0 /: res)(_+_.costPerTick))
-          res map {r=>r.taskDone(t.metrics,r.costPerTick)}
-          updateSimulation(t.simulation,_.taskDone(t.metrics))
-          metrics += t
-        }
+        val res = t.resources.map(resourceMap.get(_)).flatten
+        res map {r=>r.taskDone(t.metrics,r.costPerTick)}
         true
       }
     }
+  }
+  
+  protected def finishTask(task:Task) {
+    val res = task.resources.map(resourceMap.get(_)).flatten
+    task.execute(time)
+    task.taskDone(task,time,task.cost,(0 /: res)(_+_.costPerTick))
+    updateSimulation(task.simulation,_.taskDone(task.metrics))
+    metrics += task
   }
   
   protected def workflowsReady = simulations forall (_._3.simulationReady)
@@ -116,8 +127,11 @@ class Coordinator(scheduler :Scheduler, val resources :Seq[TaskResource], timeou
     			println("["+time+"] ========= Event! ========= ")
 
     			event match {
-    			  case FinishingTask(time,task) => resourceMap map { case (n,r) => (n,resourceUpdate(r)) }
-    			  case StartingSim(time,sim,exec) => startSimulation(time,sim,exec)
+    			  case FinishingTask(_,task) => {
+    			    resourceMap map { case (n,r) => (n,resourceUpdate(r)) }
+    			    finishTask(task)
+    			  }
+    			  case StartingSim(_,sim,exec) => startSimulation(time,sim,exec)
     	    }
       }
     }
@@ -138,6 +152,8 @@ class Coordinator(scheduler :Scheduler, val resources :Seq[TaskResource], timeou
   
 protected def tack :Unit = {
     resourceMap map { case (n,r) => (n,resourceAssign(r)) }
+    runNoResourceTasks()
+    
     if (events.isEmpty && tasks.isEmpty && workflowsReady) { //&& resources.forall(_.isIdle)
       println("["+time+"] All events done. All tasks done. All workflows idle. All resources idle.")
       resourceMap.values map (metrics += _)

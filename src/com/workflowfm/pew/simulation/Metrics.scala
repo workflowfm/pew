@@ -18,14 +18,14 @@ class MetricTracker[T <: Metrics](init :T) {
 object TaskMetrics {
   def header(sep:String) = List("Task","Start","Delay","Duration","Cost","Simulation","Resources").mkString(sep)
 }
-case class TaskMetrics (task:String, start:Int, delay:Int, duration:Int, cost:Int, simulation:String, resources:Seq[String], counted:Boolean=false) extends Metrics {
+case class TaskMetrics (task:String, start:Int, delay:Int, duration:Int, cost:Int, simulation:String, resources:Seq[String]) extends Metrics {
   override def stringValues = List(task,start,delay,duration,cost,simulation,"\"" + resources.mkString(",") + "\"") map (_.toString)
 //  def addDelay(d :Int) = copy(delay = delay + d)
 //  def addDuration(d :Int) = copy(duration = duration + d)
 //  def addCost(c:Int) = copy(cost = cost + c)
   def setStart(st:Int) = copy(start=st)
   def setResources(sim:String,rs:Seq[String]) = copy(simulation=sim,resources=rs)
-  def add(dl:Int, dur:Int, c:Int) = copy(delay = delay + dl, duration = duration + dur, cost = cost + c, counted = true)
+  def add(dl:Int, dur:Int, c:Int) = copy(delay = delay + dl, duration = duration + dur, cost = cost + c)
 }
 
 class TaskMetricTracker(task:String) extends MetricTracker[TaskMetrics](TaskMetrics(task,-1,0,0,0,"",Seq())) {

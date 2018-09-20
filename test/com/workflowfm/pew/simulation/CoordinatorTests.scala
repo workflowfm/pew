@@ -109,7 +109,6 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
       coordinator ! Coordinator.Start
       
       val done = expectMsgType[Coordinator.Done](20.seconds)
-      handler(done.time,done.metrics)
       
       done.time should be (6)
       val metricA = done.metrics.resourceMetrics.find { x => x._1.equals("A") } 
@@ -118,6 +117,40 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
       val metricS3T = done.metrics.taskMetrics.find { x => x._1.equals("S3Task(S3)") } 
       metricS3T should not be empty
       metricS3T map { x => x._2.delay should be (2) }
+    }
+    
+    "run a task with no resources" in {
+      val coordinator = system.actorOf(Coordinator.props(DefaultScheduler,Seq()))      
+      val s1 = new TaskSimulation("S1", coordinator, Seq(), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
+      
+      coordinator ! Coordinator.AddSim(1,s1,executor)
+      coordinator ! Coordinator.Start
+      
+      val done = expectMsgType[Coordinator.Done](20.seconds)
+      handler(done.time,done.metrics)
+      
+      done.time should be (3)
+      done.metrics.resourceMetrics.isEmpty should be (true)
+      done.metrics.simulationMetrics.size should be (1)
+      done.metrics.taskMetrics.size should be (1)
+    }
+    
+    "run multiple tasks with no resources" in {
+      val coordinator = system.actorOf(Coordinator.props(DefaultScheduler,Seq()))      
+      val s1 = new TaskSimulation("S1", coordinator, Seq(), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
+      val s2 = new TaskSimulation("S2", coordinator, Seq(), new ConstantGenerator(2), new ConstantGenerator(2), -1, Task.Highest)
+      
+      coordinator ! Coordinator.AddSim(1,s1,executor)
+      coordinator ! Coordinator.AddSim(1,s2,executor)
+      coordinator ! Coordinator.Start
+      
+      val done = expectMsgType[Coordinator.Done](20.seconds)
+      handler(done.time,done.metrics)
+      
+      done.time should be (3)
+      done.metrics.resourceMetrics.isEmpty should be (true)
+      done.metrics.simulationMetrics.size should be (2)
+      done.metrics.taskMetrics.size should be (2)
     }
   }
   
