@@ -108,6 +108,7 @@ class MetricAggregator() {
 object MetricsActor {
   case class Start(coordinator:ActorRef)
   case class StartSims(coordinator:ActorRef,sims:Seq[(Int,Simulation)],executor:FutureExecutor)
+  case class StartSimsNow(coordinator:ActorRef,sims:Seq[Simulation],executor:FutureExecutor)
   
   def props(m:MetricsOutput): Props = Props(new MetricsActor(m))
 }
@@ -124,6 +125,12 @@ class MetricsActor(m:MetricsOutput) extends Actor {
     case MetricsActor.StartSims(coordinator,sims,executor) if this.coordinator.isEmpty => {
       this.coordinator = Some(coordinator)
       coordinator ! Coordinator.AddSims(sims,executor)
+      coordinator ! Coordinator.Start
+    }
+    
+    case MetricsActor.StartSimsNow(coordinator,sims,executor) if this.coordinator.isEmpty => {
+      this.coordinator = Some(coordinator)
+      coordinator ! Coordinator.AddSimsNow(sims,executor)
       coordinator ! Coordinator.Start
     }
     
