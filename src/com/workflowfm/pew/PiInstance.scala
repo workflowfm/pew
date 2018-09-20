@@ -19,6 +19,13 @@ case class PiInstance[T](final val id:T, called:Seq[Int], process:PiProcess, sta
 		  state = state.result(thread,res).map(_.fullReduce()).getOrElse(state)
     )
 
+  /** @return Post multiple thread results to this PiInstance simultaneously and fully reduce the result.
+    */
+  def postResult( allRes: Seq[(Int, PiObject)] ): PiInstance[T] = copy(
+      called = called filterNot (allRes.map(_._1) contains _),
+      state = allRes.foldLeft( state )( (s,e) => s.result(e._1, e._2).getOrElse(s) ).fullReduce()
+    )
+
   def reduce:PiInstance[T] = copy(state = state.fullReduce())
   
   def handleThreads(handler:(Int,PiFuture)=>Boolean):(Seq[Int],PiInstance[T]) = {

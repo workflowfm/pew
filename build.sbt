@@ -20,7 +20,14 @@ libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.4.12"
 libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.5.16" % "test"
-    
+
+libraryDependencies += "com.typesafe.akka" %% "akka-stream-kafka" % "0.21.1"
+libraryDependencies += "com.typesafe.akka" %% "akka-stream"       % "2.5.13"
+libraryDependencies += "com.typesafe.akka" %% "akka-http"         % "10.1.3"
+libraryDependencies += "de.heikoseeberger" %% "akka-http-jackson" % "1.21.0"
+libraryDependencies += "org.apache.kafka"  %% "kafka"             % "1.1.0"
+libraryDependencies += "org.apache.kafka"  %  "kafka-streams"     % "1.1.0"
+
 libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.2.1"
 
 libraryDependencies += "junit" % "junit" % "4.8.2"
