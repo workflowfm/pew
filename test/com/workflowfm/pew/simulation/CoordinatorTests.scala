@@ -142,6 +142,21 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
       
       expectNoMessage(200.millis)
     }
+    
+    "start multiple simulations with one message" in {   
+      println ("*** MetricsActor multiple results should appear here:")
+      
+      val resA = new TaskResource("A",1)
+
+      val coordinator = system.actorOf(Coordinator.props(DefaultScheduler,Seq(resA)))      
+      val s1 = new TaskSimulation("S1", coordinator, Seq("A"), new ConstantGenerator(1), new ConstantGenerator(2), -1, Task.Highest)
+      val s2 = new TaskSimulation("S2", coordinator, Seq("A"), new ConstantGenerator(1), new ConstantGenerator(2), -1, Task.Highest)
+      
+      val metricsActor = system.actorOf(MetricsActor.props(handler))
+      metricsActor ! MetricsActor.StartSims(coordinator,Seq((1,s1),(1,s2)),executor)
+      
+      expectNoMessage(200.millis)
+    }
   }
 }
 

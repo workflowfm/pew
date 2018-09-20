@@ -13,6 +13,7 @@ object Coordinator {
   case object Start
   //TODO case object Stop
   case class AddSim(t:Int,sim:Simulation,exe:FutureExecutor)
+  case class AddSims(l:Seq[(Int,Simulation)],exe:FutureExecutor)
   case class AddRes(r:TaskResource)
   case class SimDone(name:String,result:String)
   case object Tick
@@ -149,6 +150,8 @@ protected def tack :Unit = {
   def receive = {
     case Coordinator.AddSim(t,s,e) =>
       events += StartingSim(t,s,e)
+    case Coordinator.AddSims(l,e) =>
+      events ++= l map { case (t,s) => StartingSim(t,s,e) }
     case Coordinator.AddRes(r) => addResource(r)
     case Coordinator.SimDone(name,result) => {
       simulations.dequeueFirst(_._1.equals(name)) map { x => metrics += (x._1,x._2.setResult(result).simDone(time).metrics) }

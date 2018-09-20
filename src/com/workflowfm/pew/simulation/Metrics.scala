@@ -3,6 +3,7 @@ package com.workflowfm.pew.simulation
 import akka.actor.Props
 import akka.actor.Actor
 import akka.actor.ActorRef
+import com.workflowfm.pew.execution.FutureExecutor
 
 trait Metrics {
   def stringValues :List[String]
@@ -106,6 +107,7 @@ class MetricAggregator() {
 
 object MetricsActor {
   case class Start(coordinator:ActorRef)
+  case class StartSims(coordinator:ActorRef,sims:Seq[(Int,Simulation)],executor:FutureExecutor)
   
   def props(m:MetricsOutput): Props = Props(new MetricsActor(m))
 }
@@ -116,6 +118,12 @@ class MetricsActor(m:MetricsOutput) extends Actor {
   def receive = {
     case MetricsActor.Start(coordinator) if this.coordinator.isEmpty => {
       this.coordinator = Some(coordinator)
+      coordinator ! Coordinator.Start
+    }
+    
+    case MetricsActor.StartSims(coordinator,sims,executor) if this.coordinator.isEmpty => {
+      this.coordinator = Some(coordinator)
+      coordinator ! Coordinator.AddSims(sims,executor)
       coordinator ! Coordinator.Start
     }
     
