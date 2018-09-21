@@ -2,13 +2,15 @@ package com.workflowfm.pew.stateless.instances.kafka
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.kafka.scaladsl.Consumer.Control
 import akka.kafka.scaladsl.Producer
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import com.workflowfm.pew._
 import com.workflowfm.pew.stateless._
-import com.workflowfm.pew.stateless.instances.kafka.components.KafkaEventHandler
-import com.workflowfm.pew.stateless.instances.kafka.settings.StatelessKafkaSettings
+import com.workflowfm.pew.stateless.components.ResultListener
+import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 import org.bson.types.ObjectId
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -19,23 +21,19 @@ import scala.concurrent._
   * present on the local machine to complete the Executor interface.
   * Other components are required are required to run on the Kafka cluster
   * but need not be situated on the local machine.
-  *
-  * @param processes
-  * @param settings
-  * @tparam ResultT
   */
 class MinimalKafkaExecutor[ResultT](
     processes: PiProcessStore
 
   ) (
-    implicit settings: StatelessKafkaSettings
+    implicit settings: KafkaExecutorSettings
 
   ) extends StatelessExecutor[ResultT] {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   import StatelessMessages._
-  import KafkaTopic._
+  import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors._
 
   // Implicit settings.
   implicit val actorSystem: ActorSystem = settings.actorSys
@@ -47,8 +45,8 @@ class MinimalKafkaExecutor[ResultT](
   val handlers = Seq( defaultHandler, futureHandler )
 
   // Necessary local KafkaComponent instance.
-  val eventHandler: KafkaEventHandlerComponent
-    = new KafkaEventHandler( handlers )
+  val eventHandler: ResultListener = ResultListener( defaultHandler, futureHandler )
+  val eventHandlerControl: Control = uniqueResultListener( eventHandler )
 
   def connect( id: ObjectId, process: PiProcess, args: Seq[Any] )
     : ( PiInstance[ObjectId], Future[ResultT] ) = {
@@ -68,8 +66,7 @@ class MinimalKafkaExecutor[ResultT](
 
     // Locally send the initial reduce request.
     logger.info( "Seeding initial 'ReduceRequest'." )
-    Source.single( toProducerMessage( ReduceRequest( pii, Seq() ) ) )
-    .runWith( Producer.plainSink( settings.psAllMessages ) )
+    sendSingleMessage( ReduceRequest( pii, Seq() ) )
 
     result
   }
@@ -78,12 +75,8 @@ class MinimalKafkaExecutor[ResultT](
     executeWith( new ObjectId, process, args )
   }
 
-  def shutdown: Future[Done] = eventHandler.shutdown
-
-  final def syncShutdown( timeout: Duration = Duration.Inf ): Done
-    = Await.result( shutdown, timeout )
-
   // TODO: What does this do? Its not handled
   override def simulationReady: Boolean = false
 
+  override def shutdown: Future[Done] = KafkaConnectors.shutdown( eventHandlerControl )
 }

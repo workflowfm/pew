@@ -31,8 +31,6 @@ class KafkaCodecProvider( processes: PiProcessStore )
 
   // These use the PEW-REST Key codecs, need to be initialised after PEW
   private val callRef = new CallRefCodec
-  private val keyPii = new KeyPiiCodec( piInst )
-  private val keyPiiCall = new KeyPiiCallCodec( piInst, callRef )
   private val keyPiiId = new KeyPiiIdCodec
   private val keyPiiIdCall = new KeyPiiIdCallCodec( callRef )
 
@@ -44,7 +42,7 @@ class KafkaCodecProvider( processes: PiProcessStore )
   private val res = new ResultCodec( piInst, anyres, callRef )
 
   // Initialised after both Keys & Msgs as it depends on them all.
-  val anykey: Codec[Any] = new AnyKeyCodec( keyPii, keyPiiCall, keyPiiId, keyPiiIdCall )
+  val anykey: Codec[Any] = new AnyKeyCodec( keyPiiId, keyPiiIdCall )
   val anymsg: Codec[Any] = new AnyMsgCodec( this )
 
   /** Implement the get[T] method from Codec*REGISTRY*,

@@ -1,9 +1,10 @@
 package com.workflowfm.pew.stateless.instances.kafka
 
 import akka.Done
+import akka.kafka.scaladsl.Consumer.Control
 import com.workflowfm.pew._
-import com.workflowfm.pew.stateless.instances.kafka.components.{KafkaProcExecutor, KafkaReducer, KafkaSequencer}
-import com.workflowfm.pew.stateless.instances.kafka.settings.StatelessKafkaSettings
+import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 
 import scala.concurrent.Future
 
@@ -13,24 +14,12 @@ import scala.concurrent.Future
   * @param settings
   * @tparam ResultT
   */
-class KafkaExecutor[ResultT](processes: PiProcessStore)(implicit settings: StatelessKafkaSettings)
+class KafkaExecutor[ResultT](processes: PiProcessStore, components: (() => Control)* )(implicit settings: KafkaExecutorSettings)
   extends MinimalKafkaExecutor[ResultT]( processes )( settings ) {
 
-  import KafkaTopic._
+  val allControls: Seq[Control] = components map (_())
 
-  // All necessary KafkaComponent instances.
-  val reducer: KafkaReducerComponent = new KafkaReducer
-  val processExecutor: KafkaProcExecutorComponent = new KafkaProcExecutor
-  val sequencer: KafkaSequencerComponent = new KafkaSequencer
-
-  override def shutdown: Future[Done] = {
-    val reducerShutdown = reducer.shutdown
-    val processShutdown = processExecutor.shutdown
-    val sequencerShutdown = sequencer.shutdown
-
-    super.shutdown
-    .flatMap( _ => reducerShutdown )
-    .flatMap( _ => processShutdown )
-    .flatMap( _ => sequencerShutdown )
-  }
+  override def shutdown: Future[Done] = KafkaConnectors.shutdown( allControls :+ eventHandlerControl )
 }
+
+

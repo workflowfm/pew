@@ -11,10 +11,15 @@ import org.bson.types.ObjectId
   */
 object StatelessMessages {
 
+  trait StatelessMessage
+  trait PiiHistory extends StatelessMessage
+
   case class ReduceRequest(
     pii:  PiInstance[ObjectId],
     args: Seq[(CallRef, PiObject)]
-  ) {
+
+  ) extends StatelessMessage {
+
     def this( pii: PiInstance[ObjectId] )
       = this( pii, Seq() )
 
@@ -28,25 +33,28 @@ object StatelessMessages {
   case class SequenceRequest(
     piiId: ObjectId,
     request: (CallRef, PiObject),
-  )
+
+  ) extends PiiHistory
 
   case class PiiUpdate(
     pii:      PiInstance[ObjectId]
-  )
+
+  ) extends PiiHistory
 
   case class Assignment(
     pii:      PiInstance[ObjectId],
     callRef:  CallRef,
-    done:     Boolean,
     process:  String, // AtomicProcess,
     args:     Seq[PiResource]
-  )
 
-  case class Result[T](
+  ) extends StatelessMessage
+
+  case class PiiResult[T](
     pii:      PiInstance[ObjectId],
     callRef:  Option[CallRef],
     res:      T
-  ) {
+
+  ) extends StatelessMessage {
 
     def this( pi: PiInstance[ObjectId], res: T )
       = this( pi, None, res )
@@ -55,6 +63,6 @@ object StatelessMessages {
       = this( pi, Some(callRef), res )
   }
 
-  type ResultSuccess = Result[PiObject]
-  type ResultFailure = Result[Throwable]
+  type ResultSuccess = PiiResult[PiObject]
+  type ResultFailure = PiiResult[Throwable]
 }

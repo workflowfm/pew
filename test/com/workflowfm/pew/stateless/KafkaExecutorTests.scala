@@ -6,7 +6,7 @@ import com.workflowfm.pew.execution._
 import com.workflowfm.pew.SimpleProcessStore
 import com.workflowfm.pew.execution.RexampleTypes._
 import com.workflowfm.pew.stateless.instances.kafka.KafkaExecutor
-import com.workflowfm.pew.stateless.instances.kafka.settings.StatelessKafkaSettings
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -71,8 +71,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
 
   def makeExecutor(store: SimpleProcessStore): KafkaExecutor[(Y, Z)] = {
 
-    implicit val kafkaSettings: StatelessKafkaSettings
-      = new StatelessKafkaSettings(
+    implicit val kafkaSettings: KafkaExecutorSettings
+      = new KafkaExecutorSettings(
         store, system, executionContext
       )
 

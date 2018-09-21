@@ -1,21 +1,21 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs
 
 import com.workflowfm.pew.stateless.CallRef
-import com.workflowfm.pew.stateless.instances.kafka.KafkaTopic
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs.PiiT
 import com.workflowfm.pew.stateless.StatelessMessages
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaConnectors
 import org.bson._
 import org.bson.codecs._
 
 class ResultCodec(
-    piiCodec: Codec[PiiT],
-    resCodec: Codec[KafkaTopic.AnyRes],
-    refCodec: Codec[CallRef]
+                   piiCodec: Codec[PiiT],
+                   resCodec: Codec[KafkaConnectors.AnyRes],
+                   refCodec: Codec[CallRef]
 
   ) extends Codec[PewCodecs.ResMsgT] {
 
   import PewCodecs._
-  import KafkaTopic._
+  import KafkaConnectors._
   import StatelessMessages._
 
   val piiN = "pii"

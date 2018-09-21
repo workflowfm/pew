@@ -2,7 +2,9 @@ package com.workflowfm.pew.stateless.components
 
 import com.workflowfm.pew._
 import com.workflowfm.pew.execution.ProcessExecutor
-import com.workflowfm.pew.stateless.{CallRef, StatelessRouter}
+import com.workflowfm.pew.execution.ProcessExecutor.NoResultException
+import com.workflowfm.pew.stateless.StatelessMessages.{ReduceRequest, StatelessMessage}
+import com.workflowfm.pew.stateless.CallRef
 import org.bson.types.ObjectId
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -11,37 +13,34 @@ import scala.concurrent.ExecutionContext
 /** Takes New Process Instances -> Updated Workflow State, and either an immediate result or a list of requested computations
   *   Separated from StatelessExecActor to ensure the WorkflowState message is actually posted before the tasks are executed.
   */
-class StatelessReducer[MsgT](
-   implicit router: StatelessRouter[MsgT],
-   exec: ExecutionContext
+class Reducer(
+   implicit exec: ExecutionContext
 
- ) extends StatelessComponent[MsgT] {
+ ) extends StatelessComponent[ReduceRequest, Seq[StatelessMessage]] {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   import com.workflowfm.pew.stateless.StatelessMessages._
 
-  def piiReduce( request: ReduceRequest ): IO[MsgT] = {
-    piiReduce( request.pii.postResult( request.args.map( a => (a._1.id, a._2)) ) )
-  }
+  override def respond: ReduceRequest => Seq[StatelessMessage] = request
+    => piiReduce( request.pii.postResult( request.args.map( a => (a._1.id, a._2)) ) )
 
-  def piiReduce( pii: PiInstance[ObjectId] ): IO[MsgT] = {
+  def piiReduce( pii: PiInstance[ObjectId] ): Seq[StatelessMessage] = {
     val piiReduced: PiInstance[ObjectId] = pii.reduce
 
-    if (piiReduced.completed) piiReduced.result match {
-      case Some( _ ) =>
-        send( new ResultSuccess( piiReduced, piiReduced.process.output._1 ) )
-      case None =>
-        send( new ResultFailure( piiReduced, ProcessExecutor.NoResultException(piiReduced.id.toString) ) )
+    if (piiReduced.completed) Seq( piiReduced.result match {
+      case Some(_) => new ResultSuccess( piiReduced, piiReduced.process.output._1 )
+      case None =>    new ResultFailure( piiReduced, NoResultException( piiReduced.id.toString ) )
 
-    } else {
+    }) else {
+
       val ( toCall, piiReady ) = handleThreads( piiReduced )
       val futureCalls = (toCall map CallRef.apply) zip (toCall flatMap piiReady.piFutureOf)
 
       val updateMsg = PiiUpdate( piiReady )
       val requests = futureCalls map ( getMessages( piiReady )(_, _) ).tupled
 
-      sendAll( requests :+ updateMsg )
+      requests :+ updateMsg
     }
   }
 
@@ -67,14 +66,14 @@ class StatelessReducer[MsgT](
     }
   }
 
-  def getMessages( piReduced: PiInstance[ObjectId] )( ref: CallRef, fut: PiFuture ): Any = {
+  def getMessages( piReduced: PiInstance[ObjectId] )( ref: CallRef, fut: PiFuture ): StatelessMessage = {
     fut match {
       case PiFuture(name, _, args) =>
         piReduced.getProc(name) match {
 
           // Request that the process be executed.
           case Some(p: AtomicProcess)
-            => Assignment( piReduced, ref, done = false, p.name, args )
+            => Assignment( piReduced, ref, p.name, args )
 
           // These should never happen! We already checked in the reducer!
           case None
@@ -83,10 +82,5 @@ class StatelessReducer[MsgT](
             => new ResultFailure( piReduced, ref, ProcessExecutor.AtomicProcessIsCompositeException(name) )
         }
     }
-  }
-
-  override def receive: PartialFunction[Any, IO[MsgT]] = {
-    case m: ReduceRequest => piiReduce( m )
-    case m => super.receive(m)
   }
 }

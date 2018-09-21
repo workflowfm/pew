@@ -1,7 +1,6 @@
 package com.workflowfm.pew.stateless.instances.kafka.components
 
 import akka.kafka.ConsumerMessage._
-import akka.kafka.ProducerMessage._
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.{PiInstance, PiObject}
@@ -52,11 +51,10 @@ class SequenceResponseBuilder(
    val responses: immutable.HashMap[ObjectId, PartialResponse],
  ) {
 
-  import com.workflowfm.pew.stateless.instances.kafka.KafkaTopic._
-
   type PiiT = PiInstance[ObjectId]
   type Arg = (CallRef, PiObject)
-  type FullResponse = MultiMessage[AnyKey, AnyMsg, Committable]
+
+  import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows._
 
   /** @return An empty response builder that consumes no messages.
     */
@@ -65,7 +63,7 @@ class SequenceResponseBuilder(
   /** MultiMessage response for the consumed messages, or None if the
     * consumed messages lack sufficient information for a response.
     */
-  val response: Option[FullResponse] =
+  val response: Option[ Tracked[ Seq[ReduceRequest] ] ] =
     if ( responses.toSeq.exists( _._2.hasPayload ) ) {
 
     // All necessary responses:
@@ -79,7 +77,7 @@ class SequenceResponseBuilder(
     // otherwise we would lose their state information when they are consumed.
     // Additionally, for performance: do not emmit empty responses.
     if ( messages.isEmpty || messages.exists( _.isEmpty ) ) None
-    else Some( MultiMessage( messages.flatten.map( toProducerMessage ).to, offset ) )
+    else Some( messages.flatten, offset )
 
   } else None // If there is no reduce request with a payload, wait for one.
 
@@ -93,7 +91,7 @@ class SequenceResponseBuilder(
     * @param msgIn The next `CommittableMessage` to handle.
     * @return A new SequenceResponseBuilder instance.
     */
-  def next( msgIn: CommittableMessage[KeyPiiId, AnyMsg] ): SequenceResponseBuilder =
+  def next( msgIn: CMsg[PiiHistory] ): SequenceResponseBuilder =
 
     // If we have already sent a response, start constructing the subsequent response instead.
     if (response.nonEmpty) (new SequenceResponseBuilder).next( msgIn )

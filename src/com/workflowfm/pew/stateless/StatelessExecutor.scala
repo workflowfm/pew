@@ -1,10 +1,13 @@
 package com.workflowfm.pew.stateless
 
+import akka.Done
 import com.workflowfm.pew.execution._
+import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors.shutdown
 import com.workflowfm.pew.{PiInstance, _}
 import org.slf4j.Logger
 
 import scala.collection.mutable
+import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future, _}
 
 // WrapperPiEventHandler(logger, base)
@@ -83,7 +86,10 @@ class LoggerHandler[T]( logger: Logger )
 abstract class StatelessExecutor[ResultT]
   extends ProcessExecutor[ResultT] {
 
-  // def shutdown: Future[Done]
+  def shutdown: Future[Done]
+
+  final def syncShutdown( timeout: Duration = Duration.Inf ): Done
+    = Await.result( shutdown, timeout )
 }
 
 // TODO, Should really be (PiInstance, CallRefID: Int)

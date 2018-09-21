@@ -1,7 +1,7 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs
 
 import com.workflowfm.pew.stateless.StatelessMessages
-import com.workflowfm.pew.stateless.instances.kafka.KafkaTopic.{AnyMsg, AnyRes}
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaConnectors.{AnyMsg, AnyRes}
 import org.bson.{BsonReader, BsonWriter}
 import org.bson.codecs._
 import org.bson.codecs.configuration.CodecRegistry

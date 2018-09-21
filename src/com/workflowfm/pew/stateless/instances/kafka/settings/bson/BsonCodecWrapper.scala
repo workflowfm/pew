@@ -5,13 +5,17 @@ import java.util
 
 import org.apache.kafka.common.serialization._
 import org.bson._
-import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.io.BasicOutputBuffer
 
+/** A deserializer/serializer wrapper for the MongoDB codec serialization interface
+  * so as to use them for Kafka message serialization.
+  *
+  * @param codec Wrapped codec to leverage for serialization.
+  * @tparam T Type that is being serialized.
+  */
 class BsonCodecWrapper[T]( codec: Codec[T] )
-  extends Deserializer[T]
-  with Serializer[T] {
+  extends Deserializer[T] with Serializer[T] {
 
   def this( clazz: Class[T] )( implicit pro: KafkaCodecProvider )
     = this( pro.get[T]( clazz ) )

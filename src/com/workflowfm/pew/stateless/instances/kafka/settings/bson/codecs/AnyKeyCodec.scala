@@ -1,13 +1,10 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs
 
-import com.workflowfm.pew.stateless.instances.kafka.KafkaTopic._
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaConnectors._
 import org.bson.codecs._
 import org.bson.{BsonReader, BsonWriter}
 
 class AnyKeyCodec(
-    keyPiiCodec:      Codec[KeyPii],
-    keyPiiCallCodec:  Codec[KeyPiiCall],
-
     keyPidCodec:      Codec[KeyPiiId],
     keyPidCallCodec:  Codec[KeyPiiIdCall]
 
