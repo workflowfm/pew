@@ -11,7 +11,7 @@ trait Scheduler {
 }
 
 object DefaultScheduler extends Scheduler {
-  def nextEstimatedTaskStart(t:Task, ticks:Int, resourceMap:Map[String,TaskResource], tasks:Seq[Task]) = {
+  protected def nextEstimatedTaskStart(t:Task, ticks:Int, resourceMap:Map[String,TaskResource], tasks:Seq[Task]) = {
     val precedingTasks = tasks filter (_ < t)
     t.nextPossibleStart(ticks, resourceMap) + (0 /: precedingTasks)(_ + _.duration.estimate)
   }
@@ -21,7 +21,11 @@ object DefaultScheduler extends Scheduler {
     val pairs = relevant map {t => (t,nextEstimatedTaskStart(t,ticks,resourceMap,relevant))}
     val canStart = pairs filter { case (t,s) => 
       // s == ticks && // s may be overestimating the start time. having all the resources idle should be enough
-      t.resources.forall(isIdleResource(_,resourceMap)) && 
+      t.resources.forall(isIdleResource(_,resourceMap)) && // all resources are idle
+      // all other relevant tasks are either 
+      // (1) the same task (name) or 
+      // (2) lower or equal priority or 
+      // (3) their estimated start time is later than our estimated finish time
       pairs.forall({case (t2,s2) => t.name == t2.name || t.priority >= t2.priority || ticks + t.duration.estimate < s2})}
     if (canStart.isEmpty) None else Some(canStart.head._1)
   }

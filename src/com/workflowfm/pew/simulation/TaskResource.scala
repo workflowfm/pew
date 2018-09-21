@@ -50,10 +50,6 @@ class TaskResource(val name:String,val costPerTick:Int) extends ResourceMetricTr
     }
   }
   
-//  def +=(t:Task) = {
-//    println("[Resource] \"" + name + "\" added task \"" + t.name + "\" to the queue.")
-//    queue+=t
-//  }
   
   def nextAvailableTimestamp(currentTime:Int) :Int = currentTask match {
     case None => currentTime

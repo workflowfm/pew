@@ -12,6 +12,8 @@ import scala.collection.mutable.PriorityQueue
 object Coordinator {
   case object Start
   //TODO case object Stop
+  case class Done(time:Int,metrics:MetricAggregator)
+  
   case class AddSim(t:Int,sim:Simulation,exe:FutureExecutor)
   case class AddSims(l:Seq[(Int,Simulation)],exe:FutureExecutor)
   case class AddSimNow(sim:Simulation,exe:FutureExecutor)
@@ -19,17 +21,17 @@ object Coordinator {
   
   case class AddRes(r:TaskResource)
   case class SimDone(name:String,result:String)
-  case object Tick
-  case object Tack
-  case object Tock
+
   case class AddTask(t:Task)
   case object AckTask
-  case class Done(time:Int,metrics:MetricAggregator)
+
+  case object Tick
+  case object Tack
 
   def props(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMillis:Int = 40)(implicit system: ActorSystem): Props = Props(new Coordinator(scheduler,resources,timeoutMillis)(system))//.withDispatcher("akka.my-dispatcher")
 }
 
-class Coordinator(scheduler :Scheduler, val resources :Seq[TaskResource], timeoutMillis:Int)(implicit system: ActorSystem) extends Actor {
+class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMillis:Int)(implicit system: ActorSystem) extends Actor {
   import scala.collection.mutable.Queue
   
   sealed trait Event extends Ordered[Event] { 
@@ -57,7 +59,6 @@ class Coordinator(scheduler :Scheduler, val resources :Seq[TaskResource], timeou
   def addResource(r:TaskResource) = if (!resourceMap.contains(r.name)) {
     println("["+time+"] Adding resource " + r.name)
     resourceMap += r.name -> r
-    //r.idle(time)
   }
   
   protected def startSimulation(t:Int, s:Simulation, e:FutureExecutor) :Boolean = {
@@ -65,7 +66,7 @@ class Coordinator(scheduler :Scheduler, val resources :Seq[TaskResource], timeou
       println("["+time+"] Starting simulation: \"" + s.name +"\".") 
       val metrics = new SimulationMetricTracker().simStart(time)
       // change to ? to require acknowledgement
-      system.actorOf(SimulationActor.props(s)) ! SimulationActor.Run(self,e) // ,"SimulationActor:" + s.name // TODO need to escape actor name
+      system.actorOf(SimulationActor.props(s)) ! SimulationActor.Run(self,e) // TODO need to escape actor name
       simulations += ((s.name,metrics,e))
       true
     } else false
@@ -147,7 +148,8 @@ class Coordinator(scheduler :Scheduler, val resources :Seq[TaskResource], timeou
 //    val simActors = simulations map (_._2.executor)
 //    for (a <- simActors)
 //      a ? AkkaExecutor.Ping
-    self ! Coordinator.Tack
+    
+    self ! Coordinator.Tack // We need to give workflows a chance to generate new tasks
   }
   
 protected def tack :Unit = {
@@ -158,8 +160,8 @@ protected def tack :Unit = {
       println("["+time+"] All events done. All tasks done. All workflows idle. All resources idle.")
       resourceMap.values map (metrics += _)
       starter map { a => a ! Coordinator.Done(time,metrics) }
+      
     } else {
-      //Thread.sleep(halfTickMillis)
       self ! Coordinator.Tick
     }
   }
@@ -192,7 +194,6 @@ protected def tack :Unit = {
     case Coordinator.Start => start(sender)
     case Coordinator.Tick => tick
     case Coordinator.Tack => tack
-    //case Coordinator.Tock => tock
       
     case SimulationActor.AckRun => Unit
   }
