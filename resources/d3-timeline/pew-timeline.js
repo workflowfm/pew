@@ -1,7 +1,9 @@
 function displayResults(tag,data) {
+	var widthPerTick = 60
+	
 	var colorScale = d3.scale.category20().domain(tasks); 
 	//var ticks = Array(totalTicks).fill().map((v,i)=>i);
-
+	
 	var chart = d3.timeline()
 		.tickFormat( //
 				{format: d3.format("03d"),

@@ -220,12 +220,9 @@ class MetricsPythonGantt(path:String,name:String) extends MetricsOutput {
   }
 }
 
-class MetricsD3Timeline(path:String,name:String) extends MetricsOutput {  
+class MetricsD3Timeline(path:String,name:String,tick:Int=1) extends MetricsOutput {  
   import java.io._
   import sys.process._
-  
-  //val tick = 60*60*1000 // 1 hour
-  val tick = 1 // custom ticks
   
   def apply(totalTicks:Int,aggregator:MetricAggregator) = {
     val result = build(totalTicks,aggregator)
@@ -245,7 +242,6 @@ class MetricsD3Timeline(path:String,name:String) extends MetricsOutput {
   
   def build(totalTicks:Int,aggregator:MetricAggregator) = {
     var buf:StringBuilder = StringBuilder.newBuilder
-    buf.append("var widthPerTick = 60\n")
     buf.append(s"var totalTicks = $totalTicks\n")
     buf.append("\nvar tasks = [\n")
     for (t <- aggregator.taskMetrics.map(_._2.task).toSet[String]) buf.append(s"""\t"$t",\n""")
