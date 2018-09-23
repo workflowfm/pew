@@ -4,6 +4,7 @@ import akka.actor.Props
 import akka.actor.Actor
 import akka.actor.ActorRef
 import com.workflowfm.pew.execution.FutureExecutor
+import akka.actor.ActorSystem
 
 trait Metrics {
   def stringValues :List[String]
@@ -110,10 +111,12 @@ object MetricsActor {
   case class StartSims(coordinator:ActorRef,sims:Seq[(Int,Simulation)],executor:FutureExecutor)
   case class StartSimsNow(coordinator:ActorRef,sims:Seq[Simulation],executor:FutureExecutor)
   
-  def props(m:MetricsOutput): Props = Props(new MetricsActor(m))
+  def props(m:MetricsOutput, callbackActor:Option[ActorRef]=None)(implicit system: ActorSystem): Props = Props(new MetricsActor(m,callbackActor)(system))
 }
 
-class MetricsActor(m:MetricsOutput) extends Actor {
+// Provide a callbackActor to get a response when we are done. Otherwise we'll shutdown the ActorSystem 
+
+class MetricsActor(m:MetricsOutput, callbackActor:Option[ActorRef])(implicit system: ActorSystem) extends Actor {
   var coordinator:Option[ActorRef] = None
   
   def receive = {
@@ -137,6 +140,10 @@ class MetricsActor(m:MetricsOutput) extends Actor {
     case Coordinator.Done(t:Int,ma:MetricAggregator) if this.coordinator == Some(sender) => {
       this.coordinator = None
       m(t,ma)
+      callbackActor match {
+        case None => system.terminate()
+        case Some(actor) => actor ! Coordinator.Done(t,ma)
+      }
     }
   }
 }
