@@ -286,10 +286,12 @@ class MetricsD3Timeline(path:String,name:String,tick:Int=1) extends MetricsOutpu
   }
   
   def taskEntry(entry:(String,TaskMetrics)) = entry match { case (name,metrics) =>
-    val start = metrics.start * tick
-    val finish = (metrics.start + metrics.duration) * tick
+    val start = (metrics.start - 1) * tick
+    val finish = (metrics.start + metrics.duration - 1) * tick
     val task = metrics.task
-    s"""{"label":"$name", task: "$task", "starting_time": $start, "ending_time": $finish},\n"""
+    val delay = metrics.delay * tick
+    val cost = metrics.cost
+    s"""{"label":"$name", task: "$task", "starting_time": $start, "ending_time": $finish, delay: $delay, cost: $cost},\n"""
     
   }
 }
