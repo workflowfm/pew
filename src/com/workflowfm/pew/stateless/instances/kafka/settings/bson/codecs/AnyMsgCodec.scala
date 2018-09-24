@@ -1,7 +1,8 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs
 
 import com.workflowfm.pew.stateless.StatelessMessages
-import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaConnectors.{AnyMsg, AnyRes}
+import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings._
 import org.bson.{BsonReader, BsonWriter}
 import org.bson.codecs._
 import org.bson.codecs.configuration.CodecRegistry
@@ -19,30 +20,40 @@ class AnyMsgCodec( reg: CodecRegistry )
   private val assgn: Codec[Assignment] = reg.get( classOf[Assignment] )
   private val seqReq: Codec[SequenceRequest] = reg.get( classOf[SequenceRequest] )
   private val redReq: Codec[ReduceRequest] = reg.get( classOf[ReduceRequest] )
-  private val result: Codec[Result[AnyRes]] = reg.get( classOf[Result[AnyRes]] )
+  private val result: Codec[PiiResult[AnyRes]] = reg.get( classOf[PiiResult[AnyRes]] )
 
   override def encode(writer: BsonWriter, value: AnyMsg, ctx: EncoderContext): Unit = {
     value match {
-      case m: PiiUpdate           => piiUpdate.encode( writer, m, ctx )
-      case m: SequenceRequest     => seqReq.encode( writer, m, ctx )
-      case m: ReduceRequest       => redReq.encode( writer, m, ctx )
-      case m: Assignment          => assgn.encode( writer, m, ctx )
-      case m: Result[_]           => result.encode( writer, m.asInstanceOf[Result[AnyRes]], ctx )
+      case m: PiiUpdate       => piiUpdate.encode( writer, m, ctx )
+      case m: SequenceRequest => seqReq.encode( writer, m, ctx )
+      case m: ReduceRequest   => redReq.encode( writer, m, ctx )
+      case m: Assignment      => assgn.encode( writer, m, ctx )
+      case m: PiiResult[_]    => result.encode( writer, m.asInstanceOf[PiiResult[AnyRes]], ctx )
       case _ =>
     }
   }
+
+  case class UnrecognisedAnyMsg( reason: String )
+    extends Exception( reason )
 
   // Only needs to decode 2 types for PiiHistory consumers.
   override def decode(reader: BsonReader, ctx: DecoderContext): AnyMsg = {
     val mark = reader.getMark
     reader.readStartDocument()
-    val name = reader.readString( "msgType" )
+    val typeName = reader.readString( "msgType" )
     mark.reset()
 
-    if ( name == piiUpdateN )
+    if ( typeName == piiUpdateN )
       ctx.decodeWithChildContext( piiUpdate, reader )
-    else if ( name == seqReqN )
+    else if ( typeName == seqReqN )
       ctx.decodeWithChildContext( seqReq, reader )
+    else {
+      // Only PiiHistory messages need decoding so far, as they are
+      // the only 2 that are read in heterogeneous topics.
+      throw UnrecognisedAnyMsg("Unrecognised AnyMsg: " + typeName)
+      null
+    }
+
   }
 
   override def getEncoderClass: Class[AnyMsg] = ANY_MSG

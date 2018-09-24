@@ -21,7 +21,6 @@ class AssignmentCodec(
   val uuidN = "uuid"
   val piiN = "pii"
   val refN = "ref"
-  val doneN = "done"
   val procN = "proc"
   val argsN = "args"
   val resN = "res"
@@ -34,9 +33,6 @@ class AssignmentCodec(
 
     reader.readName( refN )
     val callRef: CallRef = ctx.decodeWithChildContext( callRefCodec, reader )
-
-    reader.readName( doneN )
-    val done: Boolean = reader.readBoolean()
 
     reader.readName( procN )
     val proc = reader.readString()
@@ -59,7 +55,7 @@ class AssignmentCodec(
     reader.readEndArray()
 
     reader.readEndDocument()
-    Assignment( pii, callRef, done, proc, args )
+    Assignment( pii, callRef, proc, args )
   }
 
   override def encode(writer: BsonWriter, value: Assignment, ctx: EncoderContext): Unit = {
@@ -70,9 +66,6 @@ class AssignmentCodec(
 
     writer.writeName( refN )
     ctx.encodeWithChildContext( callRefCodec, writer, value.callRef )
-
-    writer.writeName( doneN )
-    writer.writeBoolean( value.done )
 
     writer.writeName( procN )
     writer.writeString( value.process )

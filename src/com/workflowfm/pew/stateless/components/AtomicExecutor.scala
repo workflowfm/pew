@@ -10,7 +10,7 @@ import scala.util.{Failure, Success}
   *
   */
 class AtomicExecutor(implicit exec: ExecutionContext )
-  extends StatelessComponent[Assignment, Future[StatelessMessage]] {
+  extends StatelessComponent[Assignment, Future[AnyMsg]] {
 
   def getProc( pii: PiInstance[_], processName: String ): AtomicProcess
     = pii.getProc( processName ) match {
@@ -18,7 +18,7 @@ class AtomicExecutor(implicit exec: ExecutionContext )
     case Some( proc: AtomicProcess ) => proc
   }
 
-  override def respond: Assignment => Future[StatelessMessage] = {
+  override def respond: Assignment => Future[AnyMsg] = {
     case Assignment( pii, callRef, name, args ) =>
 
       logger.info("Started process '{}' - callRef_{}", name, callRef.id)

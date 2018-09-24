@@ -2,6 +2,7 @@ package com.workflowfm.pew.stateless.instances.kafka.settings.bson
 
 import com.workflowfm.pew._
 import com.workflowfm.pew.mongodb.bson._
+import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs._
 import org.bson.codecs.Codec
 import org.bson.codecs.configuration.CodecRegistry
@@ -43,7 +44,7 @@ class KafkaCodecProvider( processes: PiProcessStore )
 
   // Initialised after both Keys & Msgs as it depends on them all.
   val anykey: Codec[Any] = new AnyKeyCodec( keyPiiId, keyPiiIdCall )
-  val anymsg: Codec[Any] = new AnyMsgCodec( this )
+  val anymsg: Codec[AnyMsg] = new AnyMsgCodec( this )
 
   /** Implement the get[T] method from Codec*REGISTRY*,
     * - Needed by the PEW codecs which interface with this as a CodecRegistry.

@@ -2,8 +2,8 @@ package com.workflowfm.pew.stateless.components
 
 import com.workflowfm.pew._
 import com.workflowfm.pew.execution.ProcessExecutor
-import com.workflowfm.pew.execution.ProcessExecutor.NoResultException
-import com.workflowfm.pew.stateless.StatelessMessages.{ReduceRequest, StatelessMessage}
+import com.workflowfm.pew.execution.ProcessExecutor.{AtomicProcessIsCompositeException, NoResultException, UnknownProcessException}
+import com.workflowfm.pew.stateless.StatelessMessages.{ReduceRequest, AnyMsg}
 import com.workflowfm.pew.stateless.CallRef
 import org.bson.types.ObjectId
 import org.slf4j.{Logger, LoggerFactory}
@@ -16,16 +16,14 @@ import scala.concurrent.ExecutionContext
 class Reducer(
    implicit exec: ExecutionContext
 
- ) extends StatelessComponent[ReduceRequest, Seq[StatelessMessage]] {
-
-  private val logger: Logger = LoggerFactory.getLogger(this.getClass)
+ ) extends StatelessComponent[ReduceRequest, Seq[AnyMsg]] {
 
   import com.workflowfm.pew.stateless.StatelessMessages._
 
-  override def respond: ReduceRequest => Seq[StatelessMessage] = request
+  override def respond: ReduceRequest => Seq[AnyMsg] = request
     => piiReduce( request.pii.postResult( request.args.map( a => (a._1.id, a._2)) ) )
 
-  def piiReduce( pii: PiInstance[ObjectId] ): Seq[StatelessMessage] = {
+  def piiReduce( pii: PiInstance[ObjectId] ): Seq[AnyMsg] = {
     val piiReduced: PiInstance[ObjectId] = pii.reduce
 
     if (piiReduced.completed) Seq( piiReduced.result match {
@@ -57,29 +55,26 @@ class Reducer(
 
         case None =>
           logger.error("[" + i.id + "] Unable to find process: " + name)
-          throw ProcessExecutor.UnknownProcessException(name)
+          throw UnknownProcessException( name )
 
         case Some(_: CompositeProcess) =>
           logger.error("[" + i.id + "] Executor encountered composite process thread: " + name)
-          throw ProcessExecutor.AtomicProcessIsCompositeException(name)
+          throw AtomicProcessIsCompositeException( name )
       }
     }
   }
 
-  def getMessages( piReduced: PiInstance[ObjectId] )( ref: CallRef, fut: PiFuture ): StatelessMessage = {
+  def getMessages( piReduced: PiInstance[ObjectId] )( ref: CallRef, fut: PiFuture ): AnyMsg = {
     fut match {
       case PiFuture(name, _, args) =>
         piReduced.getProc(name) match {
 
           // Request that the process be executed.
-          case Some(p: AtomicProcess)
-            => Assignment( piReduced, ref, p.name, args )
+          case Some(p: AtomicProcess) => Assignment( piReduced, ref, p.name, args )
 
           // These should never happen! We already checked in the reducer!
-          case None
-            => new ResultFailure( piReduced, ref, ProcessExecutor.UnknownProcessException(name) )
-          case Some(_: CompositeProcess)
-            => new ResultFailure( piReduced, ref, ProcessExecutor.AtomicProcessIsCompositeException(name) )
+          case None     => new ResultFailure( piReduced, ref, UnknownProcessException(name) )
+          case Some(_)  => new ResultFailure( piReduced, ref, AtomicProcessIsCompositeException(name) )
         }
     }
   }

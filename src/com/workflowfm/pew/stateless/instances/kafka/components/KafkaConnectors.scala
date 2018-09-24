@@ -1,6 +1,6 @@
 package com.workflowfm.pew.stateless.instances.kafka.components
 
-import akka.{Done, NotUsed}
+import akka.Done
 import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.{Sink, Source}
 import com.workflowfm.pew.stateless.StatelessMessages
@@ -8,8 +8,7 @@ import com.workflowfm.pew.stateless.components._
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 import org.bson.types.ObjectId
 
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration.Duration
+import scala.concurrent.{ExecutionContext, Future}
 
 /** High-Level Kafka Interface:
   * Responsible for correctly wrapping StatelessComponents into RunnableGraphs to execute
@@ -37,7 +36,7 @@ object KafkaConnectors {
     * @param s KafkaExecutorSettings controlling the interface with the Kafka Driver.
     * @return
     */
-  def sendSingleMessage( msg: StatelessMessage )( implicit s: KafkaExecutorSettings ): Future[Done]
+  def sendSingleMessage( msg: AnyMsg )( implicit s: KafkaExecutorSettings ): Future[Done]
     = Source.single( msg ).runWith( sinkPlain )( s.materializer )
 
   /** Run an independent reducer off of a ReduceRequest topic. This allows a
@@ -124,6 +123,9 @@ object KafkaConnectors {
   def uniqueResultListener( resl: ResultListener )( implicit s: KafkaExecutorSettings ): Control
     = specificResultListener( "Event-Group-" + ObjectId.get.toHexString )( resl )( s )
 
-  def shutdown( controls: Control* ): Future[Done] = shutdown( controls )
-  def shutdown( controls: Seq[Control] ): Future[Done] = ???
+  def shutdown( controls: Control* )( implicit s: KafkaExecutorSettings ): Future[Done] = shutdownAll( controls )
+  def shutdownAll( controls: Seq[Control] )( implicit s: KafkaExecutorSettings ): Future[Done] = {
+    implicit val ctx: ExecutionContext = s.execCtx
+    Future.sequence( controls.map( _.shutdown() ) ).map( _ => Done )
+  }
 }

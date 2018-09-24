@@ -121,16 +121,16 @@ object KafkaWrapperFlows {
       })
 
   def flowMessage( implicit s: KafkaExecutorSettings )
-    : Flow[ Tracked[StatelessMessage], Message[s.AnyKey, s.AnyMsg, Committable ], NotUsed ]
-      = Flow[ Tracked[StatelessMessage] ]
+    : Flow[ Tracked[AnyMsg], PMsg[AnyMsg], NotUsed ]
+      = Flow[ Tracked[AnyMsg] ]
         .map({
           case (message, offset) =>
             Message( s.record( message ), offset )
         })
 
   def flowMultiMessage( implicit s: KafkaExecutorSettings )
-    : Flow[ Tracked[Seq[StatelessMessage]], MultiMessage[s.AnyKey, s.AnyMsg, Committable], NotUsed ]
-      = Flow[ Tracked[Seq[StatelessMessage]] ]
+    : Flow[ Tracked[Seq[AnyMsg]], PMsg[AnyMsg], NotUsed ]
+      = Flow[ Tracked[Seq[AnyMsg]] ]
         .map({
           case ( messages, offset ) =>
             MultiMessage( messages.map( s.record ).to, offset )
@@ -139,11 +139,11 @@ object KafkaWrapperFlows {
 
   /// KAFKA PRODUCER / AKKA SINKS ///
 
-  def sinkPlain( implicit s: KafkaExecutorSettings ): Sink[StatelessMessage, Future[Done]]
+  def sinkPlain( implicit s: KafkaExecutorSettings ): Sink[AnyMsg, Future[Done]]
     = plainSink( s.psAllMessages )
       .contramap( s.record )
 
-  def sinkProducerMsg( implicit s: KafkaExecutorSettings ): Sink[PMsg[Any], Future[Done]]
+  def sinkProducerMsg( implicit s: KafkaExecutorSettings ): Sink[PMsg[AnyMsg], Future[Done]]
     = commitableSink( s.psAllMessages )
 
 

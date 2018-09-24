@@ -13,11 +13,29 @@ import org.bson.types.ObjectId
 
 import scala.concurrent.ExecutionContext
 
-/**
+object KafkaExecutorSettings {
+
+  // Kafka - Topic Keys
+  type KeyPiiId = ObjectId
+  type KeyPiiIdCall = (ObjectId, CallRef)
+
+  type AnyKey = Any
+  type AnyRes = Any
+
+}
+
+/** Low-level Kafka interface:
+  * Controls how Kafka Connectors connect to kafka topics, eg:
+  * - What the topic names are.
+  * - How to connect to the kafka server.
+  * - Kafka Producer & Consumer settings.
+  * - How to serialize & deserialize messages.
+  * - Where to route produced messages.
   *
-  * @param processStore
-  * @param actorSys
-  * @param execCtx
+  * IMPORTANT: Ideally these settings should be the same for *every*
+  * Consumer or Producer running on a Kafka cluster, otherwise they
+  * might send messages incompatible with other components.
+  *
   */
 class KafkaExecutorSettings(
     processStore: PiProcessStore,
@@ -25,6 +43,7 @@ class KafkaExecutorSettings(
     val execCtx: ExecutionContext = ExecutionContext.global
   ) {
 
+  import KafkaExecutorSettings._
   import com.workflowfm.pew.stateless.StatelessMessages._
 
   type TopicN = String
@@ -88,32 +107,17 @@ class KafkaExecutorSettings(
   // Kafka - (PiiId, CallRef) keyed consumer topic settings
   val csAssignment:      ConsumerSettings[KeyPiiIdCall, Assignment] = consSettings( dsKeyPiiIdCall, dsAssignment )
 
-
   // Kafka - All producer settings
   val psAllMessages: ProducerSettings[AnyKey, AnyMsg] = prodSettings( szAnyKey, szAnyMsg )
 
-  // Kafka - Topic Keys
-  type KeyPiiId = ObjectId
-  type KeyPiiIdCall = (ObjectId, CallRef)
+  def record: AnyMsg => ProducerRecord[AnyKey, AnyMsg] = {
 
-  type AnyKey = Any
-  type AnyMsg = Any
-  type AnyRes = Any
+    case m: PiiUpdate           => new ProducerRecord( tnPiiHistory, m.pii.id, m )
+    case m: SequenceRequest     => new ProducerRecord( tnPiiHistory, m.piiId, m )
+    case m: ReduceRequest       => new ProducerRecord( tnReduceRequest, m.pii.id, m )
 
-  case class InvalidProducerMessage[T]( msg: T )
-    extends Exception( "INVALID_MSG '" + msg.getClass.toString + "': " + msg.toString )
+    case m: Assignment          => new ProducerRecord( tnAssignment, (m.pii.id, m.callRef), m )
+    case m: PiiResult[_]        => new ProducerRecord( tnResult, m.pii.id, m )
 
-  private def toMsg( topicName: TopicN, key: AnyKey, value: AnyMsg): ProducerRecord[AnyKey, AnyMsg] = {
-    new ProducerRecord( topicName, key, value )
-  }
-
-  def record: StatelessMessage => ProducerRecord[AnyKey, AnyMsg] = {
-
-    case m: PiiUpdate           => toMsg( tnPiiHistory, m.pii.id, m )
-    case m: SequenceRequest     => toMsg( tnPiiHistory, m.piiId, m )
-    case m: ReduceRequest       => toMsg( tnReduceRequest, m.pii.id, m )
-
-    case m: Assignment          => toMsg( tnAssignment, (m.pii.id, m.callRef), m )
-    case m: PiiResult[_]        => toMsg( tnResult, m.pii.id, m )
   }
 }

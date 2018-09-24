@@ -1,6 +1,6 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs
 
-import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaConnectors.KeyPiiId
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.KeyPiiId
 import org.bson.{BsonReader, BsonWriter}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 

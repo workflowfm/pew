@@ -1,6 +1,6 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs
 
-import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaConnectors._
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings._
 import org.bson.codecs._
 import org.bson.{BsonReader, BsonWriter}
 

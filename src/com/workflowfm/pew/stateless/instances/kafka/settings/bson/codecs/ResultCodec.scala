@@ -3,14 +3,15 @@ package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs.PiiT
 import com.workflowfm.pew.stateless.StatelessMessages
-import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaConnectors
+import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.AnyRes
 import org.bson._
 import org.bson.codecs._
 
 class ResultCodec(
-                   piiCodec: Codec[PiiT],
-                   resCodec: Codec[KafkaConnectors.AnyRes],
-                   refCodec: Codec[CallRef]
+     piiCodec: Codec[PiiT],
+     resCodec: Codec[AnyRes],
+     refCodec: Codec[CallRef]
 
   ) extends Codec[PewCodecs.ResMsgT] {
 
@@ -41,7 +42,7 @@ class ResultCodec(
     val res: AnyRes = ctx.decodeWithChildContext( resCodec, reader )
 
     reader.readEndDocument()
-    Result( pii, optRef, res )
+    PiiResult( pii, optRef, res )
   }
 
   override def encode(writer: BsonWriter, value: ResMsgT, ctx: EncoderContext): Unit = {

@@ -11,24 +11,14 @@ import org.bson.types.ObjectId
   */
 object StatelessMessages {
 
-  trait StatelessMessage
-  trait PiiHistory extends StatelessMessage
+  trait AnyMsg
+  trait PiiHistory extends AnyMsg
 
   case class ReduceRequest(
     pii:  PiInstance[ObjectId],
     args: Seq[(CallRef, PiObject)]
 
-  ) extends StatelessMessage {
-
-    def this( pii: PiInstance[ObjectId] )
-      = this( pii, Seq() )
-
-    def add( newArg: (CallRef, PiObject) ): ReduceRequest
-      = ReduceRequest( pii, args :+ newArg )
-
-    def add( newArgs: Seq[(CallRef, PiObject)] ): ReduceRequest
-      = ReduceRequest( pii, args ++ newArgs )
-  }
+  ) extends AnyMsg
 
   case class SequenceRequest(
     piiId: ObjectId,
@@ -47,14 +37,14 @@ object StatelessMessages {
     process:  String, // AtomicProcess,
     args:     Seq[PiResource]
 
-  ) extends StatelessMessage
+  ) extends AnyMsg
 
   case class PiiResult[T](
     pii:      PiInstance[ObjectId],
     callRef:  Option[CallRef],
     res:      T
 
-  ) extends StatelessMessage {
+  ) extends AnyMsg {
 
     def this( pi: PiInstance[ObjectId], res: T )
       = this( pi, None, res )

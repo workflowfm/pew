@@ -1,12 +1,9 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs
 
-import com.workflowfm.pew.PiInstance
 import com.workflowfm.pew.stateless.CallRef
-import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaConnectors.KeyPiiIdCall
-import org.bson.{BsonReader, BsonWriter}
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.KeyPiiIdCall
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
-import org.bson.codecs.configuration.CodecRegistry
-import org.bson.types.ObjectId
+import org.bson.{BsonReader, BsonWriter}
 
 class KeyPiiIdCallCodec( refCodec: Codec[CallRef] )
   extends Codec[KeyPiiIdCall] {
