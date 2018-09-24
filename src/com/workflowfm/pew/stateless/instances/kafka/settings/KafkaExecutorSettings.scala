@@ -107,7 +107,7 @@ class KafkaExecutorSettings(
   val csResult:           ConsumerSettings[KeyPiiId, PiiResult[AnyRes]] = consSettings( dsKeyPiiId, dsResult )
 
   // Kafka - (PiiId, CallRef) keyed consumer topic settings
-  val csAssignment:      ConsumerSettings[KeyPiiIdCall, Assignment] = consSettings( dsKeyPiiIdCall, dsAssignment )
+  val csAssignment:       ConsumerSettings[KeyPiiIdCall, Assignment] = consSettings( dsKeyPiiIdCall, dsAssignment )
 
   // Kafka - All producer settings
   val psAllMessages: ProducerSettings[AnyKey, AnyMsg] = prodSettings( szAnyKey, szAnyMsg )

@@ -6,7 +6,7 @@ import akka.kafka.scaladsl._
 import akka.stream.scaladsl._
 import com.workflowfm.pew.stateless.components.StatelessComponent
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
-import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.clients.consumer.ConsumerRecord
 
 import scala.concurrent.Future
 
@@ -81,13 +81,26 @@ object KafkaWrapperFlows {
 
   /** Kafka Consumer for the `Result` topic. Configurable Group Id to allow control of the starting point
     * of consumption.
-      *
+    *
     * @param groupId GroupId for the Kafka Consumer.
     * @return Akka source containing messages published to the `Results` topic.
     */
   def srcResult( groupId: String )( implicit s: KafkaExecutorSettings ): Source[Tracked[PiiResult[Any]], Control]
     = committableSource( s.csResult withGroupId groupId, topics( s.tnResult ) )
       .via( flowUnwrap )
+
+  /** Kafka Consumers for each topic merged into a single Akka source.
+    *
+    * @return Merged source for all topics.
+    */
+  def srcAll( implicit s: KafkaExecutorSettings ): Source[Tracked[AnyMsg], Control]
+    = Seq(
+      committableSource( s.csReduceRequest, topics( s.tnReduceRequest ) ) via flowUnwrap,
+      committableSource( s.csPiiHistory, topics( s.tnPiiHistory ) ) via flowUnwrap,
+      committableSource( s.csAssignment, topics( s.tnAssignment ) ) via flowUnwrap,
+      committableSource( s.csResult, topics( s.tnResult ) ) via flowUnwrap,
+
+    ) reduce (_ merge _)
 
 
   /// STREAM PROCESSING / AKKA FLOWS ///

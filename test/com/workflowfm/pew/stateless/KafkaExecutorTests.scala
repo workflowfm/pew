@@ -2,18 +2,22 @@ package com.workflowfm.pew.stateless
 
 import akka.Done
 import akka.actor.ActorSystem
-import com.workflowfm.pew.execution._
-import com.workflowfm.pew.SimpleProcessStore
+import akka.kafka.scaladsl.Consumer.{Control, DrainingControl}
+import akka.stream.scaladsl.{Keep, Sink}
 import com.workflowfm.pew.execution.RexampleTypes._
-import com.workflowfm.pew.stateless.instances.kafka.{CompleteKafkaExecutor, MinimalKafkaExecutor, SeqRedKafkaExecutor}
+import com.workflowfm.pew.execution._
+import com.workflowfm.pew.stateless.StatelessMessages.PiiResult
+import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
+import com.workflowfm.pew.stateless.instances.kafka.{CompleteKafkaExecutor, MinimalKafkaExecutor}
+import com.workflowfm.pew.{PiProcessStore, SimpleProcessStore}
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.scalatest._
+import org.scalatest.junit.JUnitRunner
 
-import scala.concurrent.duration._
 import scala.concurrent._
+import scala.concurrent.duration._
 
 @RunWith(classOf[JUnitRunner])
 class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll with ProcessExecutorTester {
@@ -48,6 +52,9 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
   implicit val system: ActorSystem = ActorSystem("AkkaExecutorTests")
   implicit val executionContext: ExecutionContext = ExecutionContext.global //sys
 
+  val newSettings: PiProcessStore => KafkaExecutorSettings
+    = new KafkaExecutorSettings( _, system, executionContext )
+
   val completeProcessStore
     = SimpleProcessStore(
       pai, pbi, pci, pci2,
@@ -70,15 +77,42 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     )
 
   def makeExecutor(store: SimpleProcessStore): MinimalKafkaExecutor[(Y, Z)] = {
-
-    implicit val kafkaSettings: KafkaExecutorSettings
-      = new KafkaExecutorSettings(
-        store, system, executionContext
-      )
+    implicit val s: KafkaExecutorSettings = newSettings( store )
 
     CompleteKafkaExecutor[(Y, Z)]
     // SeqRedKafkaExecutor[(Y, Z)]
   }
+
+  def isAllTidy: Boolean = {
+    implicit val s: KafkaExecutorSettings = newSettings( completeProcessStore )
+
+    val isTidy: Future[Boolean]
+      = KafkaWrapperFlows.srcAll
+        .map({
+          case (msg, offset) =>
+            offset.commitScaladsl() // Commit offsets to tidy for next test.
+            msg
+        })
+        .completionTimeout( 3.seconds )
+        .map(
+          msg => {
+
+            // PiiResults are the only valid outstanding messages.
+            val isTidy: Boolean = msg.isInstanceOf[PiiResult[_]]
+
+            // Log all invalid outstanding messages.
+            if (!isTidy) System.err.println( "isAllTidy: " + msg.toString )
+
+            isTidy
+        })
+        .recover({ case _: TimeoutException => true })
+        .runFold( true )( _ && _ )( s.materializer )
+
+    Await.result( isTidy, Duration.Inf )
+  }
+
+  // Ensure there are no outstanding messages before starting testing.
+  isAllTidy
 
   it should "execute atomic PbI once" in {
 
@@ -87,6 +121,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
 
     await( f1 ) should be ("PbISleptFor1s")
     ex.syncShutdown()
+
+    isAllTidy should be (true)
   }
 
   it should "execute atomic PbI twice concurrently" in {
@@ -98,6 +134,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f1) should be ("PbISleptFor2s")
     await(f2) should be ("PbISleptFor1s")
     ex.syncShutdown()
+
+    isAllTidy should be (true)
   }
 
   it should "execute Rexample once" in {
@@ -107,6 +145,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
 
     await(f1) should be (("PbISleptFor2s","PcISleptFor1s"))
     ex.syncShutdown()
+
+    isAllTidy should be (true)
   }
 
   it should "execute Rexample once with same timings" in {
@@ -116,6 +156,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
 
     await(f1) should be (("PbISleptFor1s","PcISleptFor1s"))
     ex.syncShutdown()
+
+    isAllTidy should be (true)
   }
 
   it should "execute Rexample twice concurrently" in {
@@ -127,6 +169,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f1) should be (("PbISleptFor3s","PcISleptFor1s"))
     await(f2) should be (("PbISleptFor1s","PcISleptFor2s"))
     ex.syncShutdown()
+
+    isAllTidy should be (true)
   }
 
   it should "execute Rexample twice with same timings concurrently" in {
@@ -138,6 +182,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f1) should be (("PbISleptFor1s","PcISleptFor1s"))
     await(f2) should be (("PbISleptFor1s","PcISleptFor1s"))
     ex.syncShutdown()
+
+    isAllTidy should be (true)
   }
 
   it should "execute Rexample thrice concurrently" in {
@@ -151,6 +197,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f2) should be (("PbISleptFor1s","PcISleptFor1s"))
     await(f3) should be (("PbISleptFor1s","PcISleptFor1s"))
     ex.syncShutdown()
+
+    isAllTidy should be (true)
   }
 
   it should "execute Rexample twice, each with a differnt component" in {
@@ -162,49 +210,55 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f1) should be (("PbISleptFor1s","PcISleptFor1s"))
     await(f2) should be (("PbISleptFor1s","PcXSleptFor1s"))
     ex.syncShutdown()
+
+    isAllTidy should be (true)
   }
 
   it should "handle a failing atomic process" in {
 
-     val ex = makeExecutor( failureProcessStore )
-     val f1 = ex.execute( failp, Seq(1) )
+    val ex = makeExecutor( failureProcessStore )
+    val f1 = ex.execute( failp, Seq(1) )
 
-     try {
-       await(f1)
-     } catch {
-       case e: Exception => e.getMessage should be ("FailP")
-     }
+    try await(f1)
+    catch {
+     case e: Exception =>
+       e.getMessage should be ("FailP")
+    }
 
-     ex.syncShutdown()
-   }
+    ex.syncShutdown()
+    isAllTidy should be (true)
+  }
 
   it should "handle a failing composite process" in {
 
-     val ex = makeExecutor( failureProcessStore )
-     val f1 = ex.execute( rif, Seq(21) )
+    val ex = makeExecutor( failureProcessStore )
+    val f1 = ex.execute( rif, Seq(21) )
 
-     try {
-       await(f1)
-     } catch {
-       case e: Exception => e.getMessage should be ("Fail")
-     }
+    try await(f1)
+    catch {
+      case e: Exception =>
+        e.getMessage should be ("Fail")
+    }
 
-     ex.syncShutdown()
+    ex.syncShutdown()
+    isAllTidy should be (true)
    }
 
   it should "2 separate executors should execute with same timings concurrently" in {
 
-     val ex1 = makeExecutor(completeProcessStore)
-     val ex2 = makeExecutor(completeProcessStore)
+    val ex1 = makeExecutor(completeProcessStore)
+    val ex2 = makeExecutor(completeProcessStore)
 
-     val f1 = ex1.execute(ri,Seq(11))
-     val f2 = ex2.execute(ri,Seq(11))
+    val f1 = ex1.execute(ri,Seq(11))
+    val f2 = ex2.execute(ri,Seq(11))
 
-     await(f1) should be (("PbISleptFor1s","PcISleptFor1s"))
-     await(f2) should be (("PbISleptFor1s","PcISleptFor1s"))
+    await(f1) should be (("PbISleptFor1s","PcISleptFor1s"))
+    await(f2) should be (("PbISleptFor1s","PcISleptFor1s"))
 
-     ex1.syncShutdown()
-     ex2.syncShutdown()
+    ex1.syncShutdown()
+    ex2.syncShutdown()
+
+    isAllTidy should be (true)
    }
 
   it should "an executor should restart successfully" in {
@@ -226,6 +280,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
 
       await(f2) should be (("PbISleptFor2s","PcISleptFor1s"))
     }
+
+    isAllTidy should be (true)
   }
 
 }
