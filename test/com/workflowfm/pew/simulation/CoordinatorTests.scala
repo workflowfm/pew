@@ -134,7 +134,7 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
       
       done.time should be (3)
       done.metrics.resourceMetrics.isEmpty should be (true)
-      done.metrics.simulationMetrics.size should be (1)
+      done.metrics.workflowMetrics.size should be (1)
       done.metrics.taskMetrics.size should be (1)
     }
     
@@ -152,7 +152,7 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
       
       done.time should be (3)
       done.metrics.resourceMetrics.isEmpty should be (true)
-      done.metrics.simulationMetrics.size should be (2)
+      done.metrics.workflowMetrics.size should be (2)
       done.metrics.taskMetrics.size should be (2)
     }
   }

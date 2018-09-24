@@ -19,15 +19,15 @@ class MetricTracker[T <: Metrics](init :T) {
 }
 
 object TaskMetrics {
-  def header(sep:String) = List("Task","Start","Delay","Duration","Cost","Simulation","Resources").mkString(sep)
+  def header(sep:String) = List("Task","Start","Delay","Duration","Cost","Workflow","Resources").mkString(sep)
 }
-case class TaskMetrics (task:String, start:Int, delay:Int, duration:Int, cost:Int, simulation:String, resources:Seq[String]) extends Metrics {
-  override def stringValues = List(task,start,delay,duration,cost,simulation,"\"" + resources.mkString(",") + "\"") map (_.toString)
+case class TaskMetrics (task:String, start:Int, delay:Int, duration:Int, cost:Int, workflow:String, resources:Seq[String]) extends Metrics {
+  override def stringValues = List(task,start,delay,duration,cost,workflow,"\"" + resources.mkString(",") + "\"") map (_.toString)
 //  def addDelay(d :Int) = copy(delay = delay + d)
 //  def addDuration(d :Int) = copy(duration = duration + d)
 //  def addCost(c:Int) = copy(cost = cost + c)
   def setStart(st:Int) = copy(start=st)
-  def setResources(sim:String,rs:Seq[String]) = copy(simulation=sim,resources=rs)
+  def setResources(wf:String,rs:Seq[String]) = copy(workflow=wf,resources=rs)
   def add(dl:Int, dur:Int, c:Int) = copy(delay = delay + dl, duration = duration + dur, cost = cost + c)
 }
 
@@ -39,10 +39,10 @@ class TaskMetricTracker(task:String) extends MetricTracker[TaskMetrics](TaskMetr
   }
 }
 
-object SimulationMetrics {
+object WorkflowMetrics {
   def header(sep:String) = List("Start","Duration","Cost","Result").mkString(sep)
 }
-case class SimulationMetrics (start:Int, duration: Int, cost: Int, result :String) extends Metrics {
+case class WorkflowMetrics (start:Int, duration: Int, cost: Int, result :String) extends Metrics {
   override def stringValues = List(start,duration,cost,"\"" + result + "\"") map (_.toString)
   def setStart(st:Int) = copy(start=st)
   def setResult(r:String) = copy(result = r) 
@@ -50,7 +50,7 @@ case class SimulationMetrics (start:Int, duration: Int, cost: Int, result :Strin
   def addCost(c:Int) = copy(cost = cost + c)
 }
 
-class SimulationMetricTracker() extends MetricTracker[SimulationMetrics](SimulationMetrics(-1,0,0,"None")) {
+class WorkflowMetricTracker() extends MetricTracker[WorkflowMetrics](WorkflowMetrics(-1,0,0,"None")) {
   def simStart(t:Int) = this <~ (_.setStart(t))
   def simDone(t:Int) = if (metrics.start > 0) {
     this <~ (_.addDuration(t - metrics.start)) 
@@ -82,11 +82,11 @@ class ResourceMetricTracker() extends MetricTracker[ResourceMetrics](ResourceMet
 class MetricAggregator() {
   import scala.collection.mutable.Queue
   val taskMetrics = Queue[(String,TaskMetrics)]()
-  val simulationMetrics = Queue[(String,SimulationMetrics)]()
+  val workflowMetrics = Queue[(String,WorkflowMetrics)]()
   val resourceMetrics = Queue[(String,ResourceMetrics)]()
   
   def +=(s:String,m:TaskMetrics) = taskMetrics += (s->m)
-  def +=(s:String,m:SimulationMetrics) = simulationMetrics += (s->m)
+  def +=(s:String,m:WorkflowMetrics) = workflowMetrics += (s->m)
   def +=(s:String,m:ResourceMetrics) = resourceMetrics += (s->m)
   
   def +=(t:Task) = taskMetrics += ((t.name + "(" + t.simulation + ")")->t.metrics)
@@ -96,13 +96,13 @@ class MetricAggregator() {
   def values(sep:String)(e:(String,Metrics)) = e._1 + sep + e._2.values(sep)
   
   def taskValues(sep:String) = (taskMetrics map values(sep)).mkString("\n")
-  def simulationValues(sep:String) = (simulationMetrics map values(sep)).mkString("\n")
+  def workflowValues(sep:String) = (workflowMetrics map values(sep)).mkString("\n")
   def resourceValues(sep:String) = (resourceMetrics map values(sep)).mkString("\n")
 
   def taskTable(sep:String) = 
     "Name" + sep + TaskMetrics.header(sep) + "\n" + taskValues(sep) + "\n"
-  def simulationTable(sep:String) =
-    "Name" + sep + SimulationMetrics.header(sep) + "\n" + simulationValues(sep) + "\n"
+  def workflowTable(sep:String) =
+    "Name" + sep + WorkflowMetrics.header(sep) + "\n" + workflowValues(sep) + "\n"
   def resourceTable(sep:String) =
     "Name" + sep + ResourceMetrics.header(sep) + "\n" + resourceValues(sep) + "\n"
 }

@@ -46,7 +46,7 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
   case class StartingSim(override val time:Int,simulation:Simulation,executor:FutureExecutor) extends Event
   
   var resourceMap :Map[String,TaskResource] = (Map[String,TaskResource]() /: resources){ case (m,r) => m + (r.name -> r)}
-  var simulations :Queue[(String,SimulationMetricTracker,FutureExecutor)] = Queue()
+  var simulations :Queue[(String,WorkflowMetricTracker,FutureExecutor)] = Queue()
   val tasks :Queue[Task] = Queue()
   
   val events = new PriorityQueue[Event]()
@@ -66,7 +66,7 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
   protected def startSimulation(t:Int, s:Simulation, e:FutureExecutor) :Boolean = {
     if (t == time) {
       println("["+time+"] Starting simulation: \"" + s.name +"\".") 
-      val metrics = new SimulationMetricTracker().simStart(time)
+      val metrics = new WorkflowMetricTracker().simStart(time)
       // change to ? to require acknowledgement
       system.actorOf(SimulationActor.props(s)) ! SimulationActor.Run(self,e) // TODO need to escape actor name
       simulations += ((s.name,metrics,e))
@@ -74,7 +74,7 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
     } else false
   }
   
-  protected def updateSimulation(s:String, f:SimulationMetricTracker=>SimulationMetricTracker) = simulations = simulations map { 
+  protected def updateSimulation(s:String, f:WorkflowMetricTracker=>WorkflowMetricTracker) = simulations = simulations map { 
     case (n,m,e) if n.equals(s) => (n,f(m),e) 
     case x => x
   }

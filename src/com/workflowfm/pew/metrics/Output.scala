@@ -65,9 +65,9 @@ class MetricsPrinter extends MetricsOutput {
         "Tasks\n" +
         "-----\n" +
         aggregator.taskTable(sep) + "\n" +
-        "Simulations\n" +
+        "Workflows\n" +
         "-----------\n" +
-        aggregator.simulationTable(sep) + "\n" +
+        aggregator.workflowTable(sep) + "\n" +
         "Resources\n" +
         "---------\n" +
         aggregator.resourceTable(sep) + "\n\n"
@@ -81,10 +81,10 @@ class MetricsCSVFileOutput(path:String,name:String) extends MetricsOutput {
   def apply(totalTicks:Int,aggregator:MetricAggregator) = {
     val sep = ","
     val taskFile = s"$path$name-tasks.csv"
-    val simulationFile = s"$path$name-simulations.csv"
+    val workflowFile = s"$path$name-workflows.csv"
     val resourceFile = s"$path$name-resources.csv"
     writeToFile(taskFile, aggregator.taskTable(sep) + "\n")
-    writeToFile(simulationFile, aggregator.simulationTable(sep) + "\n")
+    writeToFile(workflowFile, aggregator.workflowTable(sep) + "\n")
     writeToFile(resourceFile, aggregator.resourceTable(sep) + "\n")        
   }
   
@@ -157,23 +157,23 @@ class MetricsD3Timeline(path:String,name:String,tick:Int=1) extends MetricsOutpu
     for (t <- aggregator.taskMetrics.map(_._2.task).toSet[String]) buf.append(s"""\t"$t",\n""")
     buf.append("];\n\nvar resourceData = [\n")
     for (r <- aggregator.resourceMetrics.sortWith(sortRes)) buf.append(resourceEntry(r._1,aggregator))
-    buf.append("];\n\nvar simulationData = [\n")
-    for (s <- aggregator.simulationMetrics.sortWith(sortSim)) buf.append(simulationEntry(s._1,aggregator))
+    buf.append("];\n\nvar workflowData = [\n")
+    for (s <- aggregator.workflowMetrics.sortWith(sortWf)) buf.append(workflowEntry(s._1,aggregator))
     buf.append("];\n")
     buf.toString
   }
   
-  def sortSim(l:(String,SimulationMetrics),r:(String,SimulationMetrics)) = 
+  def sortWf(l:(String,WorkflowMetrics),r:(String,WorkflowMetrics)) = 
     (l._2.start.compareTo(r._2.start)) match {
     case 0 => l._1.compareTo(r._1) < 0
     case c => c < 0
   }
 
   
-  def simulationEntry(sim:String,agg:MetricAggregator) = {
-    val tasks = agg.taskMetrics.filter(_._2.simulation==sim)
+  def workflowEntry(wf:String,agg:MetricAggregator) = {
+    val tasks = agg.taskMetrics.filter(_._2.workflow==wf)
     val times = ("" /: tasks)(_ + "\t" + taskEntry(_))
-    s"""{label: \"$sim\", times: [""" + "\n" + times + "]},\n"
+    s"""{label: \"$wf\", times: [""" + "\n" + times + "]},\n"
   }
   
   def sortRes(l:(String,ResourceMetrics),r:(String,ResourceMetrics)) =
