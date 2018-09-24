@@ -23,6 +23,7 @@ object PewCodecs {
   val KEY_PII_ID_CALL:  Class[KeyPiiIdCall]     = classOf[KeyPiiIdCall]
   val PII_UPDATE:       Class[PiiUpdate]        = classOf[PiiUpdate]
   val ASSIGNMENT:       Class[Assignment]       = classOf[Assignment]
+  val PII_HISTORY:      Class[PiiHistory]       = classOf[PiiHistory]
   val REDUCE_REQUEST:   Class[ReduceRequest]    = classOf[ReduceRequest]
   val SEQUENCE_REQ:     Class[SequenceRequest]  = classOf[SequenceRequest]
   val RESULT_ANY_MSG:   Class[ResMsgT]          = classOf[ResMsgT]

@@ -41,6 +41,7 @@ class KafkaCodecProvider( processes: PiProcessStore )
   private val seqReq = new SequenceRequestCodec( callRef, obj )
   private val redReq = new ReduceRequestCodec( piInst, callRef, obj )
   private val res = new ResultCodec( piInst, anyres, callRef )
+  private val piiHistory = new PiiHistoryCodec( seqReq, update )
 
   // Initialised after both Keys & Msgs as it depends on them all.
   val anykey: Codec[Any] = new AnyKeyCodec( keyPiiId, keyPiiIdCall )
@@ -77,6 +78,8 @@ class KafkaCodecProvider( processes: PiProcessStore )
     case SEQUENCE_REQ         => seqReq
     case REDUCE_REQUEST       => redReq
     case RESULT_ANY_MSG       => res
+
+    case PII_HISTORY          => piiHistory
 
     // TODO, How are these being differentiated, they're the same type ?!?!?!
     case ANY_KEY              => anykey
