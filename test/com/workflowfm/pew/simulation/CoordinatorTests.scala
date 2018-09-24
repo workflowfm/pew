@@ -10,6 +10,9 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import com.workflowfm.pew._
 import com.workflowfm.pew.execution._
+import com.workflowfm.pew.metrics.MetricsPrinter
+import com.workflowfm.pew.metrics.MetricsOutputs
+import com.workflowfm.pew.metrics.MetricsActor
 
 
 @RunWith(classOf[JUnitRunner])
