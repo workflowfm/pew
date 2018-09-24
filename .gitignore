@@ -4,3 +4,4 @@
 .cache*
 /target/
 /.idea
+/resources/data

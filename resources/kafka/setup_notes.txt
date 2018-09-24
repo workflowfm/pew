@@ -1,0 +1,9 @@
+
+Kafka Quick-Start Guide:
+http://kafka.apache.org/quickstart
+
+Kafka Download (windows and linux):
+- Versions 2.11 - 2.0.0 should work.
+https://www.apache.org/dyn/closer.cgi?path=/kafka/2.0.0/kafka_2.11-2.0.0.tgz
+
+
