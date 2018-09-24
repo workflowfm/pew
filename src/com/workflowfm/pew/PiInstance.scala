@@ -61,6 +61,11 @@ case class PiInstance[T](final val id:T, called:Seq[Int], process:PiProcess, sta
 }
 object PiInstance {
   def apply[T](id:T,p:PiProcess,args:PiObject*):PiInstance[T] = PiInstance(id, Seq(), p, p.execState(args))
+
+  /** Construct a PiInstance as if we are making a call to ProcessExecutor.execute
+    */
+  def forCall[T]( id: T, p: PiProcess, args: Any* ): PiInstance[T]
+    = PiInstance( id, Seq(), p, p execState ( args map PiObject.apply ) )
 }
 
 

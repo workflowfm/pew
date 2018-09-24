@@ -2,15 +2,13 @@ package com.workflowfm.pew.stateless
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.kafka.scaladsl.Consumer.{Control, DrainingControl}
-import akka.stream.scaladsl.{Keep, Sink}
 import com.workflowfm.pew.execution.RexampleTypes._
 import com.workflowfm.pew.execution._
-import com.workflowfm.pew.stateless.StatelessMessages.PiiResult
-import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows
+import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, PiiResult, PiiUpdate, piiId}
+import com.workflowfm.pew.stateless.instances.kafka.components.{KafkaConnectors, KafkaWrapperFlows}
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 import com.workflowfm.pew.stateless.instances.kafka.{CompleteKafkaExecutor, MinimalKafkaExecutor}
-import com.workflowfm.pew.{PiProcessStore, SimpleProcessStore}
+import com.workflowfm.pew.{PiInstance, PiProcessStore, SimpleProcessStore}
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
 import org.scalatest._
@@ -83,7 +81,10 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     // SeqRedKafkaExecutor[(Y, Z)]
   }
 
-  def isAllTidy: Boolean = {
+  val isPiiResult: AnyMsg => Boolean = _.isInstanceOf[PiiResult[_]]
+
+  // TODO: Fix consumer shutdown: https://github.com/akka/alpakka-kafka/issues/166
+  def isAllTidy( isValid: AnyMsg => Boolean = isPiiResult ): Boolean = {
     implicit val s: KafkaExecutorSettings = newSettings( completeProcessStore )
 
     val isTidy: Future[Boolean]
@@ -98,7 +99,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
           msg => {
 
             // PiiResults are the only valid outstanding messages.
-            val isTidy: Boolean = msg.isInstanceOf[PiiResult[_]]
+            val isTidy: Boolean = isValid( msg )
 
             // Log all invalid outstanding messages.
             if (!isTidy) System.err.println( "isAllTidy: " + msg.toString )
@@ -112,7 +113,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
   }
 
   // Ensure there are no outstanding messages before starting testing.
-  isAllTidy
+  isAllTidy()
 
   it should "execute atomic PbI once" in {
 
@@ -122,7 +123,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await( f1 ) should be ("PbISleptFor1s")
     ex.syncShutdown()
 
-    isAllTidy should be (true)
+    isAllTidy() should be (true)
   }
 
   it should "execute atomic PbI twice concurrently" in {
@@ -135,7 +136,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f2) should be ("PbISleptFor1s")
     ex.syncShutdown()
 
-    isAllTidy should be (true)
+    isAllTidy() should be (true)
   }
 
   it should "execute Rexample once" in {
@@ -146,7 +147,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f1) should be (("PbISleptFor2s","PcISleptFor1s"))
     ex.syncShutdown()
 
-    isAllTidy should be (true)
+    isAllTidy() should be (true)
   }
 
   it should "execute Rexample once with same timings" in {
@@ -157,7 +158,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f1) should be (("PbISleptFor1s","PcISleptFor1s"))
     ex.syncShutdown()
 
-    isAllTidy should be (true)
+    isAllTidy() should be (true)
   }
 
   it should "execute Rexample twice concurrently" in {
@@ -170,7 +171,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f2) should be (("PbISleptFor1s","PcISleptFor2s"))
     ex.syncShutdown()
 
-    isAllTidy should be (true)
+    isAllTidy() should be (true)
   }
 
   it should "execute Rexample twice with same timings concurrently" in {
@@ -183,7 +184,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f2) should be (("PbISleptFor1s","PcISleptFor1s"))
     ex.syncShutdown()
 
-    isAllTidy should be (true)
+    isAllTidy() should be (true)
   }
 
   it should "execute Rexample thrice concurrently" in {
@@ -198,7 +199,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f3) should be (("PbISleptFor1s","PcISleptFor1s"))
     ex.syncShutdown()
 
-    isAllTidy should be (true)
+    isAllTidy() should be (true)
   }
 
   it should "execute Rexample twice, each with a differnt component" in {
@@ -211,7 +212,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f2) should be (("PbISleptFor1s","PcXSleptFor1s"))
     ex.syncShutdown()
 
-    isAllTidy should be (true)
+    isAllTidy() should be (true)
   }
 
   it should "handle a failing atomic process" in {
@@ -226,7 +227,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     }
 
     ex.syncShutdown()
-    isAllTidy should be (true)
+    isAllTidy() should be (true)
   }
 
   it should "handle a failing composite process" in {
@@ -241,7 +242,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     }
 
     ex.syncShutdown()
-    isAllTidy should be (true)
+    isAllTidy() should be (true)
    }
 
   it should "2 separate executors should execute with same timings concurrently" in {
@@ -258,7 +259,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     ex1.syncShutdown()
     ex2.syncShutdown()
 
-    isAllTidy should be (true)
+    isAllTidy() should be (true)
    }
 
   it should "an executor should restart successfully" in {
@@ -281,7 +282,25 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
       await(f2) should be (("PbISleptFor2s","PcISleptFor1s"))
     }
 
-    isAllTidy should be (true)
+    isAllTidy() should be (true)
+  }
+
+  it should "execute correctly with an outstanding PiiUpdate" in {
+
+    // Construct and send an outstanding PiiUpdate message to test robustness.
+    val outstanding: PiiUpdate = PiiUpdate( PiInstance.forCall( ObjectId.get, ri, 2, 1 ) )
+    KafkaConnectors.sendSingleMessage( outstanding )( newSettings( completeProcessStore ) )
+
+    val ex = makeExecutor(completeProcessStore)
+    val f1 = ex.execute(ri, Seq(21))
+
+    await(f1) should be (("PbISleptFor2s","PcISleptFor1s"))
+    ex.syncShutdown()
+
+    // We don't care what state we leave the outstanding message in, provided we clean our own state.
+    def isValid( msg: AnyMsg ): Boolean = isPiiResult( msg ) || piiId( msg ) == outstanding.pii.id
+
+    isAllTidy( isValid ) should be (true)
   }
 
 }
