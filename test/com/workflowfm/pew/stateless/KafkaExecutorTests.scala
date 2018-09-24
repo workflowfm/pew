@@ -4,7 +4,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import com.workflowfm.pew.execution.RexampleTypes._
 import com.workflowfm.pew.execution._
-import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, PiiResult, PiiUpdate, piiId}
+import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.instances.kafka.components.{KafkaConnectors, KafkaWrapperFlows}
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 import com.workflowfm.pew.stateless.instances.kafka.{CompleteKafkaExecutor, MinimalKafkaExecutor}
@@ -14,6 +14,7 @@ import org.junit.runner.RunWith
 import org.scalatest._
 import org.scalatest.junit.JUnitRunner
 
+import scala.collection.immutable
 import scala.concurrent._
 import scala.concurrent.duration._
 
@@ -84,33 +85,23 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
   val isPiiResult: AnyMsg => Boolean = _.isInstanceOf[PiiResult[_]]
 
   // TODO: Fix consumer shutdown: https://github.com/akka/alpakka-kafka/issues/166
-  def isAllTidy( isValid: AnyMsg => Boolean = isPiiResult ): Boolean = {
+  def outstanding( consume: Boolean ): Seq[ AnyMsg ] = {
     implicit val s: KafkaExecutorSettings = newSettings( completeProcessStore )
 
-    val isTidy: Future[Boolean]
+    val fOutstanding: Future[Seq[AnyMsg]]
       = KafkaWrapperFlows.srcAll
-        .map({
-          case (msg, offset) =>
-            offset.commitScaladsl() // Commit offsets to tidy for next test.
-            msg
-        })
-        .completionTimeout( 3.seconds )
-        .map(
-          msg => {
+      .map({ case (msg, offset) => offset.commitScaladsl(); msg })
+      .completionTimeout(5.seconds)
+      .map( Some(_) )
+      .recover({ case _: TimeoutException => None })
+      .collect({ case Some( msg ) => msg })
+      .runFold( Seq(): Seq[AnyMsg] )( _ :+ _ )( s.materializer )
 
-            // PiiResults are the only valid outstanding messages.
-            val isTidy: Boolean = isValid( msg )
-
-            // Log all invalid outstanding messages.
-            if (!isTidy) System.err.println( "isAllTidy: " + msg.toString )
-
-            isTidy
-        })
-        .recover({ case _: TimeoutException => true })
-        .runFold( true )( _ && _ )( s.materializer )
-
-    Await.result( isTidy, Duration.Inf )
+    Await.result( fOutstanding, Duration.Inf )
   }
+
+  def isAllTidy( isValid: AnyMsg => Boolean = isPiiResult ): Boolean
+    = outstanding( true ).forall( isValid )
 
   // Ensure there are no outstanding messages before starting testing.
   isAllTidy()
@@ -264,19 +255,39 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
 
   it should "an executor should restart successfully" in {
 
-    val piiId: ObjectId = new ObjectId
+    val ourPiiId: ObjectId = new ObjectId
 
     {
       val ex = makeExecutor( shutdownProcessStore )
-      ex.executeWith( piiId, ri, Seq(21) )
+      ex.executeWith( ourPiiId, ri, Seq(21) )
 
       Thread.sleep( 5.seconds.toMillis )
       ex.syncShutdown()
     }
 
     {
+      val outstandingMsgs: Map[String, Int]
+        = outstanding(false)
+          .filter(piiId(_) == ourPiiId)
+          .map(_.getClass.getSimpleName)
+          .groupBy(identity)
+          .mapValues(_.size)
+          .withDefaultValue(0)
+
+      val expectedMsgs: Map[String, Int]
+        = Map(
+          "ReduceRequest" -> 0,
+          "SequenceRequest" -> 0,
+          "Assignment" -> 1,
+          "PiiUpdate" -> 1
+        )
+
+      outstandingMsgs should be (expectedMsgs)
+    }
+
+    {
       val ex = makeExecutor( completeProcessStore )
-      val f2: Future[(Y,Z)] = ex.connect( piiId, ri, Seq(21) )._2
+      val f2: Future[(Y,Z)] = ex.connect( ourPiiId, ri, Seq(21) )._2
       pciw.release()
 
       await(f2) should be (("PbISleptFor2s","PcISleptFor1s"))
@@ -288,8 +299,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
   it should "execute correctly with an outstanding PiiUpdate" in {
 
     // Construct and send an outstanding PiiUpdate message to test robustness.
-    val outstanding: PiiUpdate = PiiUpdate( PiInstance.forCall( ObjectId.get, ri, 2, 1 ) )
-    KafkaConnectors.sendSingleMessage( outstanding )( newSettings( completeProcessStore ) )
+    val oldMsg: PiiUpdate = PiiUpdate( PiInstance.forCall( ObjectId.get, ri, 2, 1 ) )
+    KafkaConnectors.sendSingleMessage( oldMsg )( newSettings( completeProcessStore ) )
 
     val ex = makeExecutor(completeProcessStore)
     val f1 = ex.execute(ri, Seq(21))
@@ -298,7 +309,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     ex.syncShutdown()
 
     // We don't care what state we leave the outstanding message in, provided we clean our own state.
-    def isValid( msg: AnyMsg ): Boolean = isPiiResult( msg ) || piiId( msg ) == outstanding.pii.id
+    def isValid( msg: AnyMsg ): Boolean = isPiiResult( msg ) || piiId( msg ) == oldMsg.pii.id
 
     isAllTidy( isValid ) should be (true)
   }
