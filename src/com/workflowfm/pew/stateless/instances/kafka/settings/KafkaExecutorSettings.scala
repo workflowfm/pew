@@ -12,6 +12,7 @@ import org.apache.kafka.common.serialization._
 import org.bson.types.ObjectId
 
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 object KafkaExecutorSettings {
 
@@ -88,6 +89,7 @@ class KafkaExecutorSettings(
       .withBootstrapServers( serverAndPort )
       .withGroupId( defaultGroupId )
       .withProperty( AUTO_OFFSET_RESET_CONFIG, "earliest" )
+      .withWakeupTimeout( 10.seconds )
   }
 
   def prodSettings[K, V]( szKey: Serializer[K], szVal: Serializer[V] )
