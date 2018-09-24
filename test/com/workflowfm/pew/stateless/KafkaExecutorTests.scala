@@ -5,7 +5,7 @@ import akka.actor.ActorSystem
 import com.workflowfm.pew.execution._
 import com.workflowfm.pew.SimpleProcessStore
 import com.workflowfm.pew.execution.RexampleTypes._
-import com.workflowfm.pew.stateless.instances.kafka.{CompleteKafkaExecutor, MinimalKafkaExecutor}
+import com.workflowfm.pew.stateless.instances.kafka.{CompleteKafkaExecutor, MinimalKafkaExecutor, SeqRedKafkaExecutor}
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
@@ -76,7 +76,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
         store, system, executionContext
       )
 
-    CompleteKafkaExecutor[(Y, Z)]( completeProcessStore )
+    CompleteKafkaExecutor[(Y, Z)]
+    // SeqRedKafkaExecutor[(Y, Z)]
   }
 
   it should "execute atomic PbI once" in {

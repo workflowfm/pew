@@ -23,9 +23,6 @@ import scala.concurrent._
   * but need not be situated on the local machine.
   */
 class MinimalKafkaExecutor[ResultT](
-    processes: PiProcessStore
-
-  ) (
     implicit settings: KafkaExecutorSettings
 
   ) extends StatelessExecutor[ResultT] {
