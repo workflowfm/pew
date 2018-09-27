@@ -35,7 +35,7 @@ class MinimalKafkaExecutor[ResultT](
   // Implicit settings.
   implicit val actorSystem: ActorSystem = settings.actorSys
   implicit val executionContext: ExecutionContext = settings.execCtx
-  implicit val materializer: Materializer = settings.materializer
+  implicit val materializer: Materializer = settings.mat
 
   val defaultHandler = new LoggerHandler[ObjectId]( logger )
   val futureHandler = new FuturePiEventHandler[ObjectId, ResultT]
@@ -63,7 +63,7 @@ class MinimalKafkaExecutor[ResultT](
 
     // Locally send the initial reduce request.
     logger.info( "Seeding initial 'ReduceRequest'." )
-    sendSingleMessage( ReduceRequest( pii, Seq() ) )
+    sendMessages( ReduceRequest( pii, Seq() ) )
 
     result
   }

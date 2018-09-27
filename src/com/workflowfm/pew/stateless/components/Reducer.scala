@@ -54,11 +54,11 @@ class Reducer(
         case Some(_: AtomicProcess) => true
 
         case None =>
-          logger.error("[" + i.id + "] Unable to find process: " + name)
+          //logger.error("[" + i.id + "] Unable to find process: " + name)
           throw UnknownProcessException( name )
 
         case Some(_: CompositeProcess) =>
-          logger.error("[" + i.id + "] Executor encountered composite process thread: " + name)
+          //logger.error("[" + i.id + "] Executor encountered composite process thread: " + name)
           throw AtomicProcessIsCompositeException( name )
       }
     }

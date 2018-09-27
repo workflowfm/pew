@@ -2,106 +2,27 @@ package com.workflowfm.pew.stateless
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.stream.scaladsl.Sink
 import com.workflowfm.pew.execution.RexampleTypes._
 import com.workflowfm.pew.execution._
-import com.workflowfm.pew.stateless.StatelessMessages._
+import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, _}
 import com.workflowfm.pew.stateless.instances.kafka.components.{KafkaConnectors, KafkaWrapperFlows}
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 import com.workflowfm.pew.stateless.instances.kafka.{CompleteKafkaExecutor, MinimalKafkaExecutor}
 import com.workflowfm.pew.{PiInstance, PiProcessStore, SimpleProcessStore}
+import org.apache.kafka.clients.producer.ProducerRecord
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
 import org.scalatest._
 import org.scalatest.junit.JUnitRunner
 
-import scala.collection.immutable
+import scala.collection.{immutable, mutable}
 import scala.concurrent._
 import scala.concurrent.duration._
+import scala.reflect.ClassTag
 
 @RunWith(classOf[JUnitRunner])
-class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll with ProcessExecutorTester {
-
-  class PcIWait( s: String = "PcI" ) extends Pc {
-    override def iname: String = s
-
-    private var promise: Promise[Done] = Promise[Done]()
-
-    override def apply( arg0 :B ) :Z = {
-      Await.result( promise.future, Duration.Inf )
-      iname + "SleptFor" + arg0 +"s"
-    }
-
-    def release(): Unit = {
-      promise.success( Done )
-      promise = Promise[Done]()
-    }
-  }
-
-  val failp = new FailP
-  val pai = new PaI
-  val pbi = new PbI
-  val pci = new PcI
-  val pci2 = new PcI("PcX")
-  val pcif = new PcIF
-  val pciw = new PcIWait
-  val ri = new R(pai,pbi,pci)
-  val ri2 = new R(pai,pbi,pci2)
-  val rif = new R(pai,pbi,pcif)
-
-  implicit val system: ActorSystem = ActorSystem("AkkaExecutorTests")
-  implicit val executionContext: ExecutionContext = ExecutionContext.global //sys
-
-  val newSettings: PiProcessStore => KafkaExecutorSettings
-    = new KafkaExecutorSettings( _, system, executionContext )
-
-  val completeProcessStore
-    = SimpleProcessStore(
-      pai, pbi, pci, pci2,
-      ri, ri2, rif,
-      failp
-    )
-
-  val failureProcessStore
-    = SimpleProcessStore(
-      pai, pbi, pci, pci2,
-      ri, ri2, rif,
-      failp
-    )
-
-  val shutdownProcessStore
-    = SimpleProcessStore(
-      pai, pbi, pciw, pci2,
-      ri, ri2, rif,
-      failp
-    )
-
-  def makeExecutor(store: SimpleProcessStore): MinimalKafkaExecutor[(Y, Z)] = {
-    implicit val s: KafkaExecutorSettings = newSettings( store )
-
-    CompleteKafkaExecutor[(Y, Z)]
-    // SeqRedKafkaExecutor[(Y, Z)]
-  }
-
-  val isPiiResult: AnyMsg => Boolean = _.isInstanceOf[PiiResult[_]]
-
-  // TODO: Fix consumer shutdown: https://github.com/akka/alpakka-kafka/issues/166
-  def outstanding( consume: Boolean ): Seq[ AnyMsg ] = {
-    implicit val s: KafkaExecutorSettings = newSettings( completeProcessStore )
-
-    val fOutstanding: Future[Seq[AnyMsg]]
-      = KafkaWrapperFlows.srcAll
-      .map({ case (msg, offset) => offset.commitScaladsl(); msg })
-      .completionTimeout(5.seconds)
-      .map( Some(_) )
-      .recover({ case _: TimeoutException => None })
-      .collect({ case Some( msg ) => msg })
-      .runFold( Seq(): Seq[AnyMsg] )( _ :+ _ )( s.materializer )
-
-    Await.result( fOutstanding, Duration.Inf )
-  }
-
-  def isAllTidy( isValid: AnyMsg => Boolean = isPiiResult ): Boolean
-    = outstanding( true ).forall( isValid )
+class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll with KafkaTests {
 
   // Ensure there are no outstanding messages before starting testing.
   isAllTidy()
@@ -114,6 +35,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await( f1 ) should be ("PbISleptFor1s")
     ex.syncShutdown()
 
+    errors shouldBe empty
     isAllTidy() should be (true)
   }
 
@@ -127,6 +49,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f2) should be ("PbISleptFor1s")
     ex.syncShutdown()
 
+    errors shouldBe empty
     isAllTidy() should be (true)
   }
 
@@ -138,6 +61,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f1) should be (("PbISleptFor2s","PcISleptFor1s"))
     ex.syncShutdown()
 
+    errors shouldBe empty
     isAllTidy() should be (true)
   }
 
@@ -149,6 +73,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f1) should be (("PbISleptFor1s","PcISleptFor1s"))
     ex.syncShutdown()
 
+    errors shouldBe empty
     isAllTidy() should be (true)
   }
 
@@ -162,6 +87,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f2) should be (("PbISleptFor1s","PcISleptFor2s"))
     ex.syncShutdown()
 
+    errors shouldBe empty
     isAllTidy() should be (true)
   }
 
@@ -175,6 +101,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f2) should be (("PbISleptFor1s","PcISleptFor1s"))
     ex.syncShutdown()
 
+    errors shouldBe empty
     isAllTidy() should be (true)
   }
 
@@ -190,6 +117,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f3) should be (("PbISleptFor1s","PcISleptFor1s"))
     ex.syncShutdown()
 
+    errors shouldBe empty
     isAllTidy() should be (true)
   }
 
@@ -203,6 +131,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f2) should be (("PbISleptFor1s","PcXSleptFor1s"))
     ex.syncShutdown()
 
+    errors shouldBe empty
     isAllTidy() should be (true)
   }
 
@@ -218,6 +147,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     }
 
     ex.syncShutdown()
+
+    errors shouldBe empty
     isAllTidy() should be (true)
   }
 
@@ -233,6 +164,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     }
 
     ex.syncShutdown()
+
+    errors shouldBe empty
     isAllTidy() should be (true)
    }
 
@@ -250,48 +183,53 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     ex1.syncShutdown()
     ex2.syncShutdown()
 
+    errors shouldBe empty
     isAllTidy() should be (true)
    }
 
-  it should "an executor should restart successfully" in {
+  // Fix PiiId to stop the partitions for messages from changing all the time.
+  val ourPiiId: ObjectId = new ObjectId( 10: Int, 7: Int, 9: Short, 56: Int )
 
-    val ourPiiId: ObjectId = new ObjectId
+  it should "an executor should shutdown correctly" in {
 
-    {
-      val ex = makeExecutor( shutdownProcessStore )
-      ex.executeWith( ourPiiId, ri, Seq(21) )
+    val ex = makeExecutor(shutdownProcessStore)
+    ex.executeWith(ourPiiId, ri, Seq(21))
 
-      Thread.sleep( 5.seconds.toMillis )
-      ex.syncShutdown()
-    }
+    Thread.sleep(10.seconds.toMillis)
+    ex.syncShutdown()
 
-    {
-      val outstandingMsgs: Map[String, Int]
-        = outstanding(false)
-          .filter(piiId(_) == ourPiiId)
-          .map(_.getClass.getSimpleName)
-          .groupBy(identity)
-          .mapValues(_.size)
-          .withDefaultValue(0)
+    errors shouldBe empty
 
-      val expectedMsgs: Map[String, Int]
-        = Map(
-          "ReduceRequest" -> 0,
-          "SequenceRequest" -> 0,
-          "Assignment" -> 1,
-          "PiiUpdate" -> 1
-        )
+    def msgsOf[T](implicit ct: ClassTag[T]) = getMsgsOf(ct)
 
-      outstandingMsgs should be (expectedMsgs)
-    }
+    // We should just be waiting on the assignments.
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[PiiUpdate] should (have size 1)
+    msgsOf[Assignment] should (have size 2) // Pb is currently blocked by Pc with this partitioning
 
-    {
-      val ex = makeExecutor( completeProcessStore )
-      val f2: Future[(Y,Z)] = ex.connect( ourPiiId, ri, Seq(21) )._2
-      pciw.release()
+    // We must be waiting on *ALL* active assignments.
+    val calledIds: Seq[Int] = msgsOf[PiiUpdate].head.pii.called
+    val assignedIds: Seq[Int] = msgsOf[Assignment].map( _.callRef.id )
+    calledIds should contain theSameElementsAs assignedIds
+  }
 
-      await(f2) should be (("PbISleptFor2s","PcISleptFor1s"))
-    }
+  it should "resume execution after a shutdown" in {
+
+    val ex = makeExecutor( completeProcessStore )
+    val f2: Future[(Y,Z)] = ex.connect( ourPiiId, ri, Seq(21) )._2
+    pciw.continue()
+
+    await(f2) should be (("PbISleptFor2s","PcISleptFor1s"))
+
+    errors shouldBe empty
+
+    def msgsOf[T](implicit ct: ClassTag[T]) = getMsgsOf(ct)
+
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty
 
     isAllTidy() should be (true)
   }
@@ -300,7 +238,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
 
     // Construct and send an outstanding PiiUpdate message to test robustness.
     val oldMsg: PiiUpdate = PiiUpdate( PiInstance.forCall( ObjectId.get, ri, 2, 1 ) )
-    KafkaConnectors.sendSingleMessage( oldMsg )( newSettings( completeProcessStore ) )
+    KafkaConnectors.sendMessages( oldMsg )( newSettings( completeProcessStore ) )
 
     val ex = makeExecutor(completeProcessStore)
     val f1 = ex.execute(ri, Seq(21))
@@ -311,7 +249,9 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     // We don't care what state we leave the outstanding message in, provided we clean our own state.
     def isValid( msg: AnyMsg ): Boolean = isPiiResult( msg ) || piiId( msg ) == oldMsg.pii.id
 
+    errors shouldBe empty
     isAllTidy( isValid ) should be (true)
   }
+
 
 }

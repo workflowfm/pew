@@ -5,8 +5,12 @@ import java.util
 
 import org.apache.kafka.common.serialization._
 import org.bson._
+import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.io.BasicOutputBuffer
+
+import scala.collection.mutable
+import scala.reflect.ClassTag
 
 /** A deserializer/serializer wrapper for the MongoDB codec serialization interface
   * so as to use them for Kafka message serialization.
@@ -14,11 +18,8 @@ import org.bson.io.BasicOutputBuffer
   * @param codec Wrapped codec to leverage for serialization.
   * @tparam T Type that is being serialized.
   */
-class BsonCodecWrapper[T]( codec: Codec[T] )
+class CodecWrapper[T](codec: Codec[T] )
   extends Deserializer[T] with Serializer[T] {
-
-  def this( clazz: Class[T] )( implicit pro: KafkaCodecProvider )
-    = this( pro.get[T]( clazz ) )
 
   private val deCtx: DecoderContext = DecoderContext.builder().build()
   private val enCtx: EncoderContext = EncoderContext.builder().build()
@@ -39,4 +40,16 @@ class BsonCodecWrapper[T]( codec: Codec[T] )
   }
 
   override def close(): Unit = {}
+}
+
+object CodecWrapper {
+
+  private val cache: mutable.Map[Codec[_], CodecWrapper[_]] = mutable.Map()
+
+  def apply[T]( implicit ct: ClassTag[T], reg: CodecRegistry ): CodecWrapper[T]
+    = this.synchronized {
+
+    val codec: Codec[T] = reg.get[T]( ct.runtimeClass.asInstanceOf[Class[T]] )
+    cache.getOrElseUpdate( codec, new CodecWrapper[T](codec) ).asInstanceOf[CodecWrapper[T]]
+  }
 }

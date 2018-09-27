@@ -18,14 +18,14 @@ class KeyPiiIdCodec
     val piiId = reader.readObjectId()
 
     reader.readEndDocument()
-    piiId
+    KeyPiiId( piiId )
   }
 
-  override def encode(writer: BsonWriter, piiId: KeyPiiId, ctx: EncoderContext): Unit = {
+  override def encode(writer: BsonWriter, key: KeyPiiId, ctx: EncoderContext): Unit = {
     writer.writeStartDocument()
 
     writer.writeName( idN )
-    writer.writeObjectId( piiId )
+    writer.writeObjectId( key.piiId )
 
     writer.writeEndDocument()
   }

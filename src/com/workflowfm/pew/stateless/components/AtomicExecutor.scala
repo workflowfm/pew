@@ -21,14 +21,14 @@ class AtomicExecutor(implicit exec: ExecutionContext )
   override def respond: Assignment => Future[AnyMsg] = {
     case Assignment( pii, callRef, name, args ) =>
 
-      logger.info("Started process '{}' - callRef_{}", name, callRef.id)
+      System.out.println(s"Started process '$name' - callRef_${callRef.id}")
       getProc(pii, name).run( args map (_.obj) ).transformWith {
 
         case Success(res) =>
           Future.successful( SequenceRequest( pii.id, (callRef, res) ) )
 
         case Failure(e) =>
-          logger.error("Error running process: {}", name)
+          System.err.println(s"Error running process: $name")
           e.printStackTrace()
           Future.successful( new ResultFailure(pii, callRef, e) )
       }

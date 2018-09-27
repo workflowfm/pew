@@ -6,6 +6,7 @@ import akka.kafka.scaladsl._
 import akka.stream.scaladsl._
 import com.workflowfm.pew.stateless.components.StatelessComponent
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.{AnyKey, AnyRes}
 import org.apache.kafka.clients.consumer.ConsumerRecord
 
 import scala.concurrent.Future
@@ -13,7 +14,6 @@ import scala.concurrent.Future
 /** Mid-Level Kafka Interface:
   * Defines the akka sources, flows, and sinks, which the high-level interface (KafkaConnectors) builds
   * executable wrappers for the StatelessComponents with.
-  *
   */
 object KafkaWrapperFlows {
 
@@ -27,8 +27,8 @@ object KafkaWrapperFlows {
 
   import com.workflowfm.pew.stateless.StatelessMessages._
 
-  type CMsg[V] = CommittableMessage[Any, V]
-  type PMsg[V] = Envelope[Any, V, Committable]
+  type CMsg[V] = CommittableMessage[AnyKey, V]
+  type PMsg[V] = Envelope[AnyKey, V, Committable]
 
   /** Wrapper type for tracking the offset to commit when a producer eventually writes
     * this object.
@@ -85,7 +85,7 @@ object KafkaWrapperFlows {
     * @param groupId GroupId for the Kafka Consumer.
     * @return Akka source containing messages published to the `Results` topic.
     */
-  def srcResult( groupId: String )( implicit s: KafkaExecutorSettings ): Source[Tracked[PiiResult[Any]], Control]
+  def srcResult( groupId: String )( implicit s: KafkaExecutorSettings ): Source[Tracked[PiiResult[AnyRes]], Control]
     = committableSource( s.csResult withGroupId groupId, topics( s.tnResult ) )
       .via( flowUnwrap )
 
@@ -104,6 +104,9 @@ object KafkaWrapperFlows {
 
 
   /// STREAM PROCESSING / AKKA FLOWS ///
+
+  def flowUntrack[T]: Flow[Tracked[T], T, NotUsed]
+    = Flow[Tracked[T]].map( _._1 )
 
   def flowUnwrap[K, V]: Flow[CommittableMessage[K, V], Tracked[V], NotUsed]
     = Flow[CommittableMessage[K, V]]
@@ -167,6 +170,6 @@ object KafkaWrapperFlows {
       .toMat( sink )( Keep.both )
       .mapMaterializedValue( DrainingControl.apply )  // Add shutdown control object.
       .named( this.getClass.getSimpleName )           // Name for debugging.
-      .run()( s.materializer )
+      .run()( s.mat )
 
 }

@@ -22,7 +22,7 @@ class ResultListener(
         case _: PiObject =>
           pii.result match {
             case Some( piiRes ) => handlers foreach (_.success( pii, piiRes ))
-            case None           => logger.error( "Success with no result" )
+            case None           => System.err.println( "Success with no result" )
           }
 
         case result =>

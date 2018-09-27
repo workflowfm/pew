@@ -3,18 +3,20 @@ package com.workflowfm.pew.stateless.instances.kafka.settings.bson
 import com.workflowfm.pew._
 import com.workflowfm.pew.mongodb.bson._
 import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.AnyKey
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs._
 import org.bson.codecs.Codec
 import org.bson.codecs.configuration.CodecRegistry
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 
-class KafkaCodecProvider( processes: PiProcessStore )
-  extends PiCodecProvider( processes )
+class KafkaCodecRegistry(
+    processes: PiProcessStore,
+    baseRegistry: CodecRegistry = DEFAULT_CODEC_REGISTRY
+
+  ) extends PiCodecProvider( processes )
   with CodecRegistry {
 
   import PewCodecs._
-
-  private val baseRegistry: CodecRegistry = DEFAULT_CODEC_REGISTRY
 
   // Keep explicit references to these PEW codec instances,
   // We don't have a registry that includes them.
@@ -44,7 +46,7 @@ class KafkaCodecProvider( processes: PiProcessStore )
   private val piiHistory = new PiiHistoryCodec( seqReq, update )
 
   // Initialised after both Keys & Msgs as it depends on them all.
-  val anykey: Codec[Any] = new AnyKeyCodec( keyPiiId, keyPiiIdCall )
+  private val anykey = new AnyKeyCodec( keyPiiId, keyPiiIdCall )
   val anymsg: Codec[AnyMsg] = new AnyMsgCodec( this )
 
   /** Implement the get[T] method from Codec*REGISTRY*,

@@ -19,7 +19,13 @@ class PiObjectCodec(registry: CodecRegistry) extends Codec[PiObject] {
       case PiItem(i) => {
         writer.writeString("PiItem")
         writer.writeName("class")
-        writer.writeString(i.getClass().getCanonicalName)
+
+        // Jev, `getCanonicalName` produces incorrect results for packaged or inner classes.
+        // We need the `fully qualified` names for `Class.forName`, eg, "some.package.Object$Innerclass"
+        val className: String = i.getClass.getName // .getCanonicalName)
+        Class.forName( className ) // throw a ClassNotFound error if we won't be able to decode this.
+        writer.writeString( className )
+
         writer.writeName("i")
         encodeChild(writer,i,encoderContext)
       }

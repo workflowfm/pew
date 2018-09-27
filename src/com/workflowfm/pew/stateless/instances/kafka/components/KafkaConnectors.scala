@@ -36,8 +36,8 @@ object KafkaConnectors {
     * @param s KafkaExecutorSettings controlling the interface with the Kafka Driver.
     * @return
     */
-  def sendSingleMessage( msg: AnyMsg )( implicit s: KafkaExecutorSettings ): Future[Done]
-    = Source.single( msg ).runWith( sinkPlain )( s.materializer )
+  def sendMessages( msgs: AnyMsg* )( implicit s: KafkaExecutorSettings ): Future[Done]
+    = Source.fromIterator( () => msgs.toIterator ).runWith( sinkPlain )( s.mat )
 
   /** Run an independent reducer off of a ReduceRequest topic. This allows a
     * reducer to create responses to each ReduceRequest individually by using the
@@ -124,8 +124,9 @@ object KafkaConnectors {
     = specificResultListener( "Event-Group-" + ObjectId.get.toHexString )( resl )( s )
 
   def shutdown( controls: Control* )( implicit s: KafkaExecutorSettings ): Future[Done] = shutdownAll( controls )
+
   def shutdownAll( controls: Seq[Control] )( implicit s: KafkaExecutorSettings ): Future[Done] = {
     implicit val ctx: ExecutionContext = s.execCtx
-    Future.sequence( controls.map( _.shutdown() ) ).map( _ => Done )
+    Future.sequence( controls.map( c => c.shutdown().flatMap( _ => c.isShutdown ) ) ).map( _ => Done )
   }
 }

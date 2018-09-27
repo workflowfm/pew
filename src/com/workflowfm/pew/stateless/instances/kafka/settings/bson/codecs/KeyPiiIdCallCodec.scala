@@ -23,19 +23,17 @@ class KeyPiiIdCallCodec( refCodec: Codec[CallRef] )
     val ref: CallRef = ctx.decodeWithChildContext( refCodec, reader )
 
     reader.readEndDocument()
-    ( piiId, ref )
+    KeyPiiIdCall( piiId, ref )
   }
 
-  override def encode(writer: BsonWriter, value: KeyPiiIdCall, ctx: EncoderContext): Unit = {
+  override def encode(writer: BsonWriter, key: KeyPiiIdCall, ctx: EncoderContext): Unit = {
     writer.writeStartDocument()
 
-    val (piiId, ref) = value
-
     writer.writeName(idN)
-    writer.writeObjectId( piiId )
+    writer.writeObjectId( key.piiId )
 
     writer.writeName(refN)
-    ctx.encodeWithChildContext( refCodec, writer, ref )
+    ctx.encodeWithChildContext( refCodec, writer, key.ref )
 
     writer.writeEndDocument()
   }
