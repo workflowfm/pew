@@ -22,15 +22,23 @@ class AtomicExecutor(implicit exec: ExecutionContext )
     case Assignment( pii, callRef, name, args ) =>
 
       System.out.println(s"Started process '$name' - callRef_${callRef.id}")
-      getProc(pii, name).run( args map (_.obj) ).transformWith {
+      try {
+        getProc(pii, name).run(args map (_.obj)).transformWith {
 
-        case Success(res) =>
-          Future.successful( SequenceRequest( pii.id, (callRef, res) ) )
+          case Success(res) =>
+            Future.successful(SequenceRequest(pii.id, (callRef, res)))
 
-        case Failure(e) =>
-          System.err.println(s"Error running process: $name")
+          case Failure(e) =>
+            System.err.println(s"Error during process execution: $name")
+            e.printStackTrace()
+            Future.successful(new ResultFailure(pii, callRef, e))
+        }
+
+      } catch {
+        case e: Exception =>
+          System.err.println(s"Error starting process execution: $name")
           e.printStackTrace()
-          Future.successful( new ResultFailure(pii, callRef, e) )
+          Future.successful(new ResultFailure(pii, callRef, e))
       }
   }
 }
