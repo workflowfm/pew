@@ -30,7 +30,7 @@ import org.mongodb.scala.Observer
 import org.mongodb.scala.ReadConcern
 import org.mongodb.scala.WriteConcern
 
-class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, handler: PiEventHandler[ObjectId,ResultT], processes:PiProcessStore, timeout:Duration=10.seconds)(implicit val context: ExecutionContext = ExecutionContext.global) extends ProcessExecutor[ResultT] { 
+class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, handle: PiEventHandler[ObjectId,ResultT], processes:PiProcessStore, timeout:Duration=10.seconds)(implicit val context: ExecutionContext = ExecutionContext.global) extends ProcessExecutor[ResultT] { 
 
   final val CAS_MAX_ATTEMPTS = 10
   final val CAS_WAIT_MS = 1
@@ -48,15 +48,15 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
     
     val oid = new ObjectId
 	  val inst = PiInstance(oid,p,args:_*)
-	  val ret = handler.start(inst)
+	  val ret = handle.init(inst)
 	  val ni = inst.reduce
     if (ni.completed) ni.result match {
 		  case None => {
-			  handler.failure(ni,ProcessExecutor.NoResultException(ni.id.toString()))
+			  handle(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
 			  promise.success(ret)
 		  }
 		  case Some(res) => {
-			  handler.success(ni, res)
+			  handle(PiEventResult(ni, res))
 			  promise.success(ret)
 		  }
 	  } else try {
@@ -75,7 +75,7 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
 		  })
 	  } catch {
 	    case (e:Exception) => {
-	      handler.failure(ni,e)
+	      handle(PiEventFailure(ni,e))
 	      promise.failure(e)
       }
     }
@@ -143,7 +143,7 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
     case (e:Exception) => { // this should never happen!
       System.err.println("*** [" + id + "] FATAL: " + ref)
       e.printStackTrace()
-      handler.failure(id,e)
+      handle(PiEventException(id,e))
       Future.failed(e)
     }
   }
@@ -157,12 +157,12 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
 		  case None => {   
 		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
 		    System.err.println("*** [" + i.id + "] Completed with no result!")
-		    (Seq(),(col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen { case _ => handler.failure(ni,ProcessExecutor.NoResultException(ni.id.toString()))}))
+		    (Seq(),(col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen { case _ => handle(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))}))
 		  }
 		  case Some(res) => {
 		    System.err.println("*** [" + i.id + "] Completed with result!")
 		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
-		    (Seq(),(col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen {case _ => handler.success(i,res)}))
+		    (Seq(),(col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen {case _ => handle(PiEventResult(i, res))}))
 		  }
 		} else {
 		  System.err.println("*** [" + i.id + "] Handling threads after: " + ref)
@@ -198,18 +198,22 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
       case None => {
         // This should never happen! We already checked!
         System.err.println("*** [" + i.id + "] ERROR *** Unable to find process: " + name + " even though we checked already")
-        handler.failure(i.id,ProcessExecutor.UnknownProcessException(name))
+        handle(PiEventFailure(i,ProcessExecutor.UnknownProcessException(name)))
       }
       case Some(p:AtomicProcess) => {
-        p.run(args map (_.obj)).onComplete{ 
-          case Success(res) => postResult(i.id,ref,res).recover({case t:Throwable => handler.failure(i.id,t)})
-          case Failure (ex) => handler.failure(i.id,ex)
+        val objs = args map (_.obj)
+        p.run(objs).onComplete{ 
+          case Success(res) => {
+            handle(PiEventReturn(i.id,ref,res))
+            postResult(i.id,ref,res).recover({case t:Throwable => handle(PiEventFailure(i,t))})
+          }
+          case Failure (ex) => handle(PiEventProcessException(i.id,ref,ex))
         }
         System.err.println("*** [" + i.id + "] Called process: " + p.name + " ref:" + ref)
       }
       case Some(p:CompositeProcess) => {// This should never happen! We already checked! 
         System.err.println("*** [" + i.id + "] Executor encountered composite process thread: " + name)
-        handler.failure(i.id,ProcessExecutor.AtomicProcessIsCompositeException(name))
+        handle(PiEventFailure(i,ProcessExecutor.AtomicProcessIsCompositeException(name)))
       }
     }
   } }

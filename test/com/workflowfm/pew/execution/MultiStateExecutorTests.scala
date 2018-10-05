@@ -17,7 +17,7 @@ import com.workflowfm.pew._
 @RunWith(classOf[JUnitRunner])
 class MultiStateExecutorTests extends FlatSpec with Matchers with ProcessExecutorTester {
   implicit val system: ActorSystem = ActorSystem("MultiStateExecutorTests")
-  implicit val executionContext = system.dispatchers.lookup("akka.my-dispatcher")  
+  implicit val executionContext = ExecutionContext.global //system.dispatchers.lookup("akka.my-dispatcher")  
   
   val pai = new PaI
   val pbi = new PbI
@@ -47,8 +47,8 @@ class MultiStateExecutorTests extends FlatSpec with Matchers with ProcessExecuto
     val ex = new MultiStateExecutor(pai,pbi,pci,ri)
     val f1 = ex.execute(ri,Seq(21))
    
-    val r1 = await(f1)
-    r1 should be (Some(("PbISleptFor2s","PcISleptFor1s")))
+    val r1 = awaitf(f1)
+    r1 should be (("PbISleptFor2s","PcISleptFor1s"))
 	}
 	
   "MultiStateExecutor" should "execute Rexample twice concurrently" in {
@@ -57,9 +57,9 @@ class MultiStateExecutorTests extends FlatSpec with Matchers with ProcessExecuto
     val f2 = ex.execute(ri,Seq(12))
     
     val r1 = awaitf(f1)
-    r1 should be (Some(("PbSleptFor3s","PcSleptFor1s")))
+    r1 should be (("PbSleptFor3s","PcSleptFor1s"))
     val r2 = awaitf(f2)
-    r2 should be (Some(("PbISleptFor1s","PcISleptFor2s")))
+    r2 should be (("PbISleptFor1s","PcISleptFor2s"))
 	}
 
   "MultiStateExecutor" should "execute Rexample twice with same timings concurrently" in {
@@ -68,9 +68,9 @@ class MultiStateExecutorTests extends FlatSpec with Matchers with ProcessExecuto
     val f2 = ex.execute(ri,Seq(11))
     
     val r1 = awaitf(f1)
-    r1 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
+    r1 should be (("PbISleptFor1s","PcISleptFor1s"))
     val r2 = awaitf(f2)
-    r2 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
+    r2 should be (("PbISleptFor1s","PcISleptFor1s"))
 	}
   
   "MultiStateExecutor" should "execute Rexample thrice concurrently" in {
@@ -80,11 +80,11 @@ class MultiStateExecutorTests extends FlatSpec with Matchers with ProcessExecuto
     val f3 = ex.execute(ri,Seq(11))
     
     val r1 = awaitf(f1)
-    r1 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
+    r1 should be (("PbISleptFor1s","PcISleptFor1s"))
     val r2 = awaitf(f2)
-    r2 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
+    r2 should be (("PbISleptFor1s","PcISleptFor1s"))
     val r3 = awaitf(f3)
-    r3 should be (Some(("PbISleptFor1s","PcISleptFor1s")))
+    r3 should be (("PbISleptFor1s","PcISleptFor1s"))
 	}
 }
 
