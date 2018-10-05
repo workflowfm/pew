@@ -37,7 +37,7 @@ object CompleteKafkaExecutor {
     new CustomKafkaExecutor[ResultT](
       indySequencer,
       indyReducer( new Reducer ),
-      indyAtomicExecutor( new AtomicExecutor )
+      indyAtomicExecutor( AtomicExecutor() )
     )
   }
 
@@ -58,7 +58,7 @@ object SeqRedKafkaExecutor {
 
     new CustomKafkaExecutor[ResultT](
       seqReducer( new Reducer ),
-      indyAtomicExecutor( new AtomicExecutor )
+      indyAtomicExecutor( AtomicExecutor() )
     )
   }
 

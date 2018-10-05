@@ -94,7 +94,7 @@ object TestKafkaExecutor {
     new CustomKafkaExecutor[ResultT](
       indySequencer( sink ),
       indyReducer( new Reducer, sink ),
-      indyAtomicExecutor( new AtomicExecutor, sink )
+      indyAtomicExecutor( AtomicExecutor(), sink )
     )
   }
 
