@@ -10,9 +10,10 @@ import com.workflowfm.pew._
 
 @RunWith(classOf[JUnitRunner])
 class CompositeExecutionTests extends FlatSpec with Matchers {
-
+  implicit val context:ExecutionContext = ExecutionContext.global
+  
 	"SingleBlockingExecutor" should "execute C1" in {
-		SingleBlockingExecutor() withProcs (P1,C1) call("C1",PiPair(PiItem("OH"),PiItem("HAI!"))) should be( Some("OH++HAI!") )
+		SingleBlockingExecutor() withProcs (P1,C1) call(C1,Seq(PiPair(PiItem("OH"),PiItem("HAI!")))) should be( Some("OH++HAI!") )
 	}
 	
 	object P1 extends AtomicProcess { // X,Y -> (X++Y)
@@ -35,7 +36,7 @@ class CompositeExecutionTests extends FlatSpec with Matchers {
 	
 	
 	"SingleBlockingExecutor" should "execute C2" in {
-		SingleBlockingExecutor() withProcs (P2A,P2B,C2) call("C2",PiItem("HI:")) should be( Some("HI:AABB") )
+		SingleBlockingExecutor() withProcs (P2A,P2B,C2) call(C2,Seq(PiItem("HI:"))) should be( Some("HI:AABB") )
 	}
 	
 	object P2A extends AtomicProcess { // X -> XAA
@@ -68,7 +69,7 @@ class CompositeExecutionTests extends FlatSpec with Matchers {
 	
 	
   "SingleBlockingExecutor" should "execute C3" in {
-		SingleBlockingExecutor() withProcs (P3A,P3B,C3) call("C3",PiItem("HI:")) should be( Some(("HI:AARR","HI:BB")) )
+		SingleBlockingExecutor() withProcs (P3A,P3B,C3) call(C3,Seq(PiItem("HI:"))) should be( Some(("HI:AARR","HI:BB")) )
 	}
 	
 	object P3A extends AtomicProcess { // X -> (XAA,XBB)

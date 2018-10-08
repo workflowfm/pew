@@ -36,7 +36,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
     val f1 = ex.execute(pbi,Seq(1))
    
-    val r1 = awaitf(f1)
+    val r1 = await(f1)
     r1 should be ("PbISleptFor1s")
 	}
 
@@ -45,9 +45,9 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     val f1 = ex.execute(pbi,Seq(2))
     val f2 = ex.execute(pbi,Seq(1))
    
-    val r1 = awaitf(f1)
+    val r1 = await(f1)
     r1 should be ("PbISleptFor2s")
-    val r2 = awaitf(f2)
+    val r2 = await(f2)
     r2 should be ("PbISleptFor1s")
 	}
   
@@ -55,7 +55,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
     val f1 = ex.execute(ri,Seq(21))
    
-    val r1 = awaitf(f1)
+    val r1 = await(f1)
     r1 should be (("PbISleptFor2s","PcISleptFor1s"))
 	}
 
@@ -63,7 +63,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
     val f1 = ex.execute(ri,Seq(11))
    
-    val r1 = awaitf(f1)
+    val r1 = await(f1)
     r1 should be (("PbISleptFor1s","PcISleptFor1s"))
 	}
  
@@ -72,9 +72,9 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     val f1 = ex.execute(ri,Seq(31))
     val f2 = ex.execute(ri,Seq(12))
     
-    val r1 = awaitf(f1)
+    val r1 = await(f1)
     r1 should be (("PbISleptFor3s","PcISleptFor1s"))
-    val r2 = awaitf(f2)
+    val r2 = await(f2)
     r2 should be (("PbISleptFor1s","PcISleptFor2s"))
 	}
 
@@ -83,9 +83,9 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri,Seq(11))
     
-    val r1 = awaitf(f1)
+    val r1 = await(f1)
     r1 should be (("PbISleptFor1s","PcISleptFor1s"))
-    val r2 = awaitf(f2)
+    val r2 = await(f2)
     r2 should be (("PbISleptFor1s","PcISleptFor1s"))
 	}
   
@@ -95,11 +95,11 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     val f2 = ex.execute(ri,Seq(11))
     val f3 = ex.execute(ri,Seq(11))
     
-    val r1 = awaitf(f1)
+    val r1 = await(f1)
     r1 should be (("PbISleptFor1s","PcISleptFor1s"))
-    val r2 = awaitf(f2)
+    val r2 = await(f2)
     r2 should be (("PbISleptFor1s","PcISleptFor1s"))
-    val r3 = awaitf(f3)
+    val r3 = await(f3)
     r3 should be (("PbISleptFor1s","PcISleptFor1s"))
 	}
   
@@ -108,9 +108,9 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri2,Seq(11))
     
-    val r1 = awaitf(f1)
+    val r1 = await(f1)
     r1 should be (("PbISleptFor1s","PcISleptFor1s"))
-    val r2 = awaitf(f2)
+    val r2 = await(f2)
     r2 should be (("PbISleptFor1s","PcXSleptFor1s"))
 	}
   
@@ -128,7 +128,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   
   it should "handle a failing composite process" in {
     val ex = new AkkaExecutor(pai,pbi,pcif,rif)
-    val f1 = rif(21)(ex)//ex.execute(rif,Seq(21))
+    val f1 = rif(21)(ex)//ex.execute(rif,Seq(21)) 
    
     try {
       await(f1)

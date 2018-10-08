@@ -17,7 +17,7 @@ import com.workflowfm.pew._
 @RunWith(classOf[JUnitRunner])
 class SingleStateExecutorTests extends FlatSpec with Matchers with ProcessExecutorTester {
   implicit val system: ActorSystem = ActorSystem("SingleStateExecutorTests")
-  implicit val executionContext = system.dispatchers.lookup("akka.my-dispatcher")  
+  implicit val executionContext = ExecutionContext.global//system.dispatchers.lookup("akka.my-dispatcher")  
   
   val pai = new PaI
   val pbi = new PbI
@@ -176,9 +176,9 @@ package object RexampleTypes
   
   	override val body = PiCut("z16","z15","z5",ParInI("z15","buf13","cPc_B_1",ParOut("z13","b13","oPc_Z_",PiId("buf13","b13","m14"),PiCall<("Pc","cPc_B_1","oPc_Z_"))),PiCut("z8","z7","oPa_lB_A_x_B_rB_",ParInI("z7","cPb_A_1","buf5",ParOut("z5","oPb_Y_","b5",PiCall<("Pb","cPb_A_1","oPb_Y_"),PiId("buf5","b5","m6"))),PiCall<("Pa","cPa_X_1","oPa_lB_A_x_B_rB_")))
   	
-  	def apply(x:X)(implicit executor:FutureExecutor): Future[(Y,Z)] = {
+  	def apply(x:X)(implicit executor:ProcessExecutor[_]): Future[(Y,Z)] = {
 		  implicit val context:ExecutionContext = executor.context
-		  executor.execute(this,Seq(x)).flatMap(_ map(_.asInstanceOf[(Y,Z)]))
+		  executor.execute(this,Seq(x)).map(_.asInstanceOf[(Y,Z)])
 	  }
 }
 	class BadR(pa:Pa,pb:Pb,pc:Pc) extends CompositeProcess { // (X) => (Y,Z)
@@ -191,8 +191,10 @@ package object RexampleTypes
   
   	override val body = PiCut("z16","z15","z5",ParInI("z15","buf13","cPc_B_1",ParOut("z13","b13","oPc_Z_",PiId("buf13","b13","m14"),PiCall<("Pc","cPc_B_1","oPc_Z_"))),PiCut("z8","z7","oPa_lB_A_x_B_rB_",ParInI("z7","cPb_A_1","buf5",ParOut("z5","oPb_Y_","b5",PiCall<("Pb","cPb_A_1","oPb_Y_"),PiId("buf5","b5","m6"))),PiCall<("Pa","cPa_X_1","oPa_lB_A_x_B_rB_")))
   	
-  	def apply(x:X)(implicit executor:FutureExecutor): Option[(Y,Z)] =
-  		executor.execute(this,Seq(x)).asInstanceOf[Option[(Y,Z)]]
+  	def apply(x:X)(implicit executor:ProcessExecutor[_]): Future[Option[(Y,Z)]] = {
+  	  implicit val context:ExecutionContext = executor.context
+  		executor.execute(this,Seq(x)).map(_.asInstanceOf[Option[(Y,Z)]])
+  	}
 }
 }
 class PaI extends Pa {
