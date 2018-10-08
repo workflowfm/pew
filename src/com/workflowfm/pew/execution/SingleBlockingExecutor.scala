@@ -9,20 +9,15 @@ import scala.annotation.tailrec
  * SingleBlockingExecutor fully executes one PiProcess from a map of given PiProcesses.
  * It blocks waiting for every atomic call to finish, so has no concurrency.
  */
-case class SingleBlockingExecutor(processes:Map[String,PiProcess]) extends FutureExecutor {
-  def call(name:String,args:PiObject*) = {
-    processes get name match {
-      case None => None
-      case Some(process) => {
-        val s = process.execState(args)
-        System.err.println(" === INITIAL STATE === \n" + s + "\n === === === === === === === ===")
-        val fs = run(s)
-        System.err.println(" === FINAL STATE === \n" + fs + "\n === === === === === === === ===")
-        val res = fs.resources.sub(process.output._1)
-        if (res.isGround) Some(PiObject.get(res))
-        else None
-      }
-    }
+case class SingleBlockingExecutor(processes:Map[String,PiProcess])(implicit val context:ExecutionContext) { // extends ProcessExecutor[Int] with SimplePiObservable[Int] {
+  def call(process:PiProcess,args:Seq[PiObject]) = {
+	  val s = process.execState(args)
+		System.err.println(" === INITIAL STATE === \n" + s + "\n === === === === === === === ===")
+		val fs = run(s)
+		System.err.println(" === FINAL STATE === \n" + fs + "\n === === === === === === === ===")
+		val res = fs.resources.sub(process.output._1)
+		if (res.isGround) Some(PiObject.get(res))
+		else None
   }
   
   @tailrec
@@ -54,11 +49,11 @@ case class SingleBlockingExecutor(processes:Map[String,PiProcess]) extends Futur
   def withProc(p:PiProcess):SingleBlockingExecutor = copy(processes = processes + (p.name->p)) withProcs (p.dependencies :_*)
   def withProcs(l:PiProcess*):SingleBlockingExecutor = (this /: l)(_ withProc _)
   
-  override def simulationReady:Boolean = true
+  //override def simulationReady:Boolean = true
   
-  override def execute(process:PiProcess,args:Seq[Any]):Future[Future[Option[Any]]] =
-    Future.successful(Future.successful(this withProc process call(process.name,args map PiObject.apply :_*)))
+  def execute(process:PiProcess,args:Seq[Any]):Option[Any] =
+    this withProc process call(process,args map PiObject.apply)
 }
 object SingleBlockingExecutor {
-  def apply():SingleBlockingExecutor = SingleBlockingExecutor(Map[String,PiProcess]())
+  def apply()(implicit context:ExecutionContext):SingleBlockingExecutor = SingleBlockingExecutor(Map[String,PiProcess]())(context)
 }
