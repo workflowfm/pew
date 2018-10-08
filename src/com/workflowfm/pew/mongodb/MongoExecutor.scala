@@ -30,7 +30,7 @@ import org.mongodb.scala.Observer
 import org.mongodb.scala.ReadConcern
 import org.mongodb.scala.WriteConcern
 
-class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, handle: PiEventHandler[ObjectId,ResultT], processes:PiProcessStore, timeout:Duration=10.seconds)(implicit val context: ExecutionContext = ExecutionContext.global) extends ProcessExecutor[ResultT] { 
+class MongoExecutor(client:MongoClient, db:String, collection:String, processes:PiProcessStore, timeout:Duration=10.seconds)(implicit val context: ExecutionContext = ExecutionContext.global) extends ProcessExecutor[ObjectId] with SimplePiObservable[ObjectId] { 
 
   final val CAS_MAX_ATTEMPTS = 10
   final val CAS_WAIT_MS = 1
@@ -43,21 +43,16 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
   val col:MongoCollection[PiInstance[ObjectId]] = database.getCollection(collection)
 
   
-  def call(p:PiProcess,args:PiObject*):Future[ResultT] = {
-    val promise = Promise[ResultT]()
-    
+  override def call(p:PiProcess,args:Seq[PiObject]):Future[ObjectId] = {
     val oid = new ObjectId
 	  val inst = PiInstance(oid,p,args:_*)
-	  val ret = handle.init(inst)
 	  val ni = inst.reduce
     if (ni.completed) ni.result match {
 		  case None => {
-			  handle(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
-			  promise.success(ret)
+			  publish(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
 		  }
 		  case Some(res) => {
-			  handle(PiEventResult(ni, res))
-			  promise.success(ret)
+			  publish(PiEventResult(ni, res))
 		  }
 	  } else try {
 		  val (toCall,res) = ni.handleThreads(handleThread(ni))
@@ -66,7 +61,6 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
           val futureCalls = toCall flatMap (res.piFutureOf)
   			  try {
   			    (toCall zip futureCalls) map runThread(res)
-  			    promise.success(ret)
   			  } catch {
   			    case (e:Exception) => promise.failure(e)
   			  }
@@ -75,11 +69,10 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
 		  })
 	  } catch {
 	    case (e:Exception) => {
-	      handle(PiEventFailure(ni,e))
-	      promise.failure(e)
+	      publish(PiEventFailure(ni,e))
       }
     }
-	 promise.future
+	 Future.successful(oid)
   }
   
   final def postResult(id:ObjectId, ref:Int, res:PiObject):Future[Unit] = {
@@ -143,7 +136,7 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
     case (e:Exception) => { // this should never happen!
       System.err.println("*** [" + id + "] FATAL: " + ref)
       e.printStackTrace()
-      handle(PiEventException(id,e))
+      publish(PiEventException(id,e))
       Future.failed(e)
     }
   }
@@ -157,12 +150,12 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
 		  case None => {   
 		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
 		    System.err.println("*** [" + i.id + "] Completed with no result!")
-		    (Seq(),(col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen { case _ => handle(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))}))
+		    (Seq(),(col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen { case _ => publish(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))}))
 		  }
 		  case Some(res) => {
 		    System.err.println("*** [" + i.id + "] Completed with result!")
 		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
-		    (Seq(),(col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen {case _ => handle(PiEventResult(i, res))}))
+		    (Seq(),(col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen {case _ => publish(PiEventResult(i, res))}))
 		  }
 		} else {
 		  System.err.println("*** [" + i.id + "] Handling threads after: " + ref)
@@ -198,22 +191,22 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
       case None => {
         // This should never happen! We already checked!
         System.err.println("*** [" + i.id + "] ERROR *** Unable to find process: " + name + " even though we checked already")
-        handle(PiEventFailure(i,ProcessExecutor.UnknownProcessException(name)))
+        publish(PiEventFailure(i,ProcessExecutor.UnknownProcessException(name)))
       }
       case Some(p:AtomicProcess) => {
         val objs = args map (_.obj)
         p.run(objs).onComplete{ 
           case Success(res) => {
-            handle(PiEventReturn(i.id,ref,res))
-            postResult(i.id,ref,res).recover({case t:Throwable => handle(PiEventFailure(i,t))})
+            publish(PiEventReturn(i.id,ref,res))
+            postResult(i.id,ref,res).recover({case t:Throwable => publish(PiEventFailure(i,t))})
           }
-          case Failure (ex) => handle(PiEventProcessException(i.id,ref,ex))
+          case Failure (ex) => publish(PiEventProcessException(i.id,ref,ex))
         }
         System.err.println("*** [" + i.id + "] Called process: " + p.name + " ref:" + ref)
       }
       case Some(p:CompositeProcess) => {// This should never happen! We already checked! 
         System.err.println("*** [" + i.id + "] Executor encountered composite process thread: " + name)
-        handle(PiEventFailure(i,ProcessExecutor.AtomicProcessIsCompositeException(name)))
+        publish(PiEventFailure(i,ProcessExecutor.AtomicProcessIsCompositeException(name)))
       }
     }
   } }
@@ -242,18 +235,15 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
                     extends Exception("Compare-and-swap failed after " + CAS_MAX_ATTEMPTS + " attempts for id: " + id + " - call id: " + ref, cause)  
 
   override def simulationReady:Boolean = false
-  
-  override def execute(process:PiProcess,args:Seq[Any]):Future[ResultT] =
-    call(process,args map PiObject.apply :_*)
-}
+  }
 
 
 
-class MongoFutureExecutor(client:MongoClient, db:String, collection:String, processes:PiProcessStore,timeout:Duration=10.seconds)(override implicit val context: ExecutionContext = ExecutionContext.global) 
-  extends MongoExecutor[PromiseHandler.ResultT](client, db, collection, new PromiseHandler[ObjectId], processes:PiProcessStore,timeout)(context) with FutureExecutor 
-    
-object MongoFutureExecutor {
-  def apply(client:MongoClient, db:String, collection:String, l:PiProcess*) = new MongoFutureExecutor(client,db,collection,SimpleProcessStore(l :_*))  
-}
+//class MongoFutureExecutor(client:MongoClient, db:String, collection:String, processes:PiProcessStore,timeout:Duration=10.seconds)(override implicit val context: ExecutionContext = ExecutionContext.global) 
+//  extends MongoExecutor[PromiseHandler.ResultT](client, db, collection, new PromiseHandler[ObjectId], processes:PiProcessStore,timeout)(context) with FutureExecutor 
+//    
+//object MongoFutureExecutor {
+//  def apply(client:MongoClient, db:String, collection:String, l:PiProcess*) = new MongoFutureExecutor(client,db,collection,SimpleProcessStore(l :_*))  
+//}
 
     

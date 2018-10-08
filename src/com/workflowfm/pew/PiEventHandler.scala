@@ -32,7 +32,7 @@ trait PiEventHandlerFactory[T] {
   def build(id:T):PiEventHandler[T]
 }
 
-class PrintEventHandler[T] extends PiEventHandler[T] {   
+class PrintEventHandler[T](override val name:String) extends PiEventHandler[T] {   
   override def apply(e:PiEvent[T]) = { e match {
     case PiEventStart(i) => System.err.println(" === INITIAL STATE " + i.id + " === \n" + i.state + "\n === === === === === === === ===")
     case PiEventResult(i,res) => {
@@ -76,6 +76,7 @@ class PromiseHandlerFactory[T](name:String) extends PiEventHandlerFactory[T] {
 }
 
 case class MultiPiEventHandler[T](handlers:Queue[PiEventHandler[T]]) extends PiEventHandler[T] {
+  override def name = handlers map (_.name) mkString(",")
   override def apply(e:PiEvent[T]) = handlers map (_(e)) forall (_ == true)
   override def and(h:PiEventHandler[T]) = MultiPiEventHandler(handlers :+ h)
 }

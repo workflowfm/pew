@@ -14,29 +14,27 @@ import scala.util.{Success,Failure}
  * promises/futures from the first workflow can trigger changes on the state!
  */
 
-class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStore)(override implicit val context: ExecutionContext = ExecutionContext.global) extends FutureExecutor {
+class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStore)(override implicit val context: ExecutionContext = ExecutionContext.global) extends ProcessExecutor[Int] with SimplePiObservable[Int] {
   def this(store:PiInstanceStore[Int], l:PiProcess*) = this(store,SimpleProcessStore(l :_*))
   def this(l:PiProcess*) = this(SimpleInstanceStore(),SimpleProcessStore(l :_*))
   
   var ctr:Int = 0
-  val handle = new PromiseHandler[Int]
   
-  def call(p:PiProcess,args:PiObject*) = store.synchronized {
+  override def call(p:PiProcess,args:Seq[PiObject]) = store.synchronized {
 	  val inst = PiInstance(ctr,p,args:_*)
-	  val ret = handle.init(inst)
 	  val ni = inst.reduce
     if (ni.completed) ni.result match {
 		  case None => {
-			  handle(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
+			  publish(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
 		  }
 		  case Some(res) => {
-			  handle(PiEventResult(ni, res))
+			  publish(PiEventResult(ni, res))
 		  }
 	  } else {
 		  store = store.put(ni.handleThreads(handleThread(ni))._2)
 	  }
 	  ctr = ctr + 1
-	  ret
+	  Future.successful(ctr-1)
   }
   
   final def run(id:Int,f:PiInstance[Int]=>PiInstance[Int]):Unit = store.synchronized {
@@ -49,11 +47,11 @@ class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStor
           val ni = f(i).reduce
     		  if (ni.completed) ni.result match {
       		  case None => {
-      			  handle(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
+      			  publish(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
       			  store = store.del(ni.id)
       		  }
       		  case Some(res) => {
-      			  handle(PiEventResult(ni, res))
+      			  publish(PiEventResult(ni, res))
       			  store = store.del(ni.id)
       		  }
     		  } else {
@@ -73,13 +71,13 @@ class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStor
       }
       case Some(p:AtomicProcess) => {
         val objs = args map (_.obj)
-        handle(PiEventCall(i.id,ref,p,objs))
+        publish(PiEventCall(i.id,ref,p,objs))
         p.run(args map (_.obj)).onComplete{ 
           case Success(res) => {
-            handle(PiEventReturn(i.id,ref,res))
+            publish(PiEventReturn(i.id,ref,res))
             postResult(i.id,ref,res)
           }
-          case Failure (ex) => handle(PiEventProcessException(i.id,ref,ex))
+          case Failure (ex) => publish(PiEventProcessException(i.id,ref,ex))
         }
         System.err.println("*** [" + i.id + "] Called process: " + p.name + " ref:" + ref)
         true
@@ -94,7 +92,4 @@ class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStor
   }
  
   override def simulationReady:Boolean = store.simulationReady
-  
-  override def execute(process:PiProcess,args:Seq[Any]):Future[Future[Any]] =
-    Future.successful(call(process,args map PiObject.apply :_*))
 }
