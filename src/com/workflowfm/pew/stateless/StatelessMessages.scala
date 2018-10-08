@@ -22,9 +22,23 @@ object StatelessMessages {
 
   case class SequenceRequest(
     piiId: ObjectId,
-    request: (CallRef, PiObject),
+    request: (CallRef, PiObject)
 
   ) extends PiiHistory
+
+  case class SequenceFailure(
+    pii:  Either[ObjectId, PiInstance[ObjectId]],
+    results: Seq[(CallRef, PiObject)],
+    failures: Seq[(CallRef, Throwable)]
+
+  ) extends PiiHistory {
+
+    def piiId: ObjectId
+      = pii match {
+        case Left( _piiId ) => _piiId
+        case Right( _pii ) => _pii.id
+      }
+  }
 
   case class PiiUpdate(
     pii:      PiInstance[ObjectId]
@@ -41,17 +55,9 @@ object StatelessMessages {
 
   case class PiiResult[T](
     pii:      PiInstance[ObjectId],
-    callRef:  Option[CallRef],
     res:      T
 
-  ) extends AnyMsg {
-
-    def this( pi: PiInstance[ObjectId], res: T )
-      = this( pi, None, res )
-
-    def this( pi: PiInstance[ObjectId], callRef: CallRef, res: T )
-      = this( pi, Some(callRef), res )
-  }
+  ) extends AnyMsg
 
   type ResultSuccess = PiiResult[PiObject]
   type ResultFailure = PiiResult[Throwable]

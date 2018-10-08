@@ -7,7 +7,6 @@ import akka.stream.scaladsl._
 import com.workflowfm.pew.stateless.components.StatelessComponent
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.{AnyKey, AnyRes}
-import org.apache.kafka.clients.consumer.ConsumerRecord
 
 import scala.concurrent.Future
 
@@ -19,12 +18,9 @@ object KafkaWrapperFlows {
 
   import Consumer._
   import ConsumerMessage._
-
   import Producer._
   import ProducerMessage._
-
   import Subscriptions._
-
   import com.workflowfm.pew.stateless.StatelessMessages._
 
   type CMsg[V] = CommittableMessage[AnyKey, V]
@@ -64,7 +60,7 @@ object KafkaWrapperFlows {
     *
     * @return Akka flow capable of sequencing a single `PiiHistory` partition into a ReduceRequest stream.
     */
-  def flowSequencer: Flow[CMsg[PiiHistory], Tracked[Seq[ReduceRequest]], NotUsed]
+  def flowSequencer: Flow[CMsg[PiiHistory], Tracked[Seq[AnyMsg]], NotUsed]
     = Flow[CMsg[PiiHistory]]
       .scan( new SequenceResponseBuilder )(_ next _)
       .map( _.response )

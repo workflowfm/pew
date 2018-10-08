@@ -3,7 +3,6 @@ package com.workflowfm.pew.stateless.instances.kafka.settings.bson
 import com.workflowfm.pew._
 import com.workflowfm.pew.mongodb.bson._
 import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
-import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.AnyKey
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs._
 import org.bson.codecs.Codec
 import org.bson.codecs.configuration.CodecRegistry
@@ -30,7 +29,8 @@ class KafkaCodecRegistry(
   private val piInst = new PiInstanceCodec(this, processes)
 
   // Needs to be initialised before any 'ResultCodec' which depend on it.
-  val anyres: Codec[Any] = new AnyResCodec( this )
+  private val throwable = new ThrowableCodec
+  val anyres: Codec[Any] = new AnyResCodec( obj, throwable )
 
   // These use the PEW-REST Key codecs, need to be initialised after PEW
   private val callRef = new CallRefCodec
@@ -41,9 +41,10 @@ class KafkaCodecRegistry(
   private val update = new PiiUpdateCodec( piInst )
   private val assgn = new AssignmentCodec( piInst, callRef, piRes )
   private val seqReq = new SequenceRequestCodec( callRef, obj )
+  private val seqfail = new SequenceFailureCodec( piInst, callRef, obj, throwable )
   private val redReq = new ReduceRequestCodec( piInst, callRef, obj )
-  private val res = new ResultCodec( piInst, anyres, callRef )
-  private val piiHistory = new PiiHistoryCodec( seqReq, update )
+  private val res = new ResultCodec( piInst, anyres )
+  private val piiHistory = new PiiHistoryCodec( seqReq, update, seqfail)
 
   // Initialised after both Keys & Msgs as it depends on them all.
   private val anykey = new AnyKeyCodec( keyPiiId, keyPiiIdCall )
@@ -71,6 +72,7 @@ class KafkaCodecRegistry(
     case TERMCLASS            => term
     case INSTANCECLASS        => piInst
 
+    case THROWABLE            => throwable
     case CALL_REF             => callRef
     case KEY_PII_ID           => keyPiiId
     case KEY_PII_ID_CALL      => keyPiiIdCall
@@ -78,6 +80,7 @@ class KafkaCodecRegistry(
     case PII_UPDATE           => update
     case ASSIGNMENT           => assgn
     case SEQUENCE_REQ         => seqReq
+    case SEQFAIL_REQ          => seqfail
     case REDUCE_REQUEST       => redReq
     case RESULT_ANY_MSG       => res
 

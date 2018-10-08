@@ -69,6 +69,7 @@ class BsonKafkaExecutorSettings(
   override def record: AnyMsg => ProducerRecord[AnyKey, AnyMsg] = {
     case m: PiiUpdate           => new ProducerRecord( tnPiiHistory, KeyPiiId(m.pii.id), m )
     case m: SequenceRequest     => new ProducerRecord( tnPiiHistory, KeyPiiId(m.piiId), m )
+    case m: SequenceFailure     => new ProducerRecord( tnPiiHistory, KeyPiiId(m.piiId), m )
     case m: ReduceRequest       => new ProducerRecord( tnReduceRequest, KeyPiiId(m.pii.id), m )
     case m: Assignment          => new ProducerRecord( tnAssignment, KeyPiiIdCall(m.pii.id, m.callRef), m )
     case m: PiiResult[_]        => new ProducerRecord( tnResult, KeyPiiId(m.pii.id), m )

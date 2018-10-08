@@ -9,30 +9,55 @@ import org.bson.types.ObjectId
 import scala.collection.immutable
 
 case class PartialResponse(
-    pii:    Option[PiInstance[ObjectId]],
-    args:   immutable.Seq[(CallRef, PiObject)]
+    pii:      Option[PiInstance[ObjectId]],
+    results:  immutable.Seq[(CallRef, PiObject)],
+    failures: immutable.Seq[(CallRef, Throwable)]
   ) {
 
-  def this() = this( None, immutable.Seq() )
+  def this() = this( None, immutable.Seq(), immutable.Seq() )
 
-  /** We only *want* to send a response when there is a valid payload.
-    */
-  val hasPayload: Boolean = args.nonEmpty
+  lazy val allCaught: Boolean
+    = pii.exists( pii =>
+        if (failures.nonEmpty) {
+          val haveReturned: Set[Int] = ( ( results ++ failures ) map ( _._1 ) ).map( _.id ).toSet
+          pii.called.forall( haveReturned.contains )
 
-  /** @return Optional ReduceRequest which could be built from this data.
+        } else results.nonEmpty
+      )
+
+  /** We only *want* to send a response when we have actionable data to send:
+    * - ReduceRequest <- The latest PiInstance *and* at least one call ref to sequence.
+    * - ResultFailure <- The latest PiInstance *and* all the SequenceRequests to dump.
     */
-  def request: Option[ReduceRequest]
-    = pii.map( ReduceRequest( _, args ) )
+  val hasPayload: Boolean = ( results.nonEmpty && failures.isEmpty ) || allCaught
+
+  /** @return A full message which could be built with this data, or nothing.
+    */
+  def message: Option[AnyMsg]
+    = pii.map( pii =>
+        if (failures.nonEmpty) {
+          if (allCaught)  new ResultFailure( pii, failures.head._2 )
+          else            SequenceFailure( Right( pii ), results.to, failures.to )
+
+        } else ReduceRequest( pii, results )
+      )
 
   /** Overwrite with the latest PiInstance information.
     */
-  def update( newPii: PiInstance[ObjectId] )
-    = PartialResponse( Some( newPii ), args )
+  def update( newPii: PiInstance[ObjectId] ): PartialResponse
+    = PartialResponse( Some( newPii ), results, failures )
 
   /** Update the full list of results to sequence into the next reduce.
     */
-  def update( arg: (CallRef, PiObject) )
-    = PartialResponse( pii, args :+ arg )
+  def update( arg: (CallRef, PiObject) ): PartialResponse
+    = PartialResponse( pii, arg +: results, failures )
+
+  def merge( failure: SequenceFailure ): PartialResponse
+    = PartialResponse(
+      failure.pii.toOption.orElse( pii ),
+      failure.results.to[immutable.Seq] ++ results,
+      failure.failures.to[immutable.Seq] ++ failures
+    )
 }
 
 /** Object that aggregates information required to properly respond to a sequence
@@ -63,15 +88,15 @@ class SequenceResponseBuilder(
   /** MultiMessage response for the consumed messages, or None if the
     * consumed messages lack sufficient information for a response.
     */
-  val response: Option[ Tracked[ Seq[ReduceRequest] ] ] =
+  val response: Option[ Tracked[ Seq[AnyMsg] ] ] =
     if ( responses.toSeq.exists( _._2.hasPayload ) ) {
 
     // All necessary responses:
     // - None if we lack information for a ReduceRequest
     // - Or a complete response. However, this isn't final,
     //   it may be updated when integrating new messages.
-    val messages: Seq[Option[ReduceRequest]]
-      = responses.toSeq.map( _._2.request )
+    val messages: Seq[Option[AnyMsg]]
+      = responses.toSeq.map( _._2.message )
 
     // All PiInstances we've received information for need to be "reduced"
     // otherwise we would lose their state information when they are consumed.
@@ -104,8 +129,9 @@ class SequenceResponseBuilder(
 
         // Update partial results:
         msgIn.record.value match {
-          case msg: SequenceRequest => update( msg.piiId, _.update( msg.request ) )
-          case msg: PiiUpdate       => update( msg.pii.id, _.update( msg.pii ) )
+          case msg: SequenceRequest => update( msg.piiId, _ update msg.request )
+          case msg: PiiUpdate       => update( msg.pii.id, _ update msg.pii )
+          case msg: SequenceFailure => update( msg.piiId, _ merge msg )
         }
       )
 }

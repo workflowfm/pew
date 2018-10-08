@@ -73,9 +73,12 @@ class Reducer(
           case Some(p: AtomicProcess) => Assignment( piReduced, ref, p.name, args )
 
           // These should never happen! We already checked in the reducer!
-          case None     => new ResultFailure( piReduced, ref, UnknownProcessException(name) )
-          case Some(_)  => new ResultFailure( piReduced, ref, AtomicProcessIsCompositeException(name) )
+          case None    => fail( piReduced.id, ref, UnknownProcessException(name) )
+          case Some(_) => fail( piReduced.id, ref, AtomicProcessIsCompositeException(name) )
         }
     }
   }
+
+  def fail( id: ObjectId, ref: CallRef, err: Throwable ): SequenceFailure
+    = SequenceFailure( Left(id), Seq(), Seq((ref, err)) )
 }

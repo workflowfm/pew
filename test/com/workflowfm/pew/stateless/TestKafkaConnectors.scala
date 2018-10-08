@@ -1,10 +1,10 @@
 package com.workflowfm.pew.stateless
 
-import akka.{Done, NotUsed}
 import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.{Flow, Sink}
-import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, ReduceRequest}
-import com.workflowfm.pew.stateless.components.{AtomicExecutor, Reducer, ResultListener}
+import akka.{Done, NotUsed}
+import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
+import com.workflowfm.pew.stateless.components.{AtomicExecutor, Reducer}
 import com.workflowfm.pew.stateless.instances.kafka.CustomKafkaExecutor
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows._
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
@@ -51,7 +51,7 @@ object TestKafkaConnectors {
   def indySequencer( sink: Sink[AnyMsg, Future[Done]] )( implicit s: KafkaExecutorSettings ): Control
     = {
     val flowCheck
-      = flowUntrack[Seq[ReduceRequest]]
+      = flowUntrack[Seq[AnyMsg]]
         .via( flowFlatten )
         // .via( checkMsg() )
         .to( sink )

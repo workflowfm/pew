@@ -10,8 +10,7 @@ import org.bson.codecs._
 
 class ResultCodec(
      piiCodec: Codec[PiiT],
-     resCodec: Codec[AnyRes],
-     refCodec: Codec[CallRef]
+     resCodec: Codec[AnyRes]
 
   ) extends Codec[PewCodecs.ResMsgT] {
 
@@ -20,8 +19,6 @@ class ResultCodec(
   import StatelessMessages._
 
   val piiN = "pii"
-  val hasRefN = "hasRef"
-  val refN = "ref"
   val resN = "res"
 
   override def decode(reader: BsonReader, ctx: DecoderContext): ResMsgT = {
@@ -30,19 +27,11 @@ class ResultCodec(
     reader.readName( piiN )
     val pii = ctx.decodeWithChildContext( piiCodec, reader )
 
-    reader.readName( hasRefN )
-    val optRef =
-      if ( reader.readBoolean() ) {
-        reader.readName( refN )
-        Some( ctx.decodeWithChildContext( refCodec, reader ) )
-
-      } else None
-
     reader.readName( resN )
     val res: AnyRes = ctx.decodeWithChildContext( resCodec, reader )
 
     reader.readEndDocument()
-    PiiResult( pii, optRef, res )
+    PiiResult( pii, res )
   }
 
   override def encode(writer: BsonWriter, value: ResMsgT, ctx: EncoderContext): Unit = {
@@ -50,18 +39,6 @@ class ResultCodec(
 
     writer.writeName( piiN )
     ctx.encodeWithChildContext( piiCodec, writer, value.pii )
-
-    writer.writeName( hasRefN )
-    value.callRef match {
-      case Some( ref ) =>
-        writer.writeBoolean( true )
-
-        writer.writeName( refN )
-        ctx.encodeWithChildContext( refCodec, writer, ref )
-
-      case None =>
-        writer.writeBoolean( false )
-    }
 
     writer.writeName( resN )
     ctx.encodeWithChildContext( resCodec, writer, value.res )

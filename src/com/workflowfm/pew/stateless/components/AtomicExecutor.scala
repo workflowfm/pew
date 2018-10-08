@@ -40,7 +40,7 @@ class AtomicExecutor( errHandler: ErrorHandler )( implicit exec: ExecutionContex
       }
 
       def fail( t: Throwable ): Future[ResultFailure]
-        = Future.successful( new ResultFailure(pii, ref, t) )
+        = Future.successful( new ResultFailure(pii, t) )
 
       println(s"Started: '$callName'.")
       handling.run()

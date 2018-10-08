@@ -3,36 +3,27 @@ package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs
 import com.workflowfm.pew.PiObject
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.AnyRes
 import org.bson.codecs._
-import org.bson.codecs.configuration.CodecRegistry
 import org.bson.{BsonReader, BsonWriter}
 
-class AnyResCodec( reg: CodecRegistry )
+class AnyResCodec( objCodec: Codec[PiObject], throwCodec: Codec[Throwable] )
   extends Codec[AnyRes] {
 
   import PewCodecs._
 
-  val piObjTN = "piobj"
-  val piObjCodec: Codec[PiObject] = reg.get( classOf[PiObject] )
-
-  val throwableTN = "failure"
-  // val throwableCodec: Codec[Throwable] = pro.get( classOf[Throwable] )
+  val piObjN = "piobj"
+  val throwableN = "failure"
 
   override def encode(writer: BsonWriter, value: AnyRes, ctx: EncoderContext): Unit = {
     writer.writeStartDocument()
 
-
     value match {
       case piObj: PiObject =>
-        writer.writeName( piObjTN )
-        ctx.encodeWithChildContext( piObjCodec, writer, piObj )
+        writer.writeName( piObjN )
+        ctx.encodeWithChildContext( objCodec, writer, piObj )
 
       case fail: Throwable =>
-        writer.writeName( throwableTN )
-        writer.writeString( fail.getMessage )
-
-      case _ =>
-        writer.writeName( throwableTN )
-        writer.writeString( "Unsupported result type (Sender): " + value.getClass.toString )
+        writer.writeName( throwableN )
+        ctx.encodeWithChildContext( throwCodec, writer, fail )
     }
 
     writer.writeEndDocument()
@@ -47,11 +38,11 @@ class AnyResCodec( reg: CodecRegistry )
     val typeN = reader.readName()
 
     val result: AnyRes =
-      if ( typeN == piObjTN )
-        ctx.decodeWithChildContext( piObjCodec, reader )
+      if ( typeN == piObjN )
+        ctx.decodeWithChildContext( objCodec, reader )
 
-      else if ( typeN == throwableTN )
-        KafkaRemoteException( reader.readString() )
+      else if ( typeN == throwableN )
+        ctx.decodeWithChildContext( throwCodec, reader )
 
       else
         KafkaRemoteException( "Unsupported result type (Receiver): " + typeN )

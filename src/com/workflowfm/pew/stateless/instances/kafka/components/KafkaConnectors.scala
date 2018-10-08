@@ -1,8 +1,8 @@
 package com.workflowfm.pew.stateless.instances.kafka.components
 
-import akka.{Done, NotUsed}
+import akka.Done
 import akka.kafka.scaladsl.Consumer.Control
-import akka.stream.scaladsl.{Flow, Interleave, Sink, Source}
+import akka.stream.scaladsl.{Sink, Source}
 import com.workflowfm.pew.stateless.StatelessMessages
 import com.workflowfm.pew.stateless.components._
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
@@ -79,7 +79,10 @@ object KafkaConnectors {
   def seqReducer( red: Reducer )(implicit s: KafkaExecutorSettings ): Control
     = run(
       srcPiiHistory( flowSequencer )
-      via flowRespondAll( red )
+      .map({
+        case (messages, offset) =>
+          ( messages.collect({ case req: ReduceRequest => red respond req }), offset )
+      })
       map { case (msgs, offset) => (msgs.flatten, offset) }
       via flowMultiMessage,
       sinkProducerMsg
