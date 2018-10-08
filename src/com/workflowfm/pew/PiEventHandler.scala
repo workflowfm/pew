@@ -34,24 +34,24 @@ trait PiEventHandlerFactory[T,H <: PiEventHandler[T]] {
 
 class PrintEventHandler[T](override val name:String) extends PiEventHandler[T] {   
   override def apply(e:PiEvent[T]) = { e match {
-    case PiEventStart(i) => System.err.println(" === INITIAL STATE " + i.id + " === \n" + i.state + "\n === === === === === === === ===")
+    case PiEventStart(i) => System.err.println(" === [" + i.id + "] INITIAL STATE === \n" + i.state + "\n === === === === === === === ===")
     case PiEventResult(i,res) => {
-      System.err.println(" === FINAL STATE " + i.id + " === \n" + i.state + "\n === === === === === === === ===")
-      System.err.println(" === RESULT FOR " + i.id + ": " + res)
+      System.err.println(" === [" + i.id + "] FINAL STATE === \n" + i.state + "\n === === === === === === === ===")
+      System.err.println(" === [" + i.id + "] RESULT: " + res)
     }
     case PiEventFailure(i,reason) => {	  
-    	  System.err.println(" === FINAL STATE " + i.id + " === \n" + i.state + "\n === === === === === === === ===")
-    	  System.err.println(" === FAILED: " + i.id + " ! === Exception: " + reason)
+    	  System.err.println(" === [" + i.id + "] FINAL STATE === \n" + i.state + "\n === === === === === === === ===")
+    	  System.err.println(" === [" + i.id + "] FAILED! === Exception: " + reason)
     	  reason.printStackTrace()
     }
     case PiEventException(id,reason) => {	  
-  	    System.err.println(" === EXCEPTION: " + id + " ! === Exception: " + reason)
+  	    System.err.println(" === [" + id + "] EXCEPTION: " + reason)
   	    reason.printStackTrace()
     }
-    case PiEventCall(id,ref,p,args) => System.err.println(" === PROCESS CALL " + id + " === \n" + p.name + " (" + ref + ") with args: " + args.mkString(",") + "\n === === === === === === === ===")
-    case PiEventReturn(id,ref,result) => System.err.println(" === PROCESS RETURN " + id + " === \n" + ref + " returned: " + result + "\n === === === === === === === ===")
+    case PiEventCall(id,ref,p,args) => System.err.println(" === [" + id + "] PROCESS CALL:" +  p.name + " (" + ref + ") with args: " + args.mkString(","))
+    case PiEventReturn(id,ref,result) => System.err.println(" === [" + id + "] PROCESS RETURN: (" + ref + ") returned: " + result)
     case PiEventProcessException(id,ref,reason) => {	  
-    	  System.err.println(" === PROCESS FAILED: " + id + " === " + ref + " === Exception: " + reason)
+    	  System.err.println(" === [" + id + "] PROCESS FAILED: (" + ref + ") === Exception: " + reason)
     	  reason.printStackTrace()
      }   
   }
@@ -94,8 +94,10 @@ trait PiObservable[T] {
 trait SimplePiObservable[T] extends PiObservable[T] {
   var handlers:Queue[PiEventHandler[T]] = Queue()
   
-  override def subscribe(handler:PiEventHandler[T]):Unit = 
+  override def subscribe(handler:PiEventHandler[T]):Unit = {
+    System.err.println("Subscribed: " + handler.name)
     handlers = handlers :+ handler
+  }
   
   override def unsubscribe(handlerName:String):Unit = {
     handlers = handlers filter (_.name!=handlerName)  

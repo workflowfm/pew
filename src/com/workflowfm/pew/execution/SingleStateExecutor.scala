@@ -24,18 +24,16 @@ class SingleStateExecutor(processes:PiProcessStore)(override implicit val contex
     if (instance.isDefined) Future.failed(new ProcessExecutor.AlreadyExecutingException())
     else {
       val inst = PiInstance(ctr,p,args:_*)
-      System.err.println(" === INITIAL STATE === \n" + inst.state + "\n === === === === === === === ===")
       instance = Some(inst)
       ctr = ctr + 1
       run
-      Future.successful(ctr)
+      Future.successful(ctr - 1)
     }
   }
 
   def success(id:Int,res:Any) = {
     instance match {
       case Some(i) => {
-        System.err.println(" === FINAL STATE === \n" + i.state + "\n === === === === === === === ===")
         publish(PiEventResult(i,res))
       }
       case None => publish(PiEventException(id,new ProcessExecutor.NoSuchInstanceException(id.toString)))
@@ -44,7 +42,6 @@ class SingleStateExecutor(processes:PiProcessStore)(override implicit val contex
   }
   
   def failure(inst:PiInstance[Int]) = {
-	  System.err.println(" === FINAL STATE === \n" + inst.state + "\n === === === === === === === ===")
 	  publish(PiEventFailure(inst,new ProcessExecutor.NoResultException(inst.id.toString)))
 	  instance = None 
   }
@@ -59,28 +56,29 @@ class SingleStateExecutor(processes:PiProcessStore)(override implicit val contex
             case None => failure(ni)
             case Some(res) => success(ni.id,res)        
         }} else {
-          instance = Some(ni.handleThreads(handleThread(ni.id))._2)
+          instance = Some(ni.handleThreads(handleThread(ni))._2)
         }
     }}
  
-  def handleThread(id:Int)(ref:Int,f:PiFuture):Boolean = f match {
-    case PiFuture(name, outChan, args) => processes get name match {
+  def handleThread(i:PiInstance[Int])(ref:Int,f:PiFuture):Boolean = f match {
+    case PiFuture(name, outChan, args) => i.getProc(name) match {
       case None => {
-        publish(PiEventException(id,new ProcessExecutor.UnknownProcessException(name)))
+        publish(PiEventFailure(i,new ProcessExecutor.UnknownProcessException(name)))
         false
       }
       case Some(p:AtomicProcess) => {
         val objs = args map (_.obj)
+        publish(PiEventCall(i.id,ref,p,objs))
         p.run(objs).onComplete{ 
           case Success(res) => {
-            postResult(id,ref,res)
-            publish(PiEventReturn(id,ref,res))
+            publish(PiEventReturn(i.id,ref,res))
+            postResult(i.id,ref,res)
           }
           case Failure(ex) => {
-            publish(PiEventProcessException(id,ref,ex))
+            publish(PiEventProcessException(i.id,ref,ex))
+            instance = None 
           }
         }
-        publish(PiEventCall(id,ref,p,objs))
         true
       }
       case Some(p:CompositeProcess) => { System.err.println("*** Executor encountered composite process thread: " + name); false } // TODO this should never happen!
@@ -88,7 +86,6 @@ class SingleStateExecutor(processes:PiProcessStore)(override implicit val contex
   }
     
   def postResult(id:Int,ref:Int, res:PiObject):Unit = this.synchronized {
-    System.err.println("*** Received result for ID:" + id + " Thread:" + ref + " : " + res)
     instance match {
       case None => publish(PiEventException(id,new ProcessExecutor.NoSuchInstanceException(id.toString)))
       case Some(i) => 

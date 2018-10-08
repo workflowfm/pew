@@ -25,14 +25,18 @@ class SingleStateExecutorTests extends FlatSpec with Matchers with ProcessExecut
   val ri = new R(pai,pbi,pci)
   
   "SingleStateExecutor" should "execute Rexample concurrently" in {
-		exe(new SingleStateExecutor(pai,pbi,pci,ri),ri,13)//.isEmpty should be( false )
-		exe(new SingleStateExecutor(pai,pbi,pci,ri),ri,31)//.isEmpty should be( false )
+    val executor = new SingleStateExecutor(pai,pbi,pci,ri)
+    executor.subscribe(new PrintEventHandler("printer"))
+		exe(executor,ri,13)//.isEmpty should be( false )
+		//exe(new SingleStateExecutor(pai,pbi,pci,ri),ri,31)//.isEmpty should be( false )
 	}
 	
   
   
 	"SingleStateExecutor" should "execute C1" in {
-		exe(new SingleStateExecutor(P1,C1),C1,("OH","HAI!")) should be( Some("OH++HAI!") )
+	  val executor = new SingleStateExecutor(P1,C1)
+	  executor.subscribe(new PrintEventHandler("printer"))
+		exe(executor,C1,("OH","HAI!")) should be( "OH++HAI!" )
 	}
 	
 	object P1 extends AtomicProcess { // X,Y -> (X++Y)
@@ -55,7 +59,7 @@ class SingleStateExecutorTests extends FlatSpec with Matchers with ProcessExecut
 	
 	
 	"SingleStateExecutor" should "execute C2" in {
-		exe(new SingleStateExecutor(P2A,P2B,C2),C2,"HI:") should be( Some("HI:AABB") )
+		exe(new SingleStateExecutor(P2A,P2B,C2),C2,"HI:") should be( "HI:AABB" )
 	}
 	
 	object P2A extends AtomicProcess { // X -> XAA
@@ -88,7 +92,7 @@ class SingleStateExecutorTests extends FlatSpec with Matchers with ProcessExecut
 	
 	
   "SingleStateExecutor" should "execute C3" in {
-		exe(new SingleStateExecutor(P3A,P3B,C3),C3,"HI:") should be( Some(("HI:AARR","HI:BB")) )
+		exe(new SingleStateExecutor(P3A,P3B,C3),C3,"HI:") should be( ("HI:AARR","HI:BB") )
 	}
 	
 	object P3A extends AtomicProcess { // X -> (XAA,XBB)
