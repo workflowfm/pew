@@ -20,7 +20,7 @@ class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStor
   
   var ctr:Int = 0
   
-  override def call(p:PiProcess,args:Seq[PiObject]) = store.synchronized {
+  override def run(p:PiProcess,args:Seq[PiObject]) = store.synchronized {
 	  val inst = PiInstance(ctr,p,args:_*)
 	  val ni = inst.reduce
     if (ni.completed) ni.result match {

@@ -43,7 +43,7 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
   val col:MongoCollection[PiInstance[ObjectId]] = database.getCollection(collection)
 
   
-  override def call(p:PiProcess,args:Seq[PiObject]):Future[ObjectId] = {
+  override def run(p:PiProcess,args:Seq[PiObject]):Future[ObjectId] = {
     val oid = new ObjectId
 	  val inst = PiInstance(oid,p,args:_*)
 	  val ni = inst.reduce

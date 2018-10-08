@@ -45,7 +45,7 @@ class AkkaExecutor(store:PiInstanceStore[Int], processes:PiProcessStore)(overrid
   
   override def simulationReady = Await.result(execActor ? AkkaExecutor.SimReady,timeout).asInstanceOf[Boolean]
   
-  override def call(process:PiProcess,args:Seq[PiObject]):Future[Int] = 
+  override def run(process:PiProcess,args:Seq[PiObject]):Future[Int] = 
     execActor ? AkkaExecutor.Call(process,args) map (_.asInstanceOf[Int])
 }
 

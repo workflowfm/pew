@@ -26,22 +26,23 @@ case class AtomicProcessExecutor(process:AtomicProcess) {
  * Trait representing the ability to execute any PiProcess
  */
 trait ProcessExecutor[KeyT] { this:PiObservable[KeyT] => 
-  def call(process:PiProcess,args:Seq[PiObject]):Future[KeyT]
+  def run(process:PiProcess,args:Seq[PiObject]):Future[KeyT]
   def simulationReady:Boolean
   
   implicit val context: ExecutionContext //= ExecutionContext.global
 
-	def execute(process:PiProcess,args:Seq[Any]):Future[KeyT] = {
-    call(process,args map PiObject.apply)
-  }
+	def call(process:PiProcess,args:Seq[Any]):Future[KeyT] = run(process,args map PiObject.apply)
 	
 	def execute[H <: PiEventHandler[KeyT]](process:PiProcess,args:Seq[Any],factory:PiEventHandlerFactory[KeyT,H]):Future[H] = {
-	   execute(process,args) map { id => 
+	   call(process,args) map { id => 
 	     val handler = factory.build(id) 
 	     subscribe(handler)
 	     handler
 	   }
   }
+	
+  def execute(process:PiProcess,args:Seq[Any]):Future[Any] = 
+    execute(process,args,new PromiseHandlerFactory[KeyT]({ id => "["+id+"]"})) flatMap (_.future)
 }
 
 object ProcessExecutor {
@@ -59,25 +60,20 @@ object ProcessExecutor {
                     extends Exception("Failed to find instance with id: " + id, cause) 
 }
 
-trait FutureExecutorX[KeyT] extends ProcessExecutor[KeyT] { this:PiObservable[KeyT] => 
-  def run(process:PiProcess,args:Seq[Any]):Future[Any] = 
-    execute(process,args,new PromiseHandlerFactory[KeyT]("handler")) flatMap (_.future)
-}
-
 /**
  * Shortcut methods for unit testing
  */
-//trait ProcessExecutorTester {
-//  def exe(e:FutureExecutor,p:PiProcess,args:Any*) = awaitf(e.execute(p,args:Seq[Any]))
-//  def await[A](f:Future[A]):A = try {
-//    Await.result(f,15.seconds)
-//  } catch {
-//    case e:Throwable => {
-//      System.out.println("=== RESULT FAILED! ===")
-//      throw e
-//    }
-//  }
-//  
+trait ProcessExecutorTester {
+  def exe(e:ProcessExecutor[_],p:PiProcess,args:Any*) = await(e.execute(p,args:Seq[Any]))
+  def await[A](f:Future[A]):A = try {
+    Await.result(f,15.seconds)
+  } catch {
+    case e:Throwable => {
+      System.out.println("=== RESULT FAILED! ===")
+      throw e
+    }
+  }
+  
 //  def awaitf[A](f:Future[Future[A]]):A = try {
 //    Await.result(Await.result(f,15.seconds),15.seconds)
 //  } catch {
@@ -86,4 +82,4 @@ trait FutureExecutorX[KeyT] extends ProcessExecutor[KeyT] { this:PiObservable[Ke
 //      throw e
 //    }
 //  }
-//}
+}

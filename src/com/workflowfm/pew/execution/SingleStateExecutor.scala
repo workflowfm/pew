@@ -4,6 +4,7 @@ import com.workflowfm.pew._
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.annotation.tailrec
+import scala.util.{Success, Failure}
 
 /**
  * Executes any PiProcess asynchronously.
@@ -13,14 +14,13 @@ import scala.annotation.tailrec
  * promises/futures from the first workflow can trigger changes on the state!
  */
 
-class SingleStateExecutor(processes:PiProcessStore)(override implicit val context: ExecutionContext = ExecutionContext.global) extends FutureExecutor {
+class SingleStateExecutor(processes:PiProcessStore)(override implicit val context: ExecutionContext = ExecutionContext.global) extends ProcessExecutor[Int] with SimplePiObservable[Int] {
   def this(l:PiProcess*) = this(SimpleProcessStore(l :_*))
   
   var ctr:Int = 0
   var instance:Option[PiInstance[Int]] = None
-  var promise:Promise[Option[Any]] = Promise()
   
-  def call(p:PiProcess,args:PiObject*) = {
+  override def run(p:PiProcess,args:Seq[PiObject]):Future[Int] = {
     if (instance.isDefined) Future.failed(new ProcessExecutor.AlreadyExecutingException())
     else {
       val inst = PiInstance(ctr,p,args:_*)
@@ -28,26 +28,25 @@ class SingleStateExecutor(processes:PiProcessStore)(override implicit val contex
       instance = Some(inst)
       ctr = ctr + 1
       run
-      promise.future
+      Future.successful(ctr)
     }
   }
 
-  def success(res:Any) = {
+  def success(id:Int,res:Any) = {
     instance match {
-      case Some(i) => System.err.println(" === FINAL STATE === \n" + i.state + "\n === === === === === === === ===")
-      case None => System.err.println(" === FINAL STATE IS GONE!! === === === === === === === === ===")
+      case Some(i) => {
+        System.err.println(" === FINAL STATE === \n" + i.state + "\n === === === === === === === ===")
+        publish(PiEventResult(i,res))
+      }
+      case None => publish(PiEventException(id,new ProcessExecutor.NoSuchInstanceException(id.toString)))
     }
-    promise.success(Some(res)) 
     instance = None
-    promise = Promise()  
   }
   
   def failure(inst:PiInstance[Int]) = {
-	  System.err.println(" === Failed to obtain output! ===")
 	  System.err.println(" === FINAL STATE === \n" + inst.state + "\n === === === === === === === ===")
-	  promise.success(None) 
-	  instance = None
-	  promise = Promise()  
+	  publish(PiEventFailure(inst,new ProcessExecutor.NoResultException(inst.id.toString)))
+	  instance = None 
   }
   
   final def run:Unit = this.synchronized {
@@ -58,7 +57,7 @@ class SingleStateExecutor(processes:PiProcessStore)(override implicit val contex
         if (ni.completed) {
           ni.result match {
             case None => failure(ni)
-            case Some(res) => success(res)        
+            case Some(res) => success(ni.id,res)        
         }} else {
           instance = Some(ni.handleThreads(handleThread(ni.id))._2)
         }
@@ -67,12 +66,21 @@ class SingleStateExecutor(processes:PiProcessStore)(override implicit val contex
   def handleThread(id:Int)(ref:Int,f:PiFuture):Boolean = f match {
     case PiFuture(name, outChan, args) => processes get name match {
       case None => {
-        System.err.println("*** ERROR *** Unable to find process: " + name)
+        publish(PiEventException(id,new ProcessExecutor.UnknownProcessException(name)))
         false
       }
       case Some(p:AtomicProcess) => {
-        p.run(args map (_.obj)).onSuccess{ case res => postResult(id,ref,res)}
-        System.err.println("*** Called process: " + p.name + " ref:" + ref)
+        val objs = args map (_.obj)
+        p.run(objs).onComplete{ 
+          case Success(res) => {
+            postResult(id,ref,res)
+            publish(PiEventReturn(id,ref,res))
+          }
+          case Failure(ex) => {
+            publish(PiEventProcessException(id,ref,ex))
+          }
+        }
+        publish(PiEventCall(id,ref,p,objs))
         true
       }
       case Some(p:CompositeProcess) => { System.err.println("*** Executor encountered composite process thread: " + name); false } // TODO this should never happen!
@@ -82,9 +90,9 @@ class SingleStateExecutor(processes:PiProcessStore)(override implicit val contex
   def postResult(id:Int,ref:Int, res:PiObject):Unit = this.synchronized {
     System.err.println("*** Received result for ID:" + id + " Thread:" + ref + " : " + res)
     instance match {
-      case None => System.err.println("*** No running instance! ***")
+      case None => publish(PiEventException(id,new ProcessExecutor.NoSuchInstanceException(id.toString)))
       case Some(i) => 
-        if (i.id != id) System.err.println("*** Different instance ID encountered: " + i.id)
+        if (i.id != id) publish(PiEventException(id,new ProcessExecutor.NoSuchInstanceException(id.toString)))
         else {
           instance = Some(i.postResult(ref, res))
           run
@@ -97,6 +105,4 @@ class SingleStateExecutor(processes:PiProcessStore)(override implicit val contex
     case Some(i) => i.simulationReady
   }
   
-  override def execute(process:PiProcess,args:Seq[Any]):Future[Future[Option[Any]]] =
-    Future.successful(call(process,args map PiObject.apply :_*))
 }

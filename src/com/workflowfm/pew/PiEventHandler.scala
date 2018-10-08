@@ -71,8 +71,8 @@ class PromiseHandler[T](override val name:String, val id:T) extends PiEventHandl
   } else false 
 }
 
-class PromiseHandlerFactory[T](name:String) extends PiEventHandlerFactory[T,PromiseHandler[T]] {
-  override def build(id:T) = new PromiseHandler[T](name,id)
+class PromiseHandlerFactory[T](name:T=>String) extends PiEventHandlerFactory[T,PromiseHandler[T]] {
+  override def build(id:T) = new PromiseHandler[T](name(id),id)
 }
 
 case class MultiPiEventHandler[T](handlers:Queue[PiEventHandler[T]]) extends PiEventHandler[T] {
