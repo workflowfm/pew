@@ -54,6 +54,10 @@ object KafkaWrapperFlows {
     = committableSource( s.csAssignment, topics( s.tnAssignment ) )
       .via( flowUnwrap )
 
+  def srcAssignmentPartitioned( implicit s: KafkaExecutorSettings ): Source[Source[Tracked[Assignment], NotUsed], Control]
+    = committablePartitionedSource( s.csAssignment, topics( s.tnAssignment ) )
+      .map( _._2 ).map( _.via( flowUnwrap ) )
+
   /** Synchronous handling intended for consuming a single `PiiHistory` partition. Blocks until a ReduceRequest is
     * released by receiving both a PiiUpdate *and* at least one SequenceRequest. All SequenceRequests received are
     * responded to, even if this requires sending a ReduceRequest for a PiiUpdate that contains no SequenceRequests.
@@ -66,7 +70,6 @@ object KafkaWrapperFlows {
       .map( _.response )
       .collect({ case Some( m ) => m })
 
-  // TODO: FIGURE OUT HOW BEST TO HANDLE THE BREADTH PARAMETER: SHOULD BE GREATER THAN THE MAXIMUM PARTITION COUNT
   /** Kafka Consumer for the `PiiHistory` topic. Exposes the individual partition sources so they handled individually
     * by `flowPartition` argument.
     *
@@ -77,7 +80,7 @@ object KafkaWrapperFlows {
     : Source[Out, Control] =
       committablePartitionedSource( s.csPiiHistory, topics( s.tnPiiHistory ) )
       .map( _._2 )
-      .flatMapMerge[Out, NotUsed]( 4, _.map( _.asInstanceOf[CMsg[PiiHistory]] ) via flowPartition )
+      .flatMapMerge[Out, NotUsed]( Int.MaxValue, _.map( _.asInstanceOf[CMsg[PiiHistory]] ) via flowPartition )
 
   /** Kafka Consumer for the `Result` topic. Configurable Group Id to allow control of the starting point
     * of consumption.
