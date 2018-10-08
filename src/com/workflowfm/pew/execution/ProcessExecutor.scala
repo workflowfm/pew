@@ -3,6 +3,7 @@ package com.workflowfm.pew.execution
 import com.workflowfm.pew._
 import scala.concurrent._
 import scala.concurrent.duration._
+import scala.collection.mutable.Map
 
 /**
  * Executes an atomic process - blocking
@@ -24,17 +25,27 @@ case class AtomicProcessExecutor(process:AtomicProcess) {
 /**
  * Trait representing the ability to execute any PiProcess
  */
-trait ProcessExecutor[R] {
-	def execute(process:PiProcess,args:Seq[Any]):Future[R]
-	def simulationReady:Boolean
+trait ProcessExecutor[KeyT] { this:PiObservable[KeyT] => 
+  def call(process:PiProcess,args:Seq[PiObject]):Future[KeyT]
+  def simulationReady:Boolean
+  
+  implicit val context: ExecutionContext //= ExecutionContext.global
+
+	def execute(process:PiProcess,args:Seq[Any]):Future[KeyT] = {
+    call(process,args map PiObject.apply)
+  }
+	
+	def execute(process:PiProcess,args:Seq[Any],factory:PiEventHandlerFactory[KeyT]):Future[PiEventHandler[KeyT]] = {
+	   execute(process,args) map { id => 
+	     val handler = factory.build(id) 
+	     subscribe(handler)
+	     handler
+	   }
+  }
 }
 
-trait FutureExecutor extends ProcessExecutor[PromiseHandler.ResultT] {
-  implicit val context: ExecutionContext = ExecutionContext.global
-	def execute(process:PiProcess,args:Seq[Any]):Future[PromiseHandler.ResultT]
-}
 object ProcessExecutor {
-  def default = SingleBlockingExecutor(Map[String,PiProcess]())
+  //def default = SingleBlockingExecutor(Map[String,PiProcess]())
   
   final case class AlreadyExecutingException(private val cause: Throwable = None.orNull)
                     extends Exception("Unable to execute more than one process at a time", cause) 
@@ -51,23 +62,23 @@ object ProcessExecutor {
 /**
  * Shortcut methods for unit testing
  */
-trait ProcessExecutorTester {
-  def exe(e:FutureExecutor,p:PiProcess,args:Any*) = awaitf(e.execute(p,args:Seq[Any]))
-  def await[A](f:Future[A]):A = try {
-    Await.result(f,15.seconds)
-  } catch {
-    case e:Throwable => {
-      System.out.println("=== RESULT FAILED! ===")
-      throw e
-    }
-  }
-  
-  def awaitf[A](f:Future[Future[A]]):A = try {
-    Await.result(Await.result(f,15.seconds),15.seconds)
-  } catch {
-    case e:Throwable => {
-      System.out.println("=== RESULT FAILED! ===")
-      throw e
-    }
-  }
-}
+//trait ProcessExecutorTester {
+//  def exe(e:FutureExecutor,p:PiProcess,args:Any*) = awaitf(e.execute(p,args:Seq[Any]))
+//  def await[A](f:Future[A]):A = try {
+//    Await.result(f,15.seconds)
+//  } catch {
+//    case e:Throwable => {
+//      System.out.println("=== RESULT FAILED! ===")
+//      throw e
+//    }
+//  }
+//  
+//  def awaitf[A](f:Future[Future[A]]):A = try {
+//    Await.result(Await.result(f,15.seconds),15.seconds)
+//  } catch {
+//    case e:Throwable => {
+//      System.out.println("=== RESULT FAILED! ===")
+//      throw e
+//    }
+//  }
+//}

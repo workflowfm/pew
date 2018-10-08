@@ -11,8 +11,31 @@ import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout
 
+class AkkaPiEventHandler(handler:PiEventHandler[Int]) extends Actor {
+  def receive = {
+    case AkkaExecutor.E(event) => if (handler(event)) unsubscribe(context)
+    case AkkaExecutor.Unsubscribe(name:String) => if (name == handler.name) unsubscribe(context)
+  }
+  
+  def unsubscribe(context:ActorContext) = {
+    context.system.eventStream.unsubscribe(self,classOf[AkkaExecutor.Event])
+    context.stop(self)
+  }
+}
 
-class AkkaExecutor(store:PiInstanceStore[Int], processes:PiProcessStore)(implicit system: ActorSystem, override implicit val context: ExecutionContext = ExecutionContext.global, implicit val timeout:FiniteDuration = 10.seconds) extends FutureExecutor {
+trait AkkaPiObservable extends PiObservable[Int] {
+  implicit val system:ActorSystem
+  override def subscribe(handler:PiEventHandler[Int]):Boolean = {
+    val handlerActor = system.actorOf(AkkaExecutor.handlerprops(handler))
+    system.eventStream.subscribe(handlerActor, classOf[AkkaExecutor.Event])
+  }
+  override def unsubscribe(name:String):Unit = {
+    system.eventStream.publish(AkkaExecutor.Unsubscribe(name))
+  }
+}
+
+
+class AkkaExecutor(store:PiInstanceStore[Int], processes:PiProcessStore)(implicit system: ActorSystem, override implicit val context: ExecutionContext = ExecutionContext.global, implicit val timeout:FiniteDuration = 10.seconds) extends ProcessExecutor[Int] with AkkaPiObservable {
   def this(store:PiInstanceStore[Int], l:PiProcess*)(implicit system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration) = this(store,SimpleProcessStore(l :_*))
   def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration,l:PiProcess*) = this(SimpleInstanceStore(),SimpleProcessStore(l :_*))(system,context,timeout)
   def this(l:PiProcess*)(implicit system: ActorSystem) = this(SimpleInstanceStore(),SimpleProcessStore(l :_*))(system,ExecutionContext.global,10.seconds)
@@ -22,8 +45,8 @@ class AkkaExecutor(store:PiInstanceStore[Int], processes:PiProcessStore)(implici
   
   override def simulationReady = Await.result(execActor ? AkkaExecutor.SimReady,timeout).asInstanceOf[Boolean]
   
-  override def execute(process:PiProcess,args:Seq[Any]):Future[Future[Any]] = 
-    Future.successful((execActor ? AkkaExecutor.Call(process,args map PiObject.apply)))
+  override def call(process:PiProcess,args:Seq[PiObject]):Future[Int] = 
+    execActor ? AkkaExecutor.Call(process,args) map (_.asInstanceOf[Int])
 }
 
 object AkkaExecutor {
@@ -39,18 +62,23 @@ object AkkaExecutor {
   case object Ping
   case object SimReady
   
+  sealed trait Event
+  case class E(evt:PiEvent[Int]) extends Event
+  case class Unsubscribe(name:String) extends Event
+  
   def atomicprops(implicit context: ExecutionContext = ExecutionContext.global): Props = Props(new AkkaAtomicProcessExecutor())
   def execprops(store:PiInstanceStore[Int], processes:PiProcessStore)(implicit system: ActorSystem, exc: ExecutionContext): Props = Props(new AkkaExecActor(store,processes))
+  def handlerprops(handler:PiEventHandler[Int])(implicit context: ExecutionContext = ExecutionContext.global): Props = Props(new AkkaPiEventHandler(handler))
 }
 
 class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(implicit system: ActorSystem, implicit val exc: ExecutionContext = ExecutionContext.global) extends Actor {
   var ctr:Int = 0
-  val handle = new PromiseHandler[Int]
-   
-  def call(p:PiProcess,args:Seq[PiObject]) = {
+
+  def handle(evt:PiEvent[Int]) = system.eventStream.publish(AkkaExecutor.E(evt))
+  
+  def call(p:PiProcess,args:Seq[PiObject]):Future[Int] = {
     //System.err.println("*** [" + ctr + "] Starting call of:" + p.name)
 	  val inst = PiInstance(ctr,p,args:_*)
-	  val ret = handle.init(inst)
 	  val ni = inst.reduce
     if (ni.completed) ni.result match {
 		  case None => {
@@ -68,7 +96,7 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(im
 	  }
 	  ctr = ctr + 1
 	  //System.err.println("*** [" + (ctr-1) + "] Done init.")
-	  ret
+	  return Future.successful(ctr-1)
   }
   
   final def postResult(id:Int,ref:Int, res:PiObject):Unit = {
