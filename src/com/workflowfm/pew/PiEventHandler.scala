@@ -28,8 +28,8 @@ trait PiEventHandler[KeyT] extends (PiEvent[KeyT]=>Boolean) {
   def and(h:PiEventHandler[KeyT]) = MultiPiEventHandler(this,h)
 }
 
-trait PiEventHandlerFactory[T] {
-  def build(id:T):PiEventHandler[T]
+trait PiEventHandlerFactory[T,H <: PiEventHandler[T]] {
+  def build(id:T):H
 }
 
 class PrintEventHandler[T](override val name:String) extends PiEventHandler[T] {   
@@ -71,7 +71,7 @@ class PromiseHandler[T](override val name:String, val id:T) extends PiEventHandl
   } else false 
 }
 
-class PromiseHandlerFactory[T](name:String) extends PiEventHandlerFactory[T] {
+class PromiseHandlerFactory[T](name:String) extends PiEventHandlerFactory[T,PromiseHandler[T]] {
   override def build(id:T) = new PromiseHandler[T](name,id)
 }
 

@@ -35,7 +35,7 @@ trait ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
     call(process,args map PiObject.apply)
   }
 	
-	def execute(process:PiProcess,args:Seq[Any],factory:PiEventHandlerFactory[KeyT]):Future[PiEventHandler[KeyT]] = {
+	def execute[H <: PiEventHandler[KeyT]](process:PiProcess,args:Seq[Any],factory:PiEventHandlerFactory[KeyT,H]):Future[H] = {
 	   execute(process,args) map { id => 
 	     val handler = factory.build(id) 
 	     subscribe(handler)
@@ -57,6 +57,11 @@ object ProcessExecutor {
                     extends Exception("Failed to get result for: " + id, cause) 
   final case class NoSuchInstanceException(val id:String, private val cause: Throwable = None.orNull)
                     extends Exception("Failed to find instance with id: " + id, cause) 
+}
+
+trait FutureExecutorX[KeyT] extends ProcessExecutor[KeyT] { this:PiObservable[KeyT] => 
+  def run(process:PiProcess,args:Seq[Any]):Future[Any] = 
+    execute(process,args,new PromiseHandlerFactory[KeyT]("handler")) flatMap (_.future)
 }
 
 /**
