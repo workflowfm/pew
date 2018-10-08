@@ -1,8 +1,8 @@
 package com.workflowfm.pew.stateless.instances.kafka.components
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.kafka.scaladsl.Consumer.Control
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{Flow, Interleave, Sink, Source}
 import com.workflowfm.pew.stateless.StatelessMessages
 import com.workflowfm.pew.stateless.components._
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
@@ -88,14 +88,18 @@ object KafkaConnectors {
   /** Run a AtomicExecutor off of the Assignment topic.
     *
     * @param exec AtomicExecutor component responsible for evaluating assignments and responding with SequenceRequests.
+    * @param threadsPerPart Parallelism of each Consumer topic partition.
     * @param s KafkaExecutorSettings controlling the interface with the Kafka Driver.
     * @return Control object for the running process.
     */
-  def indyAtomicExecutor( exec: AtomicExecutor )( implicit s: KafkaExecutorSettings ): Control
+  def indyAtomicExecutor( exec: AtomicExecutor, threadsPerPart: Int = 1 )( implicit s: KafkaExecutorSettings ): Control
     = run(
-      srcAssignment
-      via flowRespond( exec )
-      via flowWaitFuture( 1 )
+      srcAssignmentPartitioned
+      map( _
+        via flowRespond( exec )
+        via flowWaitFuture( threadsPerPart )
+      )
+      flatMapMerge( Int.MaxValue, identity )
       via flowMessage,
       sinkProducerMsg
     )
