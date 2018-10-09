@@ -78,7 +78,6 @@ class SequenceFailureCodec(
 
   override def encode(writer: BsonWriter, value: SequenceFailure, ctx: EncoderContext): Unit = {
     writer.writeStartDocument()
-
     writer.writeString( msgTypeN, msgType )
 
     writer.writeBoolean( hasPiiN, value.pii.isRight )

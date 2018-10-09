@@ -24,7 +24,7 @@ class PiiHistoryCodec(
       case m: PiiUpdate       => piiUpdate.encode( writer, m, ctx )
       case m: SequenceRequest => seqReq.encode( writer, m, ctx )
       case m: SequenceFailure => seqFailure.encode( writer, m, ctx )
-      case _ =>
+      case m => throw new IllegalArgumentException( s"Unsupported type '${m.getClass.getSimpleName}'." )
     }
   }
 

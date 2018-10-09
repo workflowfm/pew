@@ -18,6 +18,9 @@ class AssignmentCodec(
 
   import PewCodecs._
 
+  val msgTypeN = "msgType"
+  val msgType = "Assignment"
+
   val uuidN = "uuid"
   val piiN = "pii"
   val refN = "ref"
@@ -27,6 +30,7 @@ class AssignmentCodec(
 
   override def decode(reader: BsonReader, ctx: DecoderContext): Assignment = {
     reader.readStartDocument()
+    reader.readString( msgTypeN )
 
     reader.readName( piiN )
     val pii = ctx.decodeWithChildContext( piiCodec, reader )
@@ -60,6 +64,7 @@ class AssignmentCodec(
 
   override def encode(writer: BsonWriter, value: Assignment, ctx: EncoderContext): Unit = {
     writer.writeStartDocument()
+    writer.writeString( msgTypeN, msgType )
 
     writer.writeName( piiN )
     ctx.encodeWithChildContext( piiCodec, writer, value.pii )

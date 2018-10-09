@@ -1,10 +1,8 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs
 
-import com.workflowfm.pew.stateless.CallRef
-import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs.PiiT
 import com.workflowfm.pew.stateless.StatelessMessages
-import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.AnyRes
+import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs.PiiT
 import org.bson._
 import org.bson.codecs._
 
@@ -15,14 +13,17 @@ class ResultCodec(
   ) extends Codec[PewCodecs.ResMsgT] {
 
   import PewCodecs._
-  import KafkaConnectors._
   import StatelessMessages._
+
+  val msgTypeN = "msgType"
+  val msgType = "Result"
 
   val piiN = "pii"
   val resN = "res"
 
   override def decode(reader: BsonReader, ctx: DecoderContext): ResMsgT = {
     reader.readStartDocument()
+    reader.readString( msgTypeN )
 
     reader.readName( piiN )
     val pii = ctx.decodeWithChildContext( piiCodec, reader )
@@ -36,6 +37,7 @@ class ResultCodec(
 
   override def encode(writer: BsonWriter, value: ResMsgT, ctx: EncoderContext): Unit = {
     writer.writeStartDocument()
+    writer.writeString( msgTypeN, msgType )
 
     writer.writeName( piiN )
     ctx.encodeWithChildContext( piiCodec, writer, value.pii )

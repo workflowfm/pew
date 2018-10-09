@@ -6,7 +6,7 @@ import akka.{Done, NotUsed}
 import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
 import com.workflowfm.pew.stateless.components.{AtomicExecutor, Reducer}
 import com.workflowfm.pew.stateless.instances.kafka.CustomKafkaExecutor
-import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows._
+import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows.{srcAssignmentPartitioned, _}
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 
 import scala.collection.mutable
@@ -72,9 +72,12 @@ object TestKafkaConnectors {
         .to( sink )
 
     run(
-      srcAssignment
-      via flowRespond( exec )
-      via flowWaitFuture( Int.MaxValue )
+      srcAssignmentPartitioned
+      map( _
+        via flowRespond( exec )
+        via flowWaitFuture( 1 )
+      )
+      flatMapMerge( Int.MaxValue, identity )
       wireTap flowCheck
       via flowMessage,
       sinkProducerMsg

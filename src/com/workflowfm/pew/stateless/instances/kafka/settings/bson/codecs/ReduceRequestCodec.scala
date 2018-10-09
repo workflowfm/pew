@@ -13,6 +13,9 @@ class ReduceRequestCodec( piiCodec: Codec[PiiT], refCodec: Codec[CallRef], objCo
 
   import PewCodecs._
 
+  val msgTypeN = "msgType"
+  val msgType = "ReduceRequest"
+
   val piiN = "pii"
   val argsN = "args"
   val refN = "ref"
@@ -20,6 +23,7 @@ class ReduceRequestCodec( piiCodec: Codec[PiiT], refCodec: Codec[CallRef], objCo
 
   override def decode(reader: BsonReader, ctx: DecoderContext): ReduceRequest = {
     reader.readStartDocument()
+    reader.readString( msgTypeN )
 
     reader.readName( piiN )
     val pii: PiInstance[ObjectId] = ctx.decodeWithChildContext( piiCodec, reader )
@@ -43,6 +47,7 @@ class ReduceRequestCodec( piiCodec: Codec[PiiT], refCodec: Codec[CallRef], objCo
 
   override def encode(writer: BsonWriter, value: ReduceRequest, ctx: EncoderContext): Unit = {
     writer.writeStartDocument()
+    writer.writeString( msgTypeN, msgType )
 
     writer.writeName( piiN )
     ctx.encodeWithChildContext( piiCodec, writer, value.pii )
