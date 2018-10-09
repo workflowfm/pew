@@ -42,22 +42,28 @@ class SequenceFailureCodec(
         Left( reader.readObjectId() )
 
     val results = readArray( reader, resultsN ) { () =>
+      reader.readStartDocument()
+
       reader.readName( refN )
       val ref: CallRef = ctx.decodeWithChildContext( refCodec, reader )
 
       reader.readName( objN )
       val obj: PiObject = ctx.decodeWithChildContext( objCodec, reader )
 
+      reader.readEndDocument()
       (ref, obj)
     }
 
     val failures = readArray( reader, failuresN ) { () =>
+      reader.readStartDocument()
+
       reader.readName( refN )
       val ref: CallRef = ctx.decodeWithChildContext( refCodec, reader )
 
       reader.readName( failN )
       val fail: Throwable = ctx.decodeWithChildContext( errCodec, reader )
 
+      reader.readEndDocument()
       (ref, fail)
     }
 

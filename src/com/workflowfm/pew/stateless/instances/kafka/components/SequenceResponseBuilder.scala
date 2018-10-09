@@ -37,7 +37,7 @@ case class PartialResponse(
     = pii.map( pii =>
         if (failures.nonEmpty) {
           if (allCaught)  new ResultFailure( pii, failures.head._2 )
-          else            SequenceFailure( Right( pii ), results.to, failures.to )
+          else            SequenceFailure( pii, results, failures )
 
         } else ReduceRequest( pii, results )
       )

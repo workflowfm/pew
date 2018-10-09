@@ -22,6 +22,7 @@ class AtomicExecutor( errHandler: ErrorHandler )( implicit exec: ExecutionContex
       lazy val handling: Handling = Handling( callName, run( errHandler ), fail )
 
       def run( err: ErrorHandler )(): Future[AnyMsg] = {
+        println(s"Running: '$callName'.")
 
         val proc: Option[AtomicProcess]
           = pii.getProc( name ).collect({ case ap: AtomicProcess => ap })
@@ -39,8 +40,8 @@ class AtomicExecutor( errHandler: ErrorHandler )( implicit exec: ExecutionContex
         }
       }
 
-      def fail( t: Throwable ): Future[ResultFailure]
-        = Future.successful( new ResultFailure(pii, t) )
+      def fail( t: Throwable ): Future[SequenceFailure]
+        = Future.successful( SequenceFailure( pii.id, ref, t ) )
 
       println(s"Started: '$callName'.")
       handling.run()
@@ -49,7 +50,7 @@ class AtomicExecutor( errHandler: ErrorHandler )( implicit exec: ExecutionContex
 
 object AtomicExecutor {
 
-  def apply( errHandler: ErrorHandler = _ => defaultHandler() )( implicit exec: ExecutionContext )
+  def apply( errHandler: ErrorHandler = _ => cancelHandler )( implicit exec: ExecutionContext )
     : AtomicExecutor = new AtomicExecutor( errHandler )
 
   case class PreExecutionException( t: Throwable ) extends Throwable
@@ -57,12 +58,13 @@ object AtomicExecutor {
   case class Handling(
     name: String,
     run: () => Future[AnyMsg],
-    fail: Throwable => Future[ResultFailure]
+    fail: Throwable => Future[SequenceFailure]
   )
 
   type HandlerLogic = Handling => PartialFunction[Throwable, Future[AnyMsg]]
   type ErrorHandler = AtomicProcess => HandlerLogic
 
+  // TODO: Rework implementation so `maxAttempts` actually does something.
   /** Retry execution in this AtomicProcessExecutor for `maxAttempts` before
     * resorting to a backup handler logic.
     *
@@ -73,6 +75,7 @@ object AtomicExecutor {
     override def apply( handling: Handling ): PartialFunction[Throwable, Future[AnyMsg]] = {
       case t: Throwable =>
         if ( maxAttempts > 1 ) {
+          println(s"Retrying: ${handling.name}, ${maxAttempts - 1} remaining.")
           maxAttempts -= 1
           handling.run()
 

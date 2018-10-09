@@ -1,12 +1,10 @@
 package com.workflowfm.pew.stateless.components
 
 import com.workflowfm.pew._
-import com.workflowfm.pew.execution.ProcessExecutor
 import com.workflowfm.pew.execution.ProcessExecutor.{AtomicProcessIsCompositeException, NoResultException, UnknownProcessException}
-import com.workflowfm.pew.stateless.StatelessMessages.{ReduceRequest, AnyMsg}
 import com.workflowfm.pew.stateless.CallRef
+import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, ReduceRequest}
 import org.bson.types.ObjectId
-import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.ExecutionContext
 
@@ -73,12 +71,9 @@ class Reducer(
           case Some(p: AtomicProcess) => Assignment( piReduced, ref, p.name, args )
 
           // These should never happen! We already checked in the reducer!
-          case None    => fail( piReduced.id, ref, UnknownProcessException(name) )
-          case Some(_) => fail( piReduced.id, ref, AtomicProcessIsCompositeException(name) )
+          case None    => SequenceFailure( piReduced.id, ref, UnknownProcessException(name) )
+          case Some(_) => SequenceFailure( piReduced.id, ref, AtomicProcessIsCompositeException(name) )
         }
     }
   }
-
-  def fail( id: ObjectId, ref: CallRef, err: Throwable ): SequenceFailure
-    = SequenceFailure( Left(id), Seq(), Seq((ref, err)) )
 }

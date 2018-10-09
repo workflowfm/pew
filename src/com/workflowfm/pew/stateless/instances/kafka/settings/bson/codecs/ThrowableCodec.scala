@@ -1,5 +1,6 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs
 
+import com.workflowfm.pew.stateless.StatelessMessages.RemoteExecutorException
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.{BsonReader, BsonWriter}
 
@@ -16,14 +17,11 @@ class ThrowableCodec
     writer.writeEndDocument()
   }
 
-  case class KafkaRemoteException( msg: String )
-    extends Exception( msg )
-
   override def decode(reader: BsonReader, ctx: DecoderContext): Throwable = {
     reader.readStartDocument()
     val message: String = reader.readString( msgN )
     reader.readEndDocument()
-    KafkaRemoteException( message )
+    RemoteExecutorException( message )
   }
 
   override def getEncoderClass: Class[Throwable] = THROWABLE

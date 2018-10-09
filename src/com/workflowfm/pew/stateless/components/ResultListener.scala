@@ -14,7 +14,7 @@ class ResultListener(
   import com.workflowfm.pew.stateless.StatelessMessages._
 
   override def respond: PiiResult[Any] => Unit = {
-    case PiiResult( pii, _, content ) =>
+    case PiiResult( pii, content ) =>
       content match {
         case failure: Throwable =>
           handlers foreach (_.failure( pii, failure ))
@@ -27,7 +27,6 @@ class ResultListener(
 
         case result =>
           handlers foreach ( _.success( pii, result ) )
-
       }
   }
 }

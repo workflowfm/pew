@@ -26,6 +26,12 @@ object StatelessMessages {
 
   ) extends PiiHistory
 
+  /** A PiiHistory message which helps collect outstanding SequenceRequests after a failure.
+    *
+    * @param pii
+    * @param results Any collected call results that have yet to be sequenced.
+    * @param failures The failed AtomicProcess calls and their errors.
+    */
   case class SequenceFailure(
     pii:  Either[ObjectId, PiInstance[ObjectId]],
     results: Seq[(CallRef, PiObject)],
@@ -39,6 +45,20 @@ object StatelessMessages {
         case Right( _pii ) => _pii.id
       }
   }
+
+  object SequenceFailure {
+    def apply( id: ObjectId, ref: CallRef, err: Throwable ): SequenceFailure
+      = SequenceFailure( Left(id), Seq(), Seq((ref, err)) )
+
+    def apply( pii: PiInstance[ObjectId], results: Seq[(CallRef, PiObject)], failures: Seq[(CallRef, Throwable)] ): SequenceFailure
+      = SequenceFailure( pii, results, failures )
+  }
+
+  /** Wrapper for thrown exceptions which need to be serialised and deserialised.
+    *
+    * @param message Debug message.
+    */
+  case class RemoteExecutorException( message: String ) extends Exception( message )
 
   case class PiiUpdate(
     pii:      PiInstance[ObjectId]

@@ -21,8 +21,8 @@ class PiiHistoryCodec(
 
   override def encode(writer: BsonWriter, value: PiiHistory, ctx: EncoderContext): Unit = {
     value match {
-      case m: SequenceRequest => seqReq.encode( writer, m, ctx )
       case m: PiiUpdate       => piiUpdate.encode( writer, m, ctx )
+      case m: SequenceRequest => seqReq.encode( writer, m, ctx )
       case m: SequenceFailure => seqFailure.encode( writer, m, ctx )
       case _ =>
     }
