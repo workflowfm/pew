@@ -12,30 +12,70 @@ import org.scalatest
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
+
 @RunWith(classOf[JUnitRunner])
 class KafkaComponentTests extends FlatSpec with Matchers with BeforeAndAfterAll with KafkaTests {
 
   // Serialisation
   val reg: CodecRegistry = new KafkaCodecRegistry( completeProcessStore )
 
+  def testCodec[T]( tOriginals: T* )( implicit codec: Codec[T] ): scalatest.Assertion = {
 
-  def testCodec[T]( tOriginal: T )( implicit codec: Codec[T] ): scalatest.Assertion = {
+    val fut: Future[Seq[T]] = Future {
 
-    val document = new BsonDocument
+      val document = new BsonDocument
 
-    codec.encode(
-      new BsonDocumentWriter(document),
-      tOriginal,
-      EncoderContext.builder().build()
-    )
+      // Write the source T objects to the Bson document.
+      {
+        val writer = new BsonDocumentWriter(document)
+        val enCtx = EncoderContext.builder().build()
 
-    val tReserialised: T
-      = codec.decode(
-        new BsonDocumentReader(document),
-        DecoderContext.builder().build()
-      )
+        var elementNum: Int = 0
 
-    tReserialised shouldBe tOriginal
+        writer.writeStartDocument()
+        tOriginals foreach {
+          t =>
+            try {
+              writer.writeName( s"Element$elementNum" )
+              elementNum += 1
+
+              codec.encode(writer, t, enCtx)
+
+            } catch {
+              case e: Exception =>
+                System.out.println(s"Failed to encode '$t'.")
+                throw e
+            }
+        }
+        writer.writeEndDocument()
+      }
+
+      // Read the values back from the Bson document
+      val reader = new BsonDocumentReader(document)
+      val deCtx = DecoderContext.builder().build()
+
+      reader.readStartDocument()
+      val out = tOriginals map {
+        t =>
+          try {
+            reader.readName()
+            codec.decode(reader, deCtx)
+
+          } catch {
+            case e: Exception =>
+              System.out.println(s"Failed to decode '$t'.")
+              throw e
+          }
+      }
+      reader.readEndDocument()
+
+      out
+    }
+
+    val tReserialized: Seq[T] = Await.result( fut, 2.seconds )
+    tReserialized shouldBe tOriginals
   }
 
   val piInstance: PiInstance[ObjectId] = PiInstance( ObjectId.get, pbi, PiObject(1) )
@@ -47,8 +87,14 @@ class KafkaComponentTests extends FlatSpec with Matchers with BeforeAndAfterAll 
     implicit val codec: Codec[ReduceRequest] = reg.get( classOf[ReduceRequest] )
     codec shouldNot be (null)
 
-    testCodec( ReduceRequest( piInstance, Seq() ) )
-    testCodec( ReduceRequest( piInstance, Seq( callResHi ) ) )
+    val emptyReduceRequest = ReduceRequest( piInstance, Seq() )
+    val singleReduceRequest = ReduceRequest( piInstance, Seq( callResHi ) )
+    val multiReduceRequest = ReduceRequest( piInstance, Seq( callRes0, callResHi ) )
+
+    testCodec( emptyReduceRequest )
+    testCodec( singleReduceRequest )
+    testCodec( multiReduceRequest )
+    testCodec( emptyReduceRequest, singleReduceRequest, multiReduceRequest, emptyReduceRequest )
   }
 
   it should "correctly (de)serialise SequenceRequests" in {
@@ -74,6 +120,20 @@ class KafkaComponentTests extends FlatSpec with Matchers with BeforeAndAfterAll 
     codec shouldNot be (null)
 
     testCodec( PiiUpdate( piInstance ) )
+  }
+
+  it should "correctly (de)serialise a sequence of PiiHistory types" in {
+    implicit val codec: Codec[PiiHistory] = reg.get( classOf[PiiHistory] )
+    codec shouldNot be (null)
+
+    testCodec[PiiHistory](
+      PiiUpdate( piInstance ),
+      SequenceRequest( ObjectId.get, callRes0 ),
+      SequenceRequest( ObjectId.get, callResHi ),
+      PiiUpdate( piInstance ),
+      SequenceFailure( ObjectId.get, CallRef(1), RemoteExecutorException("Argh!") ),
+      SequenceFailure( piInstance, Seq(callRes0, callResHi), Seq( callResErr ) )
+    )
   }
 
   it should "correctly (de)serialise Assignments" in {
