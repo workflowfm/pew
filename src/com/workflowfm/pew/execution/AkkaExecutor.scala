@@ -45,12 +45,15 @@ class AkkaExecutor(store:PiInstanceStore[Int], processes:PiProcessStore)(overrid
   
   override def simulationReady = Await.result(execActor ? AkkaExecutor.SimReady,timeout).asInstanceOf[Boolean]
   
-  override def run(process:PiProcess,args:Seq[PiObject]):Future[Int] = 
-    execActor ? AkkaExecutor.Call(process,args) map (_.asInstanceOf[Int])
+  override protected def init(process:PiProcess,args:Seq[PiObject]):Future[Int] = 
+    execActor ? AkkaExecutor.Init(process,args) map (_.asInstanceOf[Int])
+    
+  override protected def start(id:Int) = execActor ! AkkaExecutor.Start(id)
 }
 
 object AkkaExecutor {
-  case class Call(p:PiProcess,args:Seq[PiObject])
+  case class Init(p:PiProcess,args:Seq[PiObject])
+  case class Start(id:Int)
   case class Result(id:Int,ref:Int,res:PiObject)
   case class Error(id:Int,ref:Int,ex:Throwable)
   
@@ -74,47 +77,55 @@ object AkkaExecutor {
 class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(implicit system: ActorSystem, implicit val exc: ExecutionContext = ExecutionContext.global) extends Actor {
   var ctr:Int = 0
 
-  def handle(evt:PiEvent[Int]) = system.eventStream.publish(AkkaExecutor.E(evt))
+  def publish(evt:PiEvent[Int]) = system.eventStream.publish(AkkaExecutor.E(evt))
   
-  def call(p:PiProcess,args:Seq[PiObject]):Future[Int] = {
-    //System.err.println("*** [" + ctr + "] Starting call of:" + p.name)
+  def init(p:PiProcess,args:Seq[PiObject]):Int = { 
 	  val inst = PiInstance(ctr,p,args:_*)
-	  val ni = inst.reduce
-    if (ni.completed) ni.result match {
-		  case None => {
-			  handle(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
-		  }
-		  case Some(res) => {
-			  handle(PiEventResult(ni, res))
-		  }
-	  } else {
-		  val (toCall,resi) = ni.handleThreads(handleThread(ni))
-		  val futureCalls = toCall flatMap (resi.piFutureOf)
-			//System.err.println("*** [" + ctr + "] Updating state after init")
-			store = store.put(resi)
-			(toCall zip futureCalls) map runThread(resi)
-	  }
+	  store = store.put(inst)
 	  ctr = ctr + 1
-	  //System.err.println("*** [" + (ctr-1) + "] Done init.")
-	  return Future.successful(ctr-1)
+	  ctr-1
+  }
+  
+  def start(id:Int):Unit = store.get(id) match {
+    case None => publish(PiEventException(id,new ProcessExecutor.NoSuchInstanceException(id.toString)))
+    case Some(inst) => {
+      publish(PiEventStart(inst))
+  	  val ni = inst.reduce
+      if (ni.completed) ni.result match {
+  		  case None => {
+  			  publish(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
+  			  store = store.del(id)
+  		  }
+  		  case Some(res) => {
+  			  publish(PiEventResult(ni, res))
+  			  store = store.del(id)
+  		  }
+  	  } else {
+  		  val (toCall,resi) = ni.handleThreads(handleThread(ni))
+  		  val futureCalls = toCall flatMap (resi.piFutureOf)
+  			//System.err.println("*** [" + ctr + "] Updating state after init")
+  			store = store.put(resi)
+  			(toCall zip futureCalls) map runThread(resi)
+  	  }
+    }
   }
   
   final def postResult(id:Int,ref:Int, res:PiObject):Unit = {
-    //System.err.println("*** [" + id + "] Received result for thread " + ref + " : " + res)
+    publish(PiEventReturn(id,ref,res))
     store.get(id) match {
-      case None => System.err.println("*** [" + id + "] No running instance! ***")
+      case None => publish(PiEventException(id,new ProcessExecutor.NoSuchInstanceException(id.toString)))
       case Some(i) => 
-        if (i.id != id) System.err.println("*** [" + id + "] Different instance ID encountered: " + i.id)
+        if (i.id != id) System.err.println("*** [" + id + "] Different instance ID encountered: " + i.id) // This should never happen. We trust the Instance Store!
         else {
           //System.err.println("*** [" + id + "] Running!")
           val ni = i.postResult(ref, res).reduce
     		  if (ni.completed) ni.result match {
       		  case None => {
-      			  handle(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
+      			  publish(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
       			  store = store.del(ni.id)
       		  }
       		  case Some(res) => {
-      			  handle(PiEventResult(ni, res))
+      			  publish(PiEventResult(ni, res))
       			  store = store.del(ni.id)
       		  }
     		  } else {
@@ -133,11 +144,14 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(im
     f match {
     case PiFuture(name, outChan, args) => i.getProc(name) match {
       case None => {
-        //System.err.println("*** [" + id + "] ERROR *** Unable to find process: " + name)
+        publish(PiEventFailure(i,new ProcessExecutor.UnknownProcessException(name)))
         false
       }
       case Some(p:AtomicProcess) => true
-      case Some(p:CompositeProcess) => { System.err.println("*** [" + i.id + "] Executor encountered composite process thread: " + name); false } // TODO this should never happen!
+      case Some(p:CompositeProcess) => {  // TODO this should never happen!
+        publish(PiEventFailure(i,new ProcessExecutor.AtomicProcessIsCompositeException(name)))
+        false 
+      }
     }
   } }
     //
@@ -154,7 +168,7 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(im
         implicit val tOut = Timeout(1.second)
         val objs = args map (_.obj)
         try {
-          handle(PiEventCall(i.id,ref,p,objs))
+          publish(PiEventCall(i.id,ref,p,objs))
           // TODO Change from ! to ? to require an acknowledgement
           system.actorOf(AkkaExecutor.atomicprops()) ! AkkaExecutor.ACall(i.id,ref,p,objs,self)
         } catch {
@@ -162,7 +176,7 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(im
         }
       }
       case Some(p:CompositeProcess) => {// This should never happen! We already checked! 
-        System.err.println("*** [" + i.id + "] Executor encountered composite process thread: " + name)
+        publish(PiEventFailure(i,new ProcessExecutor.AtomicProcessIsCompositeException(name)))
       }
     }
   } }
@@ -170,13 +184,11 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(im
   def simulationReady():Boolean = store.simulationReady
   
   def receive = {
-    case AkkaExecutor.Call(p,args) => call(p,args) pipeTo sender()
-    case AkkaExecutor.Result(id,ref,res) => {
-      handle(PiEventReturn(id,ref,res))
-      postResult(id,ref,res) 
-    }
+    case AkkaExecutor.Init(p,args) => sender() ! init(p,args)
+    case AkkaExecutor.Start(id) => start(id)
+    case AkkaExecutor.Result(id,ref,res) => postResult(id,ref,res) 
     case AkkaExecutor.Error(id,ref,ex) => {
-      handle(PiEventProcessException(id,ref,ex))
+      publish(PiEventProcessException(id,ref,ex))
       store = store.del(id)
     }
     case AkkaExecutor.Ping => sender() ! AkkaExecutor.Ping
@@ -191,7 +203,6 @@ class AkkaAtomicProcessExecutor(implicit val exc: ExecutionContext = ExecutionCo
    def receive = {
     case AkkaExecutor.ACall(id,ref,p,args,actor) => {
       //System.err.println("*** [" + id + "] Calling atomic process: " + p.name + " ref:" + ref)
-      //val actor = sender()
       p.run(args).onComplete{ 
         case Success(res) => actor ! AkkaExecutor.Result(id,ref,res) 
         case Failure(ex) => actor ! AkkaExecutor.Error(id,ref,ex)  

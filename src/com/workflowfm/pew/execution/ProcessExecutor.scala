@@ -26,23 +26,27 @@ case class AtomicProcessExecutor(process:AtomicProcess) {
  * Trait representing the ability to execute any PiProcess
  */
 trait ProcessExecutor[KeyT] { this:PiObservable[KeyT] => 
-  def run(process:PiProcess,args:Seq[PiObject]):Future[KeyT]
+  protected def init(process:PiProcess,args:Seq[PiObject]):Future[KeyT]
+  protected def start(id:KeyT):Unit
   def simulationReady:Boolean
   
   implicit val context: ExecutionContext //= ExecutionContext.global
 
-	def call(process:PiProcess,args:Seq[Any]):Future[KeyT] = run(process,args map PiObject.apply)
+	def call(process:PiProcess,args:Seq[Any]):Future[KeyT] = {
+    init(process,args map PiObject.apply) map { id => start(id) ; id }
+  }
 	
-	def execute[H <: PiEventHandler[KeyT]](process:PiProcess,args:Seq[Any],factory:PiEventHandlerFactory[KeyT,H]):Future[H] = {
-	   call(process,args) map { id => 
+	def call[H <: PiEventHandler[KeyT]](process:PiProcess,args:Seq[Any],factory:PiEventHandlerFactory[KeyT,H]):Future[H] = {
+	   init(process,args map PiObject.apply) map { id => 
 	     val handler = factory.build(id) 
-	     subscribe(handler)
+	     subscribe(handler) 
+	     start(id)
 	     handler
 	   }
   }
 	
   def execute(process:PiProcess,args:Seq[Any]):Future[Any] = 
-    execute(process,args,new PromiseHandlerFactory[KeyT]({ id => "["+id+"]"})) flatMap (_.future)
+    call(process,args,new PromiseHandlerFactory[KeyT]({ id => "["+id+"]"})) flatMap (_.future)
 }
 
 object ProcessExecutor {

@@ -69,6 +69,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
  
   it should "execute Rexample twice concurrently" in {
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    ex.subscribe(new PrintEventHandler("printer"))
     val f1 = ex.execute(ri,Seq(31))
     val f2 = ex.execute(ri,Seq(12))
     
@@ -76,6 +77,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     r1 should be (("PbISleptFor3s","PcISleptFor1s"))
     val r2 = await(f2)
     r2 should be (("PbISleptFor1s","PcISleptFor2s"))
+    ex.unsubscribe("printer")
 	}
 
   it should "execute Rexample twice with same timings concurrently" in {

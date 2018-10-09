@@ -20,17 +20,26 @@ class SingleStateExecutor(processes:PiProcessStore)(override implicit val contex
   var ctr:Int = 0
   var instance:Option[PiInstance[Int]] = None
   
-  override def run(p:PiProcess,args:Seq[PiObject]):Future[Int] = {
-    if (instance.isDefined) Future.failed(new ProcessExecutor.AlreadyExecutingException())
+  override protected def init(p:PiProcess,args:Seq[PiObject]):Future[Int] = Future {
+    if (instance.isDefined) throw new ProcessExecutor.AlreadyExecutingException()
     else {
       val inst = PiInstance(ctr,p,args:_*)
       instance = Some(inst)
       ctr = ctr + 1
-      run
-      Future.successful(ctr - 1)
+      ctr - 1
     }
   }
 
+  override protected def start(id:Int):Unit = instance match {
+    case None => publish(PiEventException(id,new ProcessExecutor.NoSuchInstanceException(id.toString)))
+    case Some(i) => 
+      if (i.id != id) Future.failed(new ProcessExecutor.AlreadyExecutingException())
+      else {
+        publish(PiEventStart(i))
+        run
+      }
+  }
+    
   def success(id:Int,res:Any) = {
     instance match {
       case Some(i) => {

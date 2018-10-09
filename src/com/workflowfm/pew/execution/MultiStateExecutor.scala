@@ -20,23 +20,34 @@ class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStor
   
   var ctr:Int = 0
   
-  override def run(p:PiProcess,args:Seq[PiObject]) = store.synchronized {
+  override protected def init(p:PiProcess,args:Seq[PiObject]) = store.synchronized {
 	  val inst = PiInstance(ctr,p,args:_*)
-	  val ni = inst.reduce
-    if (ni.completed) ni.result match {
-		  case None => {
-			  publish(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
-		  }
-		  case Some(res) => {
-			  publish(PiEventResult(ni, res))
-		  }
-	  } else {
-		  store = store.put(ni.handleThreads(handleThread(ni))._2)
-	  }
+	  store = store.put(inst)
 	  ctr = ctr + 1
 	  Future.successful(ctr-1)
   }
-  
+
+  override def start(id:Int):Unit = store.get(id) match {
+    case None => publish(PiEventException(id,new ProcessExecutor.NoSuchInstanceException(id.toString)))
+    case Some(inst) => {
+      publish(PiEventStart(inst))
+  	  val ni = inst.reduce
+      if (ni.completed) ni.result match {
+  		  case None => {
+  			  publish(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
+  			  store = store.del(id)
+  		  }
+  		  case Some(res) => {
+  			  publish(PiEventResult(ni, res))
+  			  store = store.del(id)
+  		  }
+  	  } else {
+  		  val (_,resi) = ni.handleThreads(handleThread(ni))
+  			store = store.put(resi)
+  	  }
+    }
+  }
+   
   final def run(id:Int,f:PiInstance[Int]=>PiInstance[Int]):Unit = store.synchronized {
 	  store.get(id) match {
       case None => System.err.println("*** [" + id + "] No running instance! ***")

@@ -23,6 +23,8 @@ class SingleStateExecutorTests extends FlatSpec with Matchers with ProcessExecut
   val pbi = new PbI
   val pci = new PcI
   val ri = new R(pai,pbi,pci)
+  val pcif = new PcIF
+  val rif = new R(pai,pbi,pcif)
   
   "SingleStateExecutor" should "execute Rexample concurrently" in {
     val executor = new SingleStateExecutor(pai,pbi,pci,ri)
@@ -31,11 +33,27 @@ class SingleStateExecutorTests extends FlatSpec with Matchers with ProcessExecut
 		//exe(new SingleStateExecutor(pai,pbi,pci,ri),ri,31)//.isEmpty should be( false )
 	}
 	
+  "SingleStateExecutor" should "handle a failing component process" in {
+    val ex = new SingleStateExecutor(pai,pbi,pcif,rif)
+    val f1 = rif(21)(ex)//ex.execute(rif,Seq(21)) 
+   
+    try {
+      await(f1)
+    } catch {
+      case (e:Exception) => e.getMessage should be ("Fail")
+    }
+	}
   
+//  it should "fail properly when a component process doesn't exist" in {
+//    val ex = new SingleStateExecutor(rbad)
+//    ex.subscribe(new PrintEventHandler("printer"))
+//    val f1 = rif(21)(ex)
+//    
+//    a [ProcessExecutor.NoSuchInstanceException] should be thrownBy await(f1)
+//	}
   
 	"SingleStateExecutor" should "execute C1" in {
 	  val executor = new SingleStateExecutor(P1,C1)
-	  executor.subscribe(new PrintEventHandler("printer"))
 		exe(executor,C1,("OH","HAI!")) should be( "OH++HAI!" )
 	}
 	
