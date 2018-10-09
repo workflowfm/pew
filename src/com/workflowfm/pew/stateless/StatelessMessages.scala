@@ -51,7 +51,7 @@ object StatelessMessages {
       = SequenceFailure( Left(id), Seq(), Seq((ref, err)) )
 
     def apply( pii: PiInstance[ObjectId], results: Seq[(CallRef, PiObject)], failures: Seq[(CallRef, Throwable)] ): SequenceFailure
-      = SequenceFailure( pii, results, failures )
+      = SequenceFailure( Right( pii ), results, failures )
   }
 
   /** Wrapper for thrown exceptions which need to be serialised and deserialised.
