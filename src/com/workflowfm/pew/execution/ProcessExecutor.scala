@@ -26,16 +26,53 @@ case class AtomicProcessExecutor(process:AtomicProcess) {
  * Trait representing the ability to execute any PiProcess
  */
 trait ProcessExecutor[KeyT] { this:PiObservable[KeyT] => 
+  /**
+   * Initializes a PiInstance for a process execution.
+   * This is always and only invoked before a {@code start}, hence why it is protected.
+   * This separation gives a chance to PiEventHandlers to subscribe before execution starts.
+   * @param process The (atomic or composite) PiProcess to be executed 
+   * @param args The PiObject arguments to be passed to the process
+   * @return A Future with the new unique ID that was generated
+   */
   protected def init(process:PiProcess,args:Seq[PiObject]):Future[KeyT]
+  
+  /**
+   * Starts the execution of an initialized PiInstance.
+   * This is always and only invoked after an {@code init}, hence why it is protected.
+   * This separation gives a chance to PiEventHandlers to subscribe before execution starts.
+   * @param id The ID of the instance to start executing
+   */
   protected def start(id:KeyT):Unit
+  
+  /** 
+   *  This should check all executing PiInstances if they are simulationReady.
+   *  This means that all possible execution has been performed and they are all
+   *  waiting for simulation time to pass.
+   *  Executors that are not appropriate for simulation should return false.
+   *  @return true if all PiInstances are simulationReady
+   */
   def simulationReady:Boolean
   
-  implicit val context: ExecutionContext //= ExecutionContext.global
+  implicit val context: ExecutionContext
 
+  /**
+   * A simple {@code init ; start} sequence when we do not need any even listeners.
+   * @param process The (atomic or composite) PiProcess to be executed 
+   * @param args The (real) arguments to be passed to the process
+   * @return A Future with the ID corresponding to this execution
+   */
 	def call(process:PiProcess,args:Seq[Any]):Future[KeyT] = {
     init(process,args map PiObject.apply) map { id => start(id) ; id }
   }
 	
+  /**
+   * A {@code init ; start} sequence that gives us a chance to subscribe a listener
+   * that is specific to this execution.
+   * @param process The (atomic or composite) PiProcess to be executed 
+   * @param args The (real) arguments to be passed to the process
+   * @param factory A PiEventHandlerFactory which generates PiEventHandler's for a given ID
+   * @return A Future with the PiEventHandler that was generated
+   */
 	def call[H <: PiEventHandler[KeyT]](process:PiProcess,args:Seq[Any],factory:PiEventHandlerFactory[KeyT,H]):Future[H] = {
 	   init(process,args map PiObject.apply) map { id => 
 	     val handler = factory.build(id) 
@@ -45,6 +82,12 @@ trait ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
 	   }
   }
 	
+	/**
+   * Executes a process with a PromiseHandler
+   * @param process The (atomic or composite) PiProcess to be executed 
+   * @param args The (real) arguments to be passed to the process
+   * @return A Future with the result of the executed process
+   */
   def execute(process:PiProcess,args:Seq[Any]):Future[Any] = 
     call(process,args,new PromiseHandlerFactory[KeyT]({ id => "["+id+"]"})) flatMap (_.future)
 }
