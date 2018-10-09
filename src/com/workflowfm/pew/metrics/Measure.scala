@@ -1,7 +1,7 @@
 package com.workflowfm.pew.metrics
 
 
-import com.workflowfm.pew.execution.FutureExecutor
+import com.workflowfm.pew.execution.ProcessExecutor
 import com.workflowfm.pew.simulation.Coordinator
 import com.workflowfm.pew.simulation.Simulation
 import com.workflowfm.pew.simulation.Task

@@ -44,15 +44,6 @@ trait ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
    */
   protected def start(id:KeyT):Unit
   
-  /** 
-   *  This should check all executing PiInstances if they are simulationReady.
-   *  This means that all possible execution has been performed and they are all
-   *  waiting for simulation time to pass.
-   *  Executors that are not appropriate for simulation should return false.
-   *  @return true if all PiInstances are simulationReady
-   */
-  def simulationReady:Boolean
-  
   implicit val context: ExecutionContext
 
   /**
@@ -105,6 +96,16 @@ object ProcessExecutor {
                     extends Exception("Failed to get result for: " + id, cause) 
   final case class NoSuchInstanceException(val id:String, private val cause: Throwable = None.orNull)
                     extends Exception("Failed to find instance with id: " + id, cause) 
+}
+
+trait SimulationExecutor { this:ProcessExecutor[_] =>
+  /** 
+   *  This should check all executing PiInstances if they are simulationReady.
+   *  This means that all possible execution has been performed and they are all
+   *  waiting for simulation time to pass.
+   *  @return true if all PiInstances are simulationReady
+   */
+  def simulationReady:Boolean
 }
 
 /**

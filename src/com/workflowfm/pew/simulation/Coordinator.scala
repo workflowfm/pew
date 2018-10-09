@@ -5,8 +5,7 @@ import akka.util.Timeout
 import akka.pattern.ask
 import scala.concurrent.duration._
 import com.workflowfm.pew.metrics._
-import com.workflowfm.pew.execution.AkkaExecutor
-import com.workflowfm.pew.execution.FutureExecutor
+import com.workflowfm.pew.execution._
 import scala.collection.mutable.PriorityQueue
 
 
@@ -16,10 +15,10 @@ object Coordinator {
   //TODO case object Stop
   case class Done(time:Int,metrics:MetricAggregator)
   
-  case class AddSim(t:Int,sim:Simulation,exe:FutureExecutor)
-  case class AddSims(l:Seq[(Int,Simulation)],exe:FutureExecutor)
-  case class AddSimNow(sim:Simulation,exe:FutureExecutor)
-  case class AddSimsNow(l:Seq[Simulation],exe:FutureExecutor)
+  case class AddSim(t:Int,sim:Simulation,exe:SimulationExecutor)
+  case class AddSims(l:Seq[(Int,Simulation)],exe:SimulationExecutor)
+  case class AddSimNow(sim:Simulation,exe:SimulationExecutor)
+  case class AddSimsNow(l:Seq[Simulation],exe:SimulationExecutor)
   
   case class AddRes(r:TaskResource)
   case class SimDone(name:String,result:String)
@@ -43,10 +42,10 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
     }
   }
   case class FinishingTask(override val time:Int,task:Task) extends Event
-  case class StartingSim(override val time:Int,simulation:Simulation,executor:FutureExecutor) extends Event
+  case class StartingSim(override val time:Int,simulation:Simulation,executor:SimulationExecutor) extends Event
   
   var resourceMap :Map[String,TaskResource] = (Map[String,TaskResource]() /: resources){ case (m,r) => m + (r.name -> r)}
-  var simulations :Queue[(String,WorkflowMetricTracker,FutureExecutor)] = Queue()
+  var simulations :Queue[(String,WorkflowMetricTracker,SimulationExecutor)] = Queue()
   val tasks :Queue[Task] = Queue()
   
   val events = new PriorityQueue[Event]()
@@ -63,7 +62,7 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
     resourceMap += r.name -> r
   }
   
-  protected def startSimulation(t:Int, s:Simulation, e:FutureExecutor) :Boolean = {
+  protected def startSimulation(t:Int, s:Simulation, e:SimulationExecutor) :Boolean = {
     if (t == time) {
       println("["+time+"] Starting simulation: \"" + s.name +"\".") 
       val metrics = new WorkflowMetricTracker().simStart(time)

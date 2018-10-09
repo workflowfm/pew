@@ -248,8 +248,6 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
   final case object CASException extends Exception("CAS")
   final case class CASFailureException(val id:String, private val cause: Throwable = None.orNull)
                     extends Exception("Compare-and-swap failed after " + CAS_MAX_ATTEMPTS + " attempts for id: " + id , cause)  
-
-  override def simulationReady:Boolean = false
   }
 
 
