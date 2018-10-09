@@ -50,7 +50,9 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
   }
   
   override def start(id:ObjectId):Unit = {
-    update(id,startUpdate,0).recover({case t:Throwable => publish(PiEventException(id,t))})
+    val promise=Promise[PiInstance[ObjectId]]()
+    update(id,startUpdate,0,promise)
+    promise.future.recover({case t:Throwable => publish(PiEventException(id,t))})
   }
 //
 //	  val ni = inst.reduce
@@ -89,7 +91,9 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
   
   final def postResult(id:ObjectId, ref:Int, res:PiObject):Unit = {
     publish(PiEventReturn(id,ref,res))
-		update(id,postResultUpdate(ref,res),0).recover({case t:Throwable => publish(PiEventException(id,t))})
+    val promise=Promise[PiInstance[ObjectId]]()
+		update(id,postResultUpdate(ref,res),0,promise)
+		promise.future.recover({case t:Throwable => publish(PiEventException(id,t))})
   }
   
   def postResultUpdate(ref:Int, res:PiObject)(i:PiInstance[ObjectId]):PiInstance[ObjectId] = {
@@ -97,9 +101,9 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
 	  i.postResult(ref, res).reduce	  
   }
   
-  final def update(id:ObjectId, f:PiInstance[ObjectId]=>PiInstance[ObjectId], attempt:Int):Future[PiInstance[ObjectId]] = try {
+  // We give a promise as an argument instead of returning a Future in order to avoid chaining promises at each recursive call.
+  final def update(id:ObjectId, f:PiInstance[ObjectId]=>PiInstance[ObjectId], attempt:Int, promise:Promise[PiInstance[ObjectId]] ):Unit = try {
     implicit val iid:ObjectId = id  
-    val promise = Promise[PiInstance[ObjectId]]()
      
     val obs = client.startSession(ClientSessionOptions.builder.causallyConsistent(true).build()) safeThen { 
       case Seq(session:ClientSession) => { 
@@ -140,13 +144,12 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
           case (e:Exception) => promise.failure(e)
         }
       }
-      case Failure(CASException) => System.err.println("*** [" + id + "] CAS Retry - attempt: " + (attempt+1)); Thread.sleep(CAS_WAIT_MS); update(id,f,attempt+1)
+      case Failure(CASException) => System.err.println("*** [" + id + "] CAS Retry - attempt: " + (attempt+1)); Thread.sleep(CAS_WAIT_MS); update(id,f,attempt+1,promise)
       case Failure(e) => { 
         System.err.println("*** [" + id + "] Failed: " + e.getLocalizedMessage)
         promise.failure(e)
       }
     })
-    promise.future
   } catch {
     case (e:Exception) => { // this should never happen!
       System.err.println("*** [" + id + "] FATAL")

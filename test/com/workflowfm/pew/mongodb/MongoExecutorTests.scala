@@ -124,8 +124,10 @@ class MongoExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
   
   it should "fail properly when a workflow doesn't exist" in {
     val ex = new MongoExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,pci2,ri,ri2)
-    val f1 = ex.update(new ObjectId(), (x=>x), 0)
-    
+    val promise = Promise[PiInstance[ObjectId]]()
+    val f1 = promise.future
+    ex.update(new ObjectId(), (x=>x), 0, promise)
+      
     a [ProcessExecutor.NoSuchInstanceException] should be thrownBy await(f1)
 	}
   

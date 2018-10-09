@@ -73,7 +73,7 @@ trait ProcessExecutorTester {
     Await.result(f,15.seconds)
   } catch {
     case e:Throwable => {
-      System.out.println("=== RESULT FAILED! ===")
+      System.out.println("=== RESULT FAILED! ===: " + e.getLocalizedMessage)
       throw e
     }
   }
