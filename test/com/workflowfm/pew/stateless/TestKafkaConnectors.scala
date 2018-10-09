@@ -74,7 +74,7 @@ object TestKafkaConnectors {
     run(
       srcAssignment
       via flowRespond( exec )
-      via flowWaitFuture( 1 )
+      via flowWaitFuture( Int.MaxValue )
       wireTap flowCheck
       via flowMessage,
       sinkProducerMsg

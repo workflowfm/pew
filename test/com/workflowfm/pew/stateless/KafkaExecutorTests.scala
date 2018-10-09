@@ -1,25 +1,16 @@
 package com.workflowfm.pew.stateless
 
-import akka.Done
-import akka.actor.ActorSystem
-import akka.stream.scaladsl.Sink
+import com.workflowfm.pew.PiInstance
 import com.workflowfm.pew.execution.RexampleTypes._
-import com.workflowfm.pew.execution._
 import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, _}
-import com.workflowfm.pew.stateless.instances.kafka.components.{KafkaConnectors, KafkaWrapperFlows}
-import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
-import com.workflowfm.pew.stateless.instances.kafka.{CompleteKafkaExecutor, MinimalKafkaExecutor}
-import com.workflowfm.pew.{PiInstance, PiProcessStore, SimpleProcessStore}
-import org.apache.kafka.clients.producer.ProducerRecord
+import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
 import org.scalatest._
 import org.scalatest.junit.JUnitRunner
 
-import scala.collection.{immutable, mutable}
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.reflect.ClassTag
 
 @RunWith(classOf[JUnitRunner])
 class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll with KafkaTests {
@@ -140,16 +131,17 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     val ex = makeExecutor( failureProcessStore )
     val f1 = ex.execute( failp, Seq(1) )
 
-    try await(f1)
-    catch {
-     case e: Exception =>
-       e.getMessage should be ("FailP")
-    }
-
+    awaitErr( f1 ).map( _.getMessage ) shouldBe Right( "FailP" )
     ex.syncShutdown()
 
     errors shouldBe empty
-    isAllTidy() should be (true)
+    val msgsOf = new MessageDrain( true )
+
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty
   }
 
   it should "handle a failing composite process" in {
@@ -157,17 +149,18 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     val ex = makeExecutor( failureProcessStore )
     val f1 = ex.execute( rif, Seq(21) )
 
-    try await(f1)
-    catch {
-      case e: Exception =>
-        e.getMessage should be ("Fail")
-    }
-
+    awaitErr( f1 ).map( _.getMessage ) shouldBe Right( "Fail" )
     ex.syncShutdown()
 
     errors shouldBe empty
-    isAllTidy() should be (true)
-   }
+    val msgsOf = new MessageDrain( true )
+
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty
+  }
 
   it should "2 separate executors should execute with same timings concurrently" in {
 
@@ -184,7 +177,13 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     ex2.syncShutdown()
 
     errors shouldBe empty
-    isAllTidy() should be (true)
+    val msgsOf = new MessageDrain( true )
+
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty
    }
 
   // Fix PiiId to stop the partitions for messages from changing all the time.
@@ -199,12 +198,12 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     ex.syncShutdown()
 
     errors shouldBe empty
-
-    def msgsOf[T](implicit ct: ClassTag[T]) = getMsgsOf(ct)
+    val msgsOf = new MessageDrain( false )
 
     // We should just be waiting on the assignments.
     msgsOf[ReduceRequest] shouldBe empty
     msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
     msgsOf[PiiUpdate] should (have size 1)
     msgsOf[Assignment] should (have size 2) // Pb is currently blocked by Pc with this partitioning
 
@@ -223,15 +222,13 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f2) should be (("PbISleptFor2s","PcISleptFor1s"))
 
     errors shouldBe empty
-
-    def msgsOf[T](implicit ct: ClassTag[T]) = getMsgsOf(ct)
+    val msgsOf = new MessageDrain( true )
 
     msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
     msgsOf[ReduceRequest] shouldBe empty
     msgsOf[Assignment] shouldBe empty
     msgsOf[PiiUpdate] shouldBe empty
-
-    isAllTidy() should be (true)
   }
 
   it should "execute correctly with an outstanding PiiUpdate" in {

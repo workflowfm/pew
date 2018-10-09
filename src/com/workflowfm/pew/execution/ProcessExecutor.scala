@@ -70,4 +70,12 @@ trait ProcessExecutorTester {
       throw e
     }
   }
+
+  def awaitErr[A]( f: Future[A] ): Either[A, Throwable]
+    = try {
+      Left( Await.result( f, 15.seconds ) )
+    } catch {
+      case e: Throwable => Right( e )
+    }
+
 }

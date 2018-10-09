@@ -66,7 +66,7 @@ trait KafkaTests extends ProcessExecutorTester {
 
   val failureProcessStore
     = SimpleProcessStore(
-      pai, pbi, pci, pci2,
+      pai, pbi, pcif, pci2,
       ri, ri2, rif,
       failp
     )
@@ -109,6 +109,9 @@ trait KafkaTests extends ProcessExecutorTester {
   def outstanding( consume: Boolean ): Seq[ AnyMsg ] = {
     implicit val s: KafkaExecutorSettings = newSettings( completeProcessStore )
 
+    if (consume)
+      println("!!! CONSUMING OUTSTANDING MESSAGES !!!")
+
     val fOutstanding: Future[Seq[AnyMsg]] =
       ( if (consume)  KafkaWrapperFlows.srcAll.wireTap( _._2.commitScaladsl() )
       else          KafkaWrapperFlows.srcAll )
@@ -126,17 +129,15 @@ trait KafkaTests extends ProcessExecutorTester {
   def isAllTidy( isValid: AnyMsg => Boolean = isPiiResult ): Boolean
     = outstanding( true ).forall( isValid )
 
-  def getMsgsOf[T]: ClassTag[T] => Seq[T] = {
+  class MessageDrain( consume: Boolean = false ) {
 
     val msgMap: Map[Class[_], Seq[AnyMsg]] =
-      outstanding(false)
+      outstanding( consume )
         .groupBy[Class[_]]( _.getClass )
         .withDefaultValue[Seq[AnyMsg]]( Seq() )
 
-    def msgsOf(ct: ClassTag[T]): Seq[T]
-    = msgMap(ct.runtimeClass).asInstanceOf[Seq[T]]
-
-    msgsOf
+    def apply[T]( implicit ct: ClassTag[T] ): Seq[T]
+      = msgMap( ct.runtimeClass ).asInstanceOf[Seq[T]]
   }
 
 }
