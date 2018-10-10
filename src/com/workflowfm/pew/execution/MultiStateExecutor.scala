@@ -14,7 +14,7 @@ import scala.util.{Success,Failure}
  * promises/futures from the first workflow can trigger changes on the state!
  */
 
-class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStore)(override implicit val context: ExecutionContext = ExecutionContext.global) extends ProcessExecutor[Int] with SimplePiObservable[Int] with SimulationExecutor {
+class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStore)(override implicit val context: ExecutionContext = ExecutionContext.global) extends SimulatorExecutor[Int] with SimplePiObservable[Int] {
   def this(store:PiInstanceStore[Int], l:PiProcess*) = this(store,SimpleProcessStore(l :_*))
   def this(l:PiProcess*) = this(SimpleInstanceStore(),SimpleProcessStore(l :_*))
   

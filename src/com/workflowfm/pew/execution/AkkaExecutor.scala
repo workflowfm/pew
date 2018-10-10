@@ -35,7 +35,7 @@ trait AkkaPiObservable extends PiObservable[Int] {
 }
 
 
-class AkkaExecutor(store:PiInstanceStore[Int], processes:PiProcessStore)(override implicit val system: ActorSystem, override implicit val context: ExecutionContext = ExecutionContext.global, implicit val timeout:FiniteDuration = 10.seconds) extends ProcessExecutor[Int] with AkkaPiObservable with SimulationExecutor {
+class AkkaExecutor(store:PiInstanceStore[Int], processes:PiProcessStore)(override implicit val system: ActorSystem, override implicit val context: ExecutionContext = ExecutionContext.global, implicit val timeout:FiniteDuration = 10.seconds) extends SimulatorExecutor[Int] with AkkaPiObservable {
   def this(store:PiInstanceStore[Int], l:PiProcess*)(implicit system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration) = this(store,SimpleProcessStore(l :_*))
   def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration,l:PiProcess*) = this(SimpleInstanceStore(),SimpleProcessStore(l :_*))(system,context,timeout)
   def this(l:PiProcess*)(implicit system: ActorSystem) = this(SimpleInstanceStore(),SimpleProcessStore(l :_*))(system,ExecutionContext.global,10.seconds)

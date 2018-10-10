@@ -98,7 +98,7 @@ object ProcessExecutor {
                     extends Exception("Failed to find instance with id: " + id, cause) 
 }
 
-trait SimulationExecutor { this:ProcessExecutor[_] =>
+trait SimulatorExecutor[KeyT] extends ProcessExecutor[KeyT] { this:PiObservable[KeyT] => 
   /** 
    *  This should check all executing PiInstances if they are simulationReady.
    *  This means that all possible execution has been performed and they are all

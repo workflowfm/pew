@@ -4,15 +4,15 @@ import akka.actor.Props
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
-import com.workflowfm.pew.execution.SimulationExecutor
+import com.workflowfm.pew.execution.SimulatorExecutor
 import com.workflowfm.pew.simulation.Simulation
 import com.workflowfm.pew.simulation.Coordinator
 
 
 object MetricsActor {
   case class Start(coordinator:ActorRef)
-  case class StartSims(coordinator:ActorRef,sims:Seq[(Int,Simulation)],executor:SimulationExecutor)
-  case class StartSimsNow(coordinator:ActorRef,sims:Seq[Simulation],executor:SimulationExecutor)
+  case class StartSims(coordinator:ActorRef,sims:Seq[(Int,Simulation)],executor:SimulatorExecutor[_])
+  case class StartSimsNow(coordinator:ActorRef,sims:Seq[Simulation],executor:SimulatorExecutor[_])
   
   def props(m:MetricsOutput, callbackActor:Option[ActorRef]=None)(implicit system: ActorSystem): Props = Props(new MetricsActor(m,callbackActor)(system))
 }
