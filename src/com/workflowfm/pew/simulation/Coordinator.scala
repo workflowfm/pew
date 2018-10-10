@@ -12,20 +12,26 @@ import scala.collection.mutable.PriorityQueue
 object Coordinator {
   case object Start
   //TODO case object Stop
+  case class Done(time:Int,metrics:MetricAggregator)
+  
   case class AddSim(t:Int,sim:Simulation,exe:FutureExecutor)
+  case class AddSims(l:Seq[(Int,Simulation)],exe:FutureExecutor)
+  case class AddSimNow(sim:Simulation,exe:FutureExecutor)
+  case class AddSimsNow(l:Seq[Simulation],exe:FutureExecutor)
+  
   case class AddRes(r:TaskResource)
   case class SimDone(name:String,result:String)
-  case object Tick
-  case object Tack
-  case object Tock
+
   case class AddTask(t:Task)
   case object AckTask
-  case class Done(time:Int,metrics:MetricAggregator)
+
+  case object Tick
+  case object Tack
 
   def props(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMillis:Int = 40)(implicit system: ActorSystem): Props = Props(new Coordinator(scheduler,resources,timeoutMillis)(system))//.withDispatcher("akka.my-dispatcher")
 }
 
-class Coordinator(scheduler :Scheduler, val resources :Seq[TaskResource], timeoutMillis:Int)(implicit system: ActorSystem) extends Actor {
+class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMillis:Int)(implicit system: ActorSystem) extends Actor {
   import scala.collection.mutable.Queue
   
   sealed trait Event extends Ordered[Event] { 
@@ -53,7 +59,6 @@ class Coordinator(scheduler :Scheduler, val resources :Seq[TaskResource], timeou
   def addResource(r:TaskResource) = if (!resourceMap.contains(r.name)) {
     println("["+time+"] Adding resource " + r.name)
     resourceMap += r.name -> r
-    //r.idle(time)
   }
   
   protected def startSimulation(t:Int, s:Simulation, e:FutureExecutor) :Boolean = {
@@ -61,7 +66,7 @@ class Coordinator(scheduler :Scheduler, val resources :Seq[TaskResource], timeou
       println("["+time+"] Starting simulation: \"" + s.name +"\".") 
       val metrics = new SimulationMetricTracker().simStart(time)
       // change to ? to require acknowledgement
-      system.actorOf(SimulationActor.props(s)) ! SimulationActor.Run(self,e) // ,"SimulationActor:" + s.name // TODO need to escape actor name
+      system.actorOf(SimulationActor.props(s)) ! SimulationActor.Run(self,e) // TODO need to escape actor name
       simulations += ((s.name,metrics,e))
       true
     } else false
@@ -77,27 +82,38 @@ class Coordinator(scheduler :Scheduler, val resources :Seq[TaskResource], timeou
     case None => 
     case Some(task) => {
       tasks.dequeueFirst (_.compare(task) == 0) // TODO This should remove the correct task right?
-      task.taskStart(time)
-      val duration = task.duration.get
-      (task.resources map (resourceMap.get(_)) flatten) map (_.startTask(task, time, duration))
-      events += FinishingTask(time+duration,task)
+      startTask(task)
     }
   }
   
+  protected def startTask(task:Task) {
+    task.taskStart(time)
+    val duration = task.duration.get
+    (task.resources map (resourceMap.get(_)) flatten) map (_.startTask(task, time, duration))
+    events += FinishingTask(time+duration,task)
+  }
+  
+  protected def runNoResourceTasks() {
+    tasks.dequeueAll(_.resources.isEmpty).map(startTask)
+  }
+   
   protected def resourceUpdate(r:TaskResource) :Boolean = {
     r.finishTask(time) match {
       case None => false
       case Some(t) => {
-        if (!t.metrics.counted) {
-          val res = t.resources.map(resourceMap.get(_)).flatten
-          t.taskDone(t,time,t.cost,(0 /: res)(_+_.costPerTick))
-          res map {r=>r.taskDone(t.metrics,r.costPerTick)}
-          updateSimulation(t.simulation,_.taskDone(t.metrics))
-          metrics += t
-        }
+        val res = t.resources.map(resourceMap.get(_)).flatten
+        res map {r=>r.taskDone(t.metrics,r.costPerTick)}
         true
       }
     }
+  }
+  
+  protected def finishTask(task:Task) {
+    val res = task.resources.map(resourceMap.get(_)).flatten
+    task.execute(time)
+    task.taskDone(task,time,task.cost,(0 /: res)(_+_.costPerTick))
+    updateSimulation(task.simulation,_.taskDone(task.metrics))
+    metrics += task
   }
   
   protected def workflowsReady = simulations forall (_._3.simulationReady)
@@ -112,8 +128,11 @@ class Coordinator(scheduler :Scheduler, val resources :Seq[TaskResource], timeou
     			println("["+time+"] ========= Event! ========= ")
 
     			event match {
-    			  case FinishingTask(time,task) => resourceMap map { case (n,r) => (n,resourceUpdate(r)) }
-    			  case StartingSim(time,sim,exec) => startSimulation(time,sim,exec)
+    			  case FinishingTask(_,task) => {
+    			    resourceMap map { case (n,r) => (n,resourceUpdate(r)) }
+    			    finishTask(task)
+    			  }
+    			  case StartingSim(_,sim,exec) => startSimulation(time,sim,exec)
     	    }
       }
     }
@@ -129,17 +148,20 @@ class Coordinator(scheduler :Scheduler, val resources :Seq[TaskResource], timeou
 //    val simActors = simulations map (_._2.executor)
 //    for (a <- simActors)
 //      a ? AkkaExecutor.Ping
-    self ! Coordinator.Tack
+    
+    self ! Coordinator.Tack // We need to give workflows a chance to generate new tasks
   }
   
 protected def tack :Unit = {
     resourceMap map { case (n,r) => (n,resourceAssign(r)) }
+    runNoResourceTasks()
+    
     if (events.isEmpty && tasks.isEmpty && workflowsReady) { //&& resources.forall(_.isIdle)
       println("["+time+"] All events done. All tasks done. All workflows idle. All resources idle.")
       resourceMap.values map (metrics += _)
       starter map { a => a ! Coordinator.Done(time,metrics) }
+      
     } else {
-      //Thread.sleep(halfTickMillis)
       self ! Coordinator.Tick
     }
   }
@@ -149,6 +171,13 @@ protected def tack :Unit = {
   def receive = {
     case Coordinator.AddSim(t,s,e) =>
       events += StartingSim(t,s,e)
+    case Coordinator.AddSims(l,e) =>
+      events ++= l map { case (t,s) => StartingSim(t,s,e) }
+    case Coordinator.AddSimNow(s,e) =>
+      events += StartingSim(time,s,e)
+    case Coordinator.AddSimsNow(l,e) =>
+      events ++= l map { s => StartingSim(time,s,e) }  
+      
     case Coordinator.AddRes(r) => addResource(r)
     case Coordinator.SimDone(name,result) => {
       simulations.dequeueFirst(_._1.equals(name)) map { x => metrics += (x._1,x._2.setResult(result).simDone(time).metrics) }
@@ -165,7 +194,6 @@ protected def tack :Unit = {
     case Coordinator.Start => start(sender)
     case Coordinator.Tick => tick
     case Coordinator.Tack => tack
-    //case Coordinator.Tock => tock
       
     case SimulationActor.AckRun => Unit
   }

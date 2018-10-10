@@ -17,19 +17,18 @@ class TaskResource(val name:String,val costPerTick:Int) extends ResourceMetricTr
   
   def finishTask(currentTime:Int) :Option[Task] = currentTask match {
     case None => {
-        println("["+currentTime+"] \"" + name + "\" is idle.")
+        //println("["+currentTime+"] \"" + name + "\" is idle.")
         None
     }
     case Some((startTime,duration,task)) => 
       if (currentTime >= startTime + duration) {
         println("["+currentTime+"] \"" + name + "\" detached from task \"" + task.name + " (" + task.simulation +")\".")
-        task.execute(currentTime)
         currentTask = None
         lastUpdate = currentTime
         Some(task)
       }
       else {
-        println("["+currentTime+"] \"" + name + "\" is attached to task \"" + task.name + " (" + task.simulation +")\" - " + (startTime + duration - currentTime) + " ticks remaining.")
+        //println("["+currentTime+"] \"" + name + "\" is attached to task \"" + task.name + " (" + task.simulation +")\" - " + (startTime + duration - currentTime) + " ticks remaining.")
         None
       }
   }
@@ -51,10 +50,6 @@ class TaskResource(val name:String,val costPerTick:Int) extends ResourceMetricTr
     }
   }
   
-//  def +=(t:Task) = {
-//    println("[Resource] \"" + name + "\" added task \"" + t.name + "\" to the queue.")
-//    queue+=t
-//  }
   
   def nextAvailableTimestamp(currentTime:Int) :Int = currentTask match {
     case None => currentTime

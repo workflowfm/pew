@@ -3,6 +3,8 @@ package com.workflowfm.pew.simulation
 import akka.actor.Props
 import akka.actor.Actor
 import akka.actor.ActorRef
+import com.workflowfm.pew.execution.FutureExecutor
+import akka.actor.ActorSystem
 
 trait Metrics {
   def stringValues :List[String]
@@ -17,14 +19,14 @@ class MetricTracker[T <: Metrics](init :T) {
 object TaskMetrics {
   def header(sep:String) = List("Task","Start","Delay","Duration","Cost","Simulation","Resources").mkString(sep)
 }
-case class TaskMetrics (task:String, start:Int, delay:Int, duration:Int, cost:Int, simulation:String, resources:Seq[String], counted:Boolean=false) extends Metrics {
+case class TaskMetrics (task:String, start:Int, delay:Int, duration:Int, cost:Int, simulation:String, resources:Seq[String]) extends Metrics {
   override def stringValues = List(task,start,delay,duration,cost,simulation,"\"" + resources.mkString(",") + "\"") map (_.toString)
 //  def addDelay(d :Int) = copy(delay = delay + d)
 //  def addDuration(d :Int) = copy(duration = duration + d)
 //  def addCost(c:Int) = copy(cost = cost + c)
   def setStart(st:Int) = copy(start=st)
   def setResources(sim:String,rs:Seq[String]) = copy(simulation=sim,resources=rs)
-  def add(dl:Int, dur:Int, c:Int) = copy(delay = delay + dl, duration = duration + dur, cost = cost + c, counted = true)
+  def add(dl:Int, dur:Int, c:Int) = copy(delay = delay + dl, duration = duration + dur, cost = cost + c)
 }
 
 class TaskMetricTracker(task:String) extends MetricTracker[TaskMetrics](TaskMetrics(task,-1,0,0,0,"",Seq())) {
@@ -106,11 +108,15 @@ class MetricAggregator() {
 
 object MetricsActor {
   case class Start(coordinator:ActorRef)
+  case class StartSims(coordinator:ActorRef,sims:Seq[(Int,Simulation)],executor:FutureExecutor)
+  case class StartSimsNow(coordinator:ActorRef,sims:Seq[Simulation],executor:FutureExecutor)
   
-  def props(m:MetricsOutput): Props = Props(new MetricsActor(m))
+  def props(m:MetricsOutput, callbackActor:Option[ActorRef]=None)(implicit system: ActorSystem): Props = Props(new MetricsActor(m,callbackActor)(system))
 }
 
-class MetricsActor(m:MetricsOutput) extends Actor {
+// Provide a callbackActor to get a response when we are done. Otherwise we'll shutdown the ActorSystem 
+
+class MetricsActor(m:MetricsOutput, callbackActor:Option[ActorRef])(implicit system: ActorSystem) extends Actor {
   var coordinator:Option[ActorRef] = None
   
   def receive = {
@@ -119,9 +125,25 @@ class MetricsActor(m:MetricsOutput) extends Actor {
       coordinator ! Coordinator.Start
     }
     
+    case MetricsActor.StartSims(coordinator,sims,executor) if this.coordinator.isEmpty => {
+      this.coordinator = Some(coordinator)
+      coordinator ! Coordinator.AddSims(sims,executor)
+      coordinator ! Coordinator.Start
+    }
+    
+    case MetricsActor.StartSimsNow(coordinator,sims,executor) if this.coordinator.isEmpty => {
+      this.coordinator = Some(coordinator)
+      coordinator ! Coordinator.AddSimsNow(sims,executor)
+      coordinator ! Coordinator.Start
+    }
+    
     case Coordinator.Done(t:Int,ma:MetricAggregator) if this.coordinator == Some(sender) => {
       this.coordinator = None
       m(t,ma)
+      callbackActor match {
+        case None => system.terminate()
+        case Some(actor) => actor ! Coordinator.Done(t,ma)
+      }
     }
   }
 }
@@ -205,12 +227,9 @@ class MetricsPythonGantt(path:String,name:String) extends MetricsOutput {
   }
 }
 
-class MetricsD3Timeline(path:String,name:String) extends MetricsOutput {  
+class MetricsD3Timeline(path:String,name:String,tick:Int=1) extends MetricsOutput {  
   import java.io._
   import sys.process._
-  
-  //val tick = 60*60*1000 // 1 hour
-  val tick = 1 // custom ticks
   
   def apply(totalTicks:Int,aggregator:MetricAggregator) = {
     val result = build(totalTicks,aggregator)
@@ -230,7 +249,6 @@ class MetricsD3Timeline(path:String,name:String) extends MetricsOutput {
   
   def build(totalTicks:Int,aggregator:MetricAggregator) = {
     var buf:StringBuilder = StringBuilder.newBuilder
-    buf.append("var widthPerTick = 60\n")
     buf.append(s"var totalTicks = $totalTicks\n")
     buf.append("\nvar tasks = [\n")
     for (t <- aggregator.taskMetrics.map(_._2.task).toSet[String]) buf.append(s"""\t"$t",\n""")
@@ -268,10 +286,12 @@ class MetricsD3Timeline(path:String,name:String) extends MetricsOutput {
   }
   
   def taskEntry(entry:(String,TaskMetrics)) = entry match { case (name,metrics) =>
-    val start = metrics.start * tick
-    val finish = (metrics.start + metrics.duration) * tick
+    val start = (metrics.start - 1) * tick
+    val finish = (metrics.start + metrics.duration - 1) * tick
     val task = metrics.task
-    s"""{"label":"$name", task: "$task", "starting_time": $start, "ending_time": $finish},\n"""
+    val delay = metrics.delay * tick
+    val cost = metrics.cost
+    s"""{"label":"$name", task: "$task", "starting_time": $start, "ending_time": $finish, delay: $delay, cost: $cost},\n"""
     
   }
 }
