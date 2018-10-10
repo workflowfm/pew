@@ -94,7 +94,7 @@ trait KafkaTests extends ProcessExecutorTester {
 
     TestKafkaExecutor[(Y, Z)]( Sink.foreach[AnyMsg] {
       message => {
-        System.out.println(s"Sending: $message")
+        println(s"Sending: $message")
 
         val keys = uniques(message)
         keys.filter( sentUniques.contains ).foreach( u => errors += s"Duplicate unique '$u'." )
@@ -109,8 +109,7 @@ trait KafkaTests extends ProcessExecutorTester {
   def outstanding( consume: Boolean ): Seq[ AnyMsg ] = {
     implicit val s: KafkaExecutorSettings = newSettings( completeProcessStore )
 
-    if (consume)
-      println("!!! CONSUMING OUTSTANDING MESSAGES !!!")
+    if (consume) println("!!! CONSUMING OUTSTANDING MESSAGES !!!")
 
     val fOutstanding: Future[Seq[AnyMsg]] =
       ( if (consume)  KafkaWrapperFlows.srcAll.wireTap( _._2.commitScaladsl() )
@@ -122,7 +121,7 @@ trait KafkaTests extends ProcessExecutorTester {
         .collect({ case Some( msg ) => msg })
         .runFold( Seq(): Seq[AnyMsg] )( _ :+ _ )( s.mat )
 
-    errors.clear()
+    if (consume) errors.clear()
     Await.result( fOutstanding, Duration.Inf )
   }
 
