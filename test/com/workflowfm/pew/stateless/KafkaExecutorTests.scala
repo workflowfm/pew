@@ -205,7 +205,9 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     msgsOf[SequenceRequest] shouldBe empty
     msgsOf[SequenceFailure] shouldBe empty
     msgsOf[PiiUpdate] should (have size 1)
-    msgsOf[Assignment] should (have size 2) // Pb is currently blocked by Pc with this partitioning
+
+    // Depending on whether the assignments ended up in different partitions.
+    msgsOf[Assignment] should (have size 1 or have size 2)
 
     // We must be waiting on *ALL* active assignments.
     val calledIds: Seq[Int] = msgsOf[PiiUpdate].head.pii.called
@@ -249,6 +251,4 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     errors shouldBe empty
     isAllTidy( isValid ) should be (true)
   }
-
-
 }
