@@ -20,6 +20,8 @@ libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.4.12"
 libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.5.16" % "test"
+
+libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.3.2"
     
 libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.2.1"
 

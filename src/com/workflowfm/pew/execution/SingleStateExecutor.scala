@@ -31,7 +31,7 @@ class SingleStateExecutor(processes:PiProcessStore)(override implicit val contex
   }
 
   override protected def start(id:Int):Unit = instance match {
-    case None => publish(PiEventException(id,new ProcessExecutor.NoSuchInstanceException(id.toString)))
+    case None => publish(PiFailureNoSuchInstance(id))
     case Some(i) => 
       if (i.id != id) Future.failed(new ProcessExecutor.AlreadyExecutingException())
       else {
@@ -45,13 +45,13 @@ class SingleStateExecutor(processes:PiProcessStore)(override implicit val contex
       case Some(i) => {
         publish(PiEventResult(i,res))
       }
-      case None => publish(PiEventException(id,new ProcessExecutor.NoSuchInstanceException(id.toString)))
+      case None => publish(PiFailureNoSuchInstance(id))
     }
     instance = None
   }
   
   def failure(inst:PiInstance[Int]) = {
-	  publish(PiEventFailure(inst,new ProcessExecutor.NoResultException(inst.id.toString)))
+	  publish(PiFailureNoResult(inst))
 	  instance = None 
   }
   
@@ -72,7 +72,7 @@ class SingleStateExecutor(processes:PiProcessStore)(override implicit val contex
   def handleThread(i:PiInstance[Int])(ref:Int,f:PiFuture):Boolean = f match {
     case PiFuture(name, outChan, args) => i.getProc(name) match {
       case None => {
-        publish(PiEventFailure(i,new ProcessExecutor.UnknownProcessException(name)))
+        publish(PiFailureUnknownProcess(i, name))
         false
       }
       case Some(p:AtomicProcess) => {
@@ -96,9 +96,9 @@ class SingleStateExecutor(processes:PiProcessStore)(override implicit val contex
     
   def postResult(id:Int,ref:Int, res:PiObject):Unit = this.synchronized {
     instance match {
-      case None => publish(PiEventException(id,new ProcessExecutor.NoSuchInstanceException(id.toString)))
+      case None => publish(PiFailureNoSuchInstance(id))
       case Some(i) => 
-        if (i.id != id) publish(PiEventException(id,new ProcessExecutor.NoSuchInstanceException(id.toString)))
+        if (i.id != id) publish(PiFailureNoSuchInstance(id))
         else {
           instance = Some(i.postResult(ref, res))
           run

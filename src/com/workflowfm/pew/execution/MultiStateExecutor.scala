@@ -28,13 +28,13 @@ class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStor
   }
 
   override def start(id:Int):Unit = store.get(id) match {
-    case None => publish(PiEventException(id,new ProcessExecutor.NoSuchInstanceException(id.toString)))
+    case None => publish(PiFailureNoSuchInstance(id))
     case Some(inst) => {
       publish(PiEventStart(inst))
   	  val ni = inst.reduce
       if (ni.completed) ni.result match {
   		  case None => {
-  			  publish(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
+  			  publish(PiFailureNoResult(ni))
   			  store = store.del(id)
   		  }
   		  case Some(res) => {
@@ -58,7 +58,7 @@ class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStor
           val ni = f(i).reduce
     		  if (ni.completed) ni.result match {
       		  case None => {
-      			  publish(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
+      			  publish(PiFailureNoResult(ni))
       			  store = store.del(ni.id)
       		  }
       		  case Some(res) => {

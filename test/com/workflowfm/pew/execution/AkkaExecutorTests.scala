@@ -124,7 +124,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     try {
       await(f1)
     } catch {
-      case (e:Exception) => e.getMessage should be ("FailP")
+      case (e:Exception) => e.getMessage.contains("Exception: FailP") should be (true)
     }
 	}
   
@@ -135,7 +135,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     try {
       await(f1)
     } catch {
-      case (e:Exception) => e.getMessage should be ("Fail")
+      case (e:Exception) => e.getMessage.contains("Exception: Fail") should be (true)
     }
 	}
 }

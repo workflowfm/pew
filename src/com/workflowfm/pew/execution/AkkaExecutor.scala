@@ -87,13 +87,13 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(im
   }
   
   def start(id:Int):Unit = store.get(id) match {
-    case None => publish(PiEventException(id,new ProcessExecutor.NoSuchInstanceException(id.toString)))
+    case None => publish(PiFailureNoSuchInstance(id))
     case Some(inst) => {
       publish(PiEventStart(inst))
   	  val ni = inst.reduce
       if (ni.completed) ni.result match {
   		  case None => {
-  			  publish(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
+  			  publish(PiFailureNoResult(ni))
   			  store = store.del(id)
   		  }
   		  case Some(res) => {
@@ -113,7 +113,7 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(im
   final def postResult(id:Int,ref:Int, res:PiObject):Unit = {
     publish(PiEventReturn(id,ref,res))
     store.get(id) match {
-      case None => publish(PiEventException(id,new ProcessExecutor.NoSuchInstanceException(id.toString)))
+      case None => publish(PiFailureNoSuchInstance(id))
       case Some(i) => 
         if (i.id != id) System.err.println("*** [" + id + "] Different instance ID encountered: " + i.id) // This should never happen. We trust the Instance Store!
         else {
@@ -121,7 +121,7 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(im
           val ni = i.postResult(ref, res).reduce
     		  if (ni.completed) ni.result match {
       		  case None => {
-      			  publish(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
+      			  publish(PiFailureNoResult(ni))
       			  store = store.del(ni.id)
       		  }
       		  case Some(res) => {
@@ -144,12 +144,12 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(im
     f match {
     case PiFuture(name, outChan, args) => i.getProc(name) match {
       case None => {
-        publish(PiEventFailure(i,new ProcessExecutor.UnknownProcessException(name)))
+        publish(PiFailureUnknownProcess(i, name))
         false
       }
       case Some(p:AtomicProcess) => true
       case Some(p:CompositeProcess) => {  // TODO this should never happen!
-        publish(PiEventFailure(i,new ProcessExecutor.AtomicProcessIsCompositeException(name)))
+        publish(PiFailureAtomicProcessIsComposite(i, name))
         false 
       }
     }
@@ -176,7 +176,7 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(im
         }
       }
       case Some(p:CompositeProcess) => {// This should never happen! We already checked! 
-        publish(PiEventFailure(i,new ProcessExecutor.AtomicProcessIsCompositeException(name)))
+        publish(PiFailureAtomicProcessIsComposite(i, name))
       }
     }
   } }

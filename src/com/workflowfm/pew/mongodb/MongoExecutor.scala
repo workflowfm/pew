@@ -52,7 +52,10 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
   override def start(id:ObjectId):Unit = {
     val promise=Promise[PiInstance[ObjectId]]()
     update(id,startUpdate,0,promise)
-    promise.future.recover({case t:Throwable => publish(PiEventException(id,t))})
+    promise.future.recover({
+      case PiException => Unit
+      case t:Throwable => publish(PiEventException(id,t))
+    })
   }
 //
 //	  val ni = inst.reduce
@@ -93,7 +96,10 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
     publish(PiEventReturn(id,ref,res))
     val promise=Promise[PiInstance[ObjectId]]()
 		update(id,postResultUpdate(ref,res),0,promise)
-		promise.future.recover({case t:Throwable => publish(PiEventException(id,t))})
+		promise.future.recover({
+      case PiException => Unit
+      case t:Throwable => publish(PiEventException(id,t))
+    })
   }
   
   def postResultUpdate(ref:Int, res:PiObject)(i:PiInstance[ObjectId]):PiInstance[ObjectId] = {
@@ -113,7 +119,10 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
           System.err.println("*** [" + id + "] CAS (pre) - Closing session")
           session.close()
           if (attempt < CAS_MAX_ATTEMPTS) throw CASException
-          else throw ProcessExecutor.NoSuchInstanceException(id.toString())
+          else {
+            publish(PiFailureNoSuchInstance(id))
+            throw PiException
+          }
         }
         case Seq(i:PiInstance[ObjectId]) => {
           System.err.println("*** [" + id + "] Got PiInstance: " + i)
@@ -166,7 +175,7 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
 		  case None => {   
 		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
 		    //System.err.println("*** [" + ni.id + "] Completed with no result!")
-		    (Seq(),(col.findOneAndDelete(session,and(equal("_id",ni.id),equal("calls",unique))) andThen { case _ => publish(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))}))
+		    (Seq(),(col.findOneAndDelete(session,and(equal("_id",ni.id),equal("calls",unique))) andThen { case _ => publish(PiFailureNoResult(ni))}))
 		  }
 		  case Some(res) => {
 		    //System.err.println("*** [" + ni.id + "] Completed with result!")
@@ -188,12 +197,14 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
     case PiFuture(name, outChan, args) => i.getProc(name) match {
       case None => {
         System.err.println("*** [" + i.id + "] ERROR *** Unable to find process: " + name)
-        throw ProcessExecutor.UnknownProcessException(name)
+        publish(PiFailureUnknownProcess(i,name))
+        throw PiException
       }
       case Some(p:AtomicProcess) => true
       case Some(p:CompositeProcess) => { 
         System.err.println("*** [" + i.id + "] Executor encountered composite process thread: " + name)
-        throw ProcessExecutor.AtomicProcessIsCompositeException(name) 
+        publish(PiFailureAtomicProcessIsComposite(i,name))
+        throw PiException 
       }
     }
   } }
@@ -206,7 +217,7 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
       case None => {
         // This should never happen! We already checked!
         System.err.println("*** [" + i.id + "] ERROR *** Unable to find process: " + name + " even though we checked already")
-        publish(PiEventFailure(i,ProcessExecutor.UnknownProcessException(name)))
+        publish(PiFailureUnknownProcess(i, name))
       }
       case Some(p:AtomicProcess) => {
         val objs = args map (_.obj)
@@ -221,7 +232,7 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
       }
       case Some(p:CompositeProcess) => {// This should never happen! We already checked! 
         System.err.println("*** [" + i.id + "] Executor encountered composite process thread: " + name)
-        publish(PiEventFailure(i,ProcessExecutor.AtomicProcessIsCompositeException(name)))
+        publish(PiFailureAtomicProcessIsComposite(i, name))
       }
     }
   } }
@@ -246,6 +257,7 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
   }
 
   final case object CASException extends Exception("CAS")
+  final case object PiException extends Exception("Pi")
   final case class CASFailureException(val id:String, private val cause: Throwable = None.orNull)
                     extends Exception("Compare-and-swap failed after " + CAS_MAX_ATTEMPTS + " attempts for id: " + id , cause)  
   }

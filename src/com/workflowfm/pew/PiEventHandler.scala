@@ -2,24 +2,62 @@ package com.workflowfm.pew
 
 import scala.concurrent.{Promise,Future}
 import scala.collection.immutable.Queue
+import org.apache.commons.lang3.exception.ExceptionUtils
 
 sealed trait PiEvent[KeyT] {
   def id:KeyT
+  def asString:String
 }
 
 case class PiEventStart[KeyT](i:PiInstance[KeyT]) extends PiEvent[KeyT] {
   override def id = i.id
+  override def asString = " === [" + i.id + "] INITIAL STATE === \n" + i.state + "\n === === === === === === === ==="
 }
 case class PiEventResult[KeyT](i:PiInstance[KeyT], res:Any) extends PiEvent[KeyT] {
   override def id = i.id
+  override def asString = " === [" + i.id + "] FINAL STATE === \n" + i.state + "\n === === === === === === === ===\n" +
+      " === [" + i.id + "] RESULT: " + res
 }
-case class PiEventFailure[KeyT](i:PiInstance[KeyT], reason:Throwable) extends PiEvent[KeyT] {
+case class PiEventCall[KeyT](override val id:KeyT, ref:Int, p:AtomicProcess, args:Seq[PiObject]) extends PiEvent[KeyT] {
+	override def asString = " === [" + id + "] PROCESS CALL:" +  p.name + " (" + ref + ") args: " + args.mkString(",")
+}
+case class PiEventReturn[KeyT](override val id:KeyT, ref:Int, result:Any) extends PiEvent[KeyT] {
+	override def asString = " === [" + id + "] PROCESS RETURN: (" + ref + ") returned: " + result  
+}
+case class PiFailureNoResult[KeyT](i:PiInstance[KeyT]) extends PiEvent[KeyT] {
   override def id = i.id
+  override def asString = " === [" + i.id + "] FINAL STATE === \n" + i.state + "\n === === === === === === === ===\n" +
+		  " === [" + i.id + "] NO RESULT! ==="
 }
-case class PiEventException[KeyT](override val id:KeyT, reason:Throwable) extends PiEvent[KeyT] 
-case class PiEventCall[KeyT](override val id:KeyT, ref:Int, p:AtomicProcess, args:Seq[PiObject]) extends PiEvent[KeyT]
-case class PiEventReturn[KeyT](override val id:KeyT, ref:Int, result:Any) extends PiEvent[KeyT]
-case class PiEventProcessException[KeyT](override val id:KeyT, ref:Int, reason:Throwable) extends PiEvent[KeyT]
+case class PiFailureUnknownProcess[KeyT](i:PiInstance[KeyT], process:String) extends PiEvent[KeyT] {
+  override def id = i.id
+	override def asString = " === [" + i.id + "] FINAL STATE === \n" + i.state + "\n === === === === === === === ===\n" +
+			" === [" + id + "] FAILED - Unknown process: " + process
+}
+case class PiFailureAtomicProcessIsComposite[KeyT](i:PiInstance[KeyT], process:String) extends PiEvent[KeyT] {
+  override def id = i.id
+	override def asString = " === [" + i.id + "] FINAL STATE === \n" + i.state + "\n === === === === === === === ===\n" +
+			" === [" + id + "] FAILED - Executor encountered composite process thread: " + process
+}
+case class PiFailureNoSuchInstance[KeyT](override val id:KeyT) extends PiEvent[KeyT] {
+	override def asString = " === [" + id + "] FAILED - Failed to find instance!"
+}
+case class PiEventException[KeyT](override val id:KeyT, message:String, stackTrace:String) extends PiEvent[KeyT] {
+	override def asString = " === [" + id + "] FAILED - Exception: " + message +
+			"\n === [" + id + "] Trace: " + stackTrace
+}
+case class PiEventProcessException[KeyT](override val id:KeyT, ref:Int, message:String, stackTrace:String) extends PiEvent[KeyT] {
+	override def asString = " === [" + id + "] PROCESS [" + ref + "] FAILED - Exception: " + message +
+			"\n === [" + id + "] Trace: " + stackTrace
+}
+
+object PiEventException {
+  def apply[KeyT](id:KeyT, ex:Throwable): PiEventException[KeyT] = PiEventException(id,ex.getLocalizedMessage,ExceptionUtils.getStackTrace(ex))
+}
+object PiEventProcessException {
+  def apply[KeyT](id:KeyT, ref:Int, ex:Throwable): PiEventProcessException[KeyT] = PiEventProcessException(id,ref,ex.getLocalizedMessage,ExceptionUtils.getStackTrace(ex))
+}
+
 
 // Return true if the handler is done and needs to be unsubscribed.
 
@@ -33,40 +71,26 @@ trait PiEventHandlerFactory[T,H <: PiEventHandler[T]] {
 }
 
 class PrintEventHandler[T](override val name:String) extends PiEventHandler[T] {   
-  override def apply(e:PiEvent[T]) = { e match {
-    case PiEventStart(i) => System.err.println(" === [" + i.id + "] INITIAL STATE === \n" + i.state + "\n === === === === === === === ===")
-    case PiEventResult(i,res) => {
-      System.err.println(" === [" + i.id + "] FINAL STATE === \n" + i.state + "\n === === === === === === === ===")
-      System.err.println(" === [" + i.id + "] RESULT: " + res)
-    }
-    case PiEventFailure(i,reason) => {	  
-    	  System.err.println(" === [" + i.id + "] FINAL STATE === \n" + i.state + "\n === === === === === === === ===")
-    	  System.err.println(" === [" + i.id + "] FAILED! === Exception: " + reason)
-    	  reason.printStackTrace()
-    }
-    case PiEventException(id,reason) => {	  
-  	    System.err.println(" === [" + id + "] EXCEPTION: " + reason)
-  	    reason.printStackTrace()
-    }
-    case PiEventCall(id,ref,p,args) => System.err.println(" === [" + id + "] PROCESS CALL:" +  p.name + " (" + ref + ") with args: " + args.mkString(","))
-    case PiEventReturn(id,ref,result) => System.err.println(" === [" + id + "] PROCESS RETURN: (" + ref + ") returned: " + result)
-    case PiEventProcessException(id,ref,reason) => {	  
-    	  System.err.println(" === [" + id + "] PROCESS FAILED: (" + ref + ") === Exception: " + reason)
-    	  reason.printStackTrace()
-     }   
+  override def apply(e:PiEvent[T]) = {
+    System.err.println(e.asString)
+    false
   }
-  false }
 }
 
 class PromiseHandler[T](override val name:String, val id:T) extends PiEventHandler[T] {   
   val promise = Promise[Any]()
   def future = promise.future
   
-  override def apply(e:PiEvent[T]) = if (e.id == this.id) e match { 
+  class PromiseException(message:String) extends Exception(message)
+  
+  override def apply(e:PiEvent[T]) = if (e.id == this.id) e match {  
     case PiEventResult(i,res) => promise.success(res); true
-    case PiEventFailure(i,reason) => promise.failure(reason); true
-    case PiEventException(id,reason) => promise.failure(reason); true
-    case PiEventProcessException(id,ref,reason) => promise.failure(reason); true
+    case PiFailureNoResult(i) => promise.failure(new PromiseException(e.asString)); true 
+    case PiFailureUnknownProcess(i, process) => promise.failure(new PromiseException(e.asString)); true
+    case PiFailureAtomicProcessIsComposite(i, process) => promise.failure(new PromiseException(e.asString)); true  
+    case PiFailureNoSuchInstance(id) => promise.failure(new PromiseException(e.asString)); true
+    case PiEventException(id, message, stackTrace) => promise.failure(new PromiseException(e.asString)); true
+    case PiEventProcessException(id, ref, message, stackTrace) => promise.failure(new PromiseException(e.asString)); true
     case _ => false
   } else false 
 }
