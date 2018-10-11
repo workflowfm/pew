@@ -108,6 +108,19 @@ class SequenceResponseBuilder(
   def update( id: ObjectId, func: PartialResponse => PartialResponse ): immutable.HashMap[ObjectId, PartialResponse]
     = responses.updated( id, func( responses.getOrElse( id, new PartialResponse ) ) )
 
+  /** Combine 2 partition offsets of adjacent messages so they can be committed together.
+    *
+    * @param multiOffset Offset potentially representing multiple messages to be consumed.
+    * @param singleOffset Offset representing a single message to be consumed.
+    * @return A new partition offset that would consume all messsages represented by the inputs.
+    */
+  def combineOffsets( multiOffset: PartitionOffset, singleOffset: PartitionOffset ): PartitionOffset = {
+    import math._
+    require( multiOffset.key == singleOffset.key, "Messages from different partitions are being combined!" )
+    require( abs( multiOffset.offset - singleOffset.offset ) == 1, "Message has been skipped!" )
+    multiOffset.copy( offset = max( multiOffset.offset, singleOffset.offset ) )
+  }
+
   /** Construct a new SequenceResponseBuilder which is responsible for
     * properly consuming an additional message.
     *
@@ -124,7 +137,7 @@ class SequenceResponseBuilder(
 
         // The new message needs to be consumed with when this message commits.
         optOffset
-          .map( offset => offset.copy( offset = offset.offset + msgIn.offset ) )
+          .map( combineOffsets( _, msgIn.partOffset ) )
           .orElse( Some( msgIn.partOffset ) ),
 
         // Update partial results:

@@ -27,6 +27,11 @@ class KafkaComponentTests extends FlatSpec with Matchers with BeforeAndAfterAll 
         Source
           .fromIterator( () => history.iterator )
           .groupBy( Int.MaxValue, _.part )
+          .zip( Source(1 to 2000) )
+          .map({
+            case (t, i) =>
+              t.copy( partOffset = t.partOffset.copy( offset = i ) )
+          })
           .via( flowSequencer )
           .mergeSubstreams
           .runWith( Sink.seq )( ActorMaterializer() )
