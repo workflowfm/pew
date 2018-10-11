@@ -32,12 +32,13 @@ object KafkaConnectors {
 
   /** Creates a temporary Kafka Producer capable of sending a single message.
     *
-    * @param msg Message to send.
+    * @param msgs Messages to send.
     * @param s KafkaExecutorSettings controlling the interface with the Kafka Driver.
     * @return
     */
   def sendMessages( msgs: AnyMsg* )( implicit s: KafkaExecutorSettings ): Future[Done]
-    = Source.fromIterator( () => msgs.toIterator ).runWith( sinkPlain )( s.mat )
+    = Source.fromIterator( () => msgs.toIterator )
+      .runWith( sinkPlain )( s.mat )
 
   /** Run an independent reducer off of a ReduceRequest topic. This allows a
     * reducer to create responses to each ReduceRequest individually by using the
@@ -50,9 +51,8 @@ object KafkaConnectors {
   def indyReducer( red: Reducer )(implicit s: KafkaExecutorSettings ): Control
     = run(
       srcReduceRequest
-      via flowRespond( red )
-      via flowMultiMessage,
-      sinkProducerMsg
+      via flowRespond( red ),
+      sinkTransactionalMulti( "Reducer" )
     )
 
   /** Run an independent sequencer off of a PiiHistory topic, outputting sequenced
@@ -63,9 +63,11 @@ object KafkaConnectors {
     */
   def indySequencer( implicit s: KafkaExecutorSettings ): Control
     = run(
-      srcPiiHistory( flowSequencer )
-      via flowMultiMessage,
-      sinkProducerMsg
+      srcPiiHistory
+      groupBy( Int.MaxValue, _.part )
+      via flowSequencer
+      mergeSubstreams,
+      sinkTransactionalMulti( "Sequencer" )
     )
 
   /** Run a reducer directly off the output of a Sequencer. Doing this negates the need
@@ -76,16 +78,14 @@ object KafkaConnectors {
     * @param s KafkaExecutorSettings controlling the interface with the Kafka Driver.
     * @return Control object for the running process.
     */
-  def seqReducer( red: Reducer )(implicit s: KafkaExecutorSettings ): Control
-    = run(
-      srcPiiHistory( flowSequencer )
-      .map({
-        case (messages, offset) =>
-          ( messages.collect({ case req: ReduceRequest => red respond req }), offset )
-      })
-      map { case (msgs, offset) => (msgs.flatten, offset) }
-      via flowMultiMessage,
-      sinkProducerMsg
+  def seqReducer( reducer: Reducer )(implicit s: KafkaExecutorSettings ): Control
+    = run[Seq[AnyMsg]](
+      srcPiiHistory
+      groupBy( Int.MaxValue, _.part )
+      via flowSequencer
+      map ( _.map( _.collect({ case m: ReduceRequest => reducer respond m }).flatten ) )
+      mergeSubstreams,
+      sinkTransactionalMulti( "SeqReducer" )
     )
 
   /** Run a AtomicExecutor off of the Assignment topic.
@@ -96,15 +96,13 @@ object KafkaConnectors {
     * @return Control object for the running process.
     */
   def indyAtomicExecutor( exec: AtomicExecutor, threadsPerPart: Int = 1 )( implicit s: KafkaExecutorSettings ): Control
-    = run(
-      srcAssignmentPartitioned
-      map( _
-        via flowRespond( exec )
-        via flowWaitFuture( threadsPerPart )
-      )
-      flatMapMerge( Int.MaxValue, identity )
-      via flowMessage,
-      sinkProducerMsg
+    = run[AnyMsg](
+      srcAssignment
+      groupBy( Int.MaxValue, _.part )
+      via flowRespond( exec )
+      via flowWaitFuture( threadsPerPart )
+      mergeSubstreams,
+      sinkTransactional( "Executor" )
     )
 
   /** Restart a terminated ResultListener group, join an existing group, or start a ResultListener with a specific

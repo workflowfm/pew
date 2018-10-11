@@ -16,7 +16,11 @@ case class PartialResponse(
 
   def this() = this( None, immutable.Seq(), immutable.Seq() )
 
-  lazy val allCaught: Boolean
+  /** We only *want* to send a response when we have actionable data to send:
+    * - ReduceRequest <- The latest PiInstance *and* at least one call ref to sequence.
+    * - ResultFailure <- The latest PiInstance *and* all the SequenceRequests to dump.
+    */
+  val hasPayload: Boolean
     = pii.exists( pii =>
         if (failures.nonEmpty) {
           val haveReturned: Set[Int] = ( ( results ++ failures ) map ( _._1 ) ).map( _.id ).toSet
@@ -25,18 +29,12 @@ case class PartialResponse(
         } else results.nonEmpty
       )
 
-  /** We only *want* to send a response when we have actionable data to send:
-    * - ReduceRequest <- The latest PiInstance *and* at least one call ref to sequence.
-    * - ResultFailure <- The latest PiInstance *and* all the SequenceRequests to dump.
-    */
-  val hasPayload: Boolean = ( results.nonEmpty && failures.isEmpty ) || allCaught
-
   /** @return A full message which could be built with this data, or nothing.
     */
   def message: Option[AnyMsg]
     = pii.map( pii =>
         if (failures.nonEmpty) {
-          if (allCaught)  new ResultFailure( pii, failures.head._2 )
+          if (hasPayload) new ResultFailure( pii, failures.head._2 )
           else            SequenceFailure( pii, results, failures )
 
         } else ReduceRequest( pii, results )
@@ -72,7 +70,7 @@ case class PartialResponse(
   * @param responses A map of partial responses for PiInstances that need reducing.
   */
 class SequenceResponseBuilder(
-   val offset: CommittableOffsetBatch,
+   val optOffset: Option[PartitionOffset],
    val responses: immutable.HashMap[ObjectId, PartialResponse],
  ) {
 
@@ -83,7 +81,7 @@ class SequenceResponseBuilder(
 
   /** @return An empty response builder that consumes no messages.
     */
-  def this() = this( emptyCommittableOffsetBatch, new immutable.HashMap )
+  def this() = this( None, new immutable.HashMap )
 
   /** MultiMessage response for the consumed messages, or None if the
     * consumed messages lack sufficient information for a response.
@@ -102,7 +100,7 @@ class SequenceResponseBuilder(
     // otherwise we would lose their state information when they are consumed.
     // Additionally, for performance: do not emmit empty responses.
     if ( messages.isEmpty || messages.exists( _.isEmpty ) ) None
-    else Some( messages.flatten, offset )
+    else Some( Tracked( messages.flatten, optOffset.get ) )
 
   } else None // If there is no reduce request with a payload, wait for one.
 
@@ -116,7 +114,7 @@ class SequenceResponseBuilder(
     * @param msgIn The next `CommittableMessage` to handle.
     * @return A new SequenceResponseBuilder instance.
     */
-  def next( msgIn: CMsg[PiiHistory] ): SequenceResponseBuilder =
+  def next( msgIn: Tracked[PiiHistory] ): SequenceResponseBuilder =
 
     // If we have already sent a response, start constructing the subsequent response instead.
     if (response.nonEmpty) (new SequenceResponseBuilder).next( msgIn )
@@ -125,10 +123,12 @@ class SequenceResponseBuilder(
       new SequenceResponseBuilder(
 
         // The new message needs to be consumed with when this message commits.
-        offset.updated( msgIn.committableOffset ),
+        optOffset
+          .map( offset => offset.copy( offset = offset.offset + msgIn.offset ) )
+          .orElse( Some( msgIn.partOffset ) ),
 
         // Update partial results:
-        msgIn.record.value match {
+        msgIn.value match {
           case msg: SequenceRequest => update( msg.piiId, _ update msg.request )
           case msg: PiiUpdate       => update( msg.pii.id, _ update msg.pii )
           case msg: SequenceFailure => update( msg.piiId, _ merge msg )

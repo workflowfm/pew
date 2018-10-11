@@ -6,7 +6,7 @@ import akka.{Done, NotUsed}
 import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
 import com.workflowfm.pew.stateless.components.{AtomicExecutor, Reducer}
 import com.workflowfm.pew.stateless.instances.kafka.CustomKafkaExecutor
-import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows.{srcAssignmentPartitioned, _}
+import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows._
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 
 import scala.collection.mutable
@@ -32,57 +32,33 @@ object TestKafkaConnectors {
   }
 
   def indyReducer( red: Reducer, sink: Sink[AnyMsg, Future[Done]] )( implicit s: KafkaExecutorSettings ): Control
-    = {
-    val flowCheck
-      = flowUntrack[Seq[AnyMsg]]
-        .via( flowFlatten )
-        //.via( checkMsg() )
-        .to( sink )
-
-    run(
+    = run(
       srcReduceRequest
-      via flowRespond(red)
-      wireTap flowCheck
-      via flowMultiMessage,
-      sinkProducerMsg
+      via flowRespond( red )
+      wireTap (flowCheckMulti to sink),
+      sinkTransactionalMulti( "Reducer" )
     )
-  }
 
   def indySequencer( sink: Sink[AnyMsg, Future[Done]] )( implicit s: KafkaExecutorSettings ): Control
-    = {
-    val flowCheck
-      = flowUntrack[Seq[AnyMsg]]
-        .via( flowFlatten )
-        // .via( checkMsg() )
-        .to( sink )
-
-    run(
-      srcPiiHistory( flowSequencer )
-      wireTap flowCheck
-      via flowMultiMessage,
-      sinkProducerMsg
+    = run(
+      srcPiiHistory
+      groupBy( Int.MaxValue, _.part )
+      via flowSequencer
+      wireTap (flowCheckMulti to sink)
+      mergeSubstreams,
+      sinkTransactionalMulti( "Sequencer" )
     )
-  }
 
   def indyAtomicExecutor( exec: AtomicExecutor, sink: Sink[AnyMsg, Future[Done]] )( implicit s: KafkaExecutorSettings ): Control
-    = {
-    val flowCheck
-      = flowUntrack[AnyMsg]
-        // .via( checkMsg() )
-        .to( sink )
-
-    run(
-      srcAssignmentPartitioned
-      map( _
-        via flowRespond( exec )
-        via flowWaitFuture( 1 )
-      )
-      flatMapMerge( Int.MaxValue, identity )
-      wireTap flowCheck
-      via flowMessage,
-      sinkProducerMsg
+    = run(
+      srcAssignment
+      groupBy( Int.MaxValue, _.part )
+      via flowRespond( exec )
+      via flowWaitFuture( 1 )
+      wireTap (flowCheck to sink)
+      mergeSubstreams,
+      sinkTransactional( "Executor" )
     )
-  }
 }
 
 object TestKafkaExecutor {
