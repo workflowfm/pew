@@ -1,9 +1,8 @@
 package com.workflowfm.pew.stateless.instances.kafka.components
 
 import akka.Done
-import akka.kafka.Subscriptions
-import akka.kafka.scaladsl.Consumer.{Control, DrainingControl}
-import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.kafka.scaladsl.Consumer.Control
+import akka.stream.scaladsl.Sink
 import com.workflowfm.pew.stateless.StatelessMessages
 import com.workflowfm.pew.stateless.components._
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
@@ -38,8 +37,8 @@ object KafkaConnectors {
     * @return
     */
   def sendMessages( msgs: AnyMsg* )( implicit s: KafkaExecutorSettings ): Future[Done]
-    = Source.fromIterator( () => msgs.toIterator )
-      .runWith( sinkPlain )( s.mat )
+    = Untracked.source( msgs )
+      .runWith( Untracked.sink )( s.mat )
 
   /** Run an independent reducer off of a ReduceRequest topic. This allows a
     * reducer to create responses to each ReduceRequest individually by using the
@@ -53,7 +52,7 @@ object KafkaConnectors {
     = run(
       srcReduceRequest
       via flowRespond( red ),
-      sinkTransactionalMulti( "Reducer" )
+      Transaction.sinkMulti[AnyMsg]( "Reducer" )
     )
 
   /** Run an independent sequencer off of a PiiHistory topic, outputting sequenced
@@ -63,14 +62,13 @@ object KafkaConnectors {
     * @return Control object for the running process.
     */
   def indySequencer( implicit s: KafkaExecutorSettings ): Control
-    = CommitTracked.sourcePartitioned( s.csPiiHistory, Subscriptions.topics(s.tnPiiHistory ) )
-      .groupBy( Int.MaxValue, _.part )
-      .via( flowSequencer )
-      .mergeSubstreams
-      .toMat( CommitTracked.sinkMulti )( Keep.both )
-      .mapMaterializedValue( DrainingControl.apply )  // Add shutdown control object.
-      .named( this.getClass.getSimpleName )           // Name for debugging.
-      .run()( s.mat )
+    = run(
+      srcPiiHistory
+      groupBy( Int.MaxValue, _.part )
+      via flowSequencer
+      mergeSubstreams,
+      CommitTracked.sinkMulti[AnyMsg]
+    )
 
   /** Run a reducer directly off the output of a Sequencer. Doing this negates the need
     * for a ReduceRequest topic, however it does necessitate the consumption of multiple
@@ -105,7 +103,7 @@ object KafkaConnectors {
       via flowRespond( exec )
       via flowWaitFuture( threadsPerPart )
       mergeSubstreams,
-      sinkTransactional( "Executor" )
+      Transaction.sink[AnyMsg]( "Executor" )
     )
 
   /** Restart a terminated ResultListener group, join an existing group, or start a ResultListener with a specific

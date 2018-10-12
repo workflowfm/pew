@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import com.workflowfm.pew.execution.RexampleTypes.{R, Y}
 import com.workflowfm.pew.execution._
 import com.workflowfm.pew.stateless.StatelessMessages._
-import com.workflowfm.pew.stateless.instances.kafka.components.{KafkaWrapperFlows, Tracked, Transaction}
+import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.{BsonKafkaExecutorSettings, KafkaCodecRegistry}
 import com.workflowfm.pew.stateless.instances.kafka.{CompleteKafkaExecutor, MinimalKafkaExecutor}
@@ -89,14 +89,10 @@ trait KafkaTests extends ProcessExecutorTester {
 
     if (consume) println("!!! CONSUMING OUTSTANDING MESSAGES !!!")
 
-    val fOutstanding: Future[Seq[AnyMsg]] =
-      ( if (consume)
-          KafkaWrapperFlows.srcAll
-          .wireTap(
-            Transaction.sinkMulti("OutstandingConsumer")
-            .contramap[Transaction[AnyMsg]]( Tracked.freplace(_)(Seq()) )
-          )
-      else KafkaWrapperFlows.srcAll )
+    val fOutstanding: Future[Seq[AnyMsg]] = (
+        if (consume)  KafkaWrapperFlows.srcAll.wireTap(_.commit)
+        else          KafkaWrapperFlows.srcAll
+      )
         .map( _.value )
         .completionTimeout(5.seconds)
         .map( Some(_) )

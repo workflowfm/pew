@@ -1,11 +1,11 @@
 package com.workflowfm.pew.stateless.instances.kafka.components
 
-import akka.{Done, NotUsed}
 import akka.kafka.ConsumerMessage.{Committable, CommittableOffset, CommittableOffsetBatch, PartitionOffset}
+import akka.kafka._
 import akka.kafka.scaladsl.Consumer.Control
 import akka.kafka.scaladsl.{Consumer, Producer, Transactional}
-import akka.kafka._
 import akka.stream.scaladsl.{Sink, Source}
+import akka.{Done, NotUsed}
 import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 import org.bson.types.ObjectId
@@ -14,7 +14,6 @@ import scala.concurrent.{ExecutionContext, Future}
 
 sealed abstract class Tracked[Value] {
   def value: Value
-  def part: Int
 
   protected def map[NewValue]( fn: Value => NewValue ): Tracked[NewValue]
 
@@ -50,14 +49,15 @@ object Tracked {
   }
 }
 
-case class CommitTracked[Value](
-    value: Value,
-    part: Int,
-    commit: Committable
-  ) extends Tracked[Value] {
+trait AbstractCommitTracked[Value]
+  extends Tracked[Value] {
+  this: {
+    def commit: Committable
+    def copy[NewValue]( value: NewValue, commit: Committable ): Tracked[NewValue]
+  } =>
 
   override protected def map[NewValue](fn: Value => NewValue): Tracked[NewValue]
-    = copy( value = fn( value ) )
+    = copy( fn( value ), commit )
 
   override protected def fold[NewValue](fn: (Value, NewValue) => Value)(other: Tracked[NewValue]): Tracked[Value] = {
     require( other.isInstanceOf[CommitTracked[NewValue]] )
@@ -66,8 +66,8 @@ case class CommitTracked[Value](
     require( that.commit.isInstanceOf[CommittableOffset] )
 
     copy(
-      value = fn( value, that.value ),
-      commit = ( commit match {
+      fn( value, that.value ),
+      ( commit match {
         case offset: CommittableOffset => ConsumerMessage.emptyCommittableOffsetBatch.updated( offset )
         case batch: CommittableOffsetBatch => batch
 
@@ -76,31 +76,45 @@ case class CommitTracked[Value](
   }
 }
 
+trait HasCommittable[Value]
+  extends Tracked[Value] {
+
+  def commit: Committable
+}
+
+case class CommitTracked[Value](
+    value: Value,
+    commit: Committable
+  ) extends Tracked[Value] with HasCommittable[Value] {
+
+  override protected def map[NewValue](fn: Value => NewValue): Tracked[NewValue]
+    = copy( fn( value ), commit )
+
+  override protected def fold[NewValue](fn: (Value, NewValue) => Value)(other: Tracked[NewValue]): Tracked[Value]
+    = copy( fn( value, other.value ), CommitTracked.unsafeMerge( commit, other.asInstanceOf[CommitTracked[_]].commit ) )
+}
+
 object CommitTracked {
+
+  def unsafeMerge( left: Committable, right: Committable ): Committable = {
+    require( right.isInstanceOf[CommittableOffset] )
+
+    ( left match {
+      case offset: CommittableOffset => ConsumerMessage.emptyCommittableOffsetBatch.updated( offset )
+      case batch: CommittableOffsetBatch => batch
+    }).updated( right.asInstanceOf[CommittableOffset] )
+  }
 
   def source[Value]( cs: ConsumerSettings[_, Value], sub: Subscription ): Source[CommitTracked[Value], Control]
     = Consumer.committableSource( cs, sub )
       .map( msg =>
         CommitTracked(
-          msg.record.value, 0,
+          msg.record.value,
           msg.committableOffset
         )
       )
 
-  def sourcePartitioned[Value]( cs: ConsumerSettings[_, Value], sub: AutoSubscription ): Source[CommitTracked[Value], Control]
-    = Consumer.committablePartitionedSource( cs, sub )
-      .flatMapMerge( Int.MaxValue, {
-        case (topicPartition, source) =>
-          source.map( msg =>
-            CommitTracked(
-              msg.record.value,
-              topicPartition.partition(),
-              msg.committableOffset
-            )
-          )
-      })
-
-  def sink[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[CommitTracked[V], Future[Done]]
+  def sink[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[HasCommittable[V], Future[Done]]
     = Producer.commitableSink( s.psAllMessages )
       .contramap( msg =>
         ProducerMessage.Message(
@@ -109,7 +123,7 @@ object CommitTracked {
         )
       )
 
-  def sinkMulti[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[CommitTracked[Seq[V]], Future[Done]]
+  def sinkMulti[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[HasCommittable[Seq[V]], Future[Done]]
     = Producer.commitableSink( s.psAllMessages )
       .contramap( msgs =>
         ProducerMessage.MultiMessage(
@@ -120,10 +134,57 @@ object CommitTracked {
 
 }
 
+trait HasPartition[Value]
+  extends Tracked[Value] {
+
+  def part: Int
+}
+
+case class PartTracked[Value](
+   value: Value,
+   commit: Committable,
+   part: Int
+
+  ) extends Tracked[Value]
+  with HasCommittable[Value]
+  with HasPartition[Value] {
+
+  override protected def map[NewValue](fn: Value => NewValue): Tracked[NewValue]
+    = copy( fn( value ), commit )
+
+  override protected def fold[NewValue](fn: (Value, NewValue) => Value)(other: Tracked[NewValue]): Tracked[Value]
+    = copy( fn( value, other.value ), CommitTracked.unsafeMerge( commit, other.asInstanceOf[PartTracked[_]].commit ) )
+}
+
+object PartTracked {
+
+  def source[Value]( cs: ConsumerSettings[_, Value], sub: AutoSubscription ): Source[PartTracked[Value], Control]
+    = Consumer.committablePartitionedSource( cs, sub )
+      .flatMapMerge( Int.MaxValue, {
+        case (topicPartition, source) =>
+          source.map( msg =>
+            PartTracked(
+              msg.record.value,
+              msg.committableOffset,
+              topicPartition.partition()
+            )
+          )
+      })
+
+  def sink[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[HasCommittable[V], Future[Done]]
+    = CommitTracked.sink[V]
+
+  def sinkMulti[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[HasCommittable[Seq[V]], Future[Done]]
+    = CommitTracked.sinkMulti[V]
+
+}
+
 case class Transaction[Value](
     value: Value,
     partOffset: PartitionOffset
-  ) extends Tracked[Value] {
+
+  ) extends Tracked[Value]
+  with HasPartition[Value] {
 
   def offset: Long = partOffset.offset
 
@@ -175,6 +236,31 @@ object Transaction {
         )
       )
   }
+}
+
+case class Untracked[Value](
+   value: Value
+ ) extends Tracked[Value] {
+
+  override protected def map[NewValue](fn: Value => NewValue): Tracked[NewValue]
+    = copy( value = fn( value ) )
+
+  override protected def fold[NewValue](fn: (Value, NewValue) => Value)(other: Tracked[NewValue]): Tracked[Value]
+    = copy( value = fn( value, other.value ) )
+}
+
+object Untracked {
+
+  def source[Value]( messages: Seq[Value] ): Source[Untracked[Value], NotUsed]
+    = Source.fromIterator( () => messages.iterator ).map( Untracked(_) )
+
+  def source[Value]( cs: ConsumerSettings[_, Value], sub: AutoSubscription ): Source[Untracked[Value], Control]
+    = Consumer.plainSource( cs, sub )
+      .map( msg => Untracked( msg.value ) )
+
+  def sink[Value <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[Untracked[Value], Future[Done]]
+    = Producer.plainSink( s.psAllMessages )
+      .contramap( (msg: Untracked[Value]) => s.record( msg.value ) )
 
 }
 
@@ -182,7 +268,9 @@ case class MockTracked[Value](
     value: Value,
     part: Int,
     consuming: Long // Number of messages to consume.
-  ) extends Tracked[Value] {
+
+  ) extends Tracked[Value]
+  with HasPartition[Value] {
 
   override protected def map[NewValue](fn: Value => NewValue): Tracked[NewValue]
     = copy( value = fn( value ) )
@@ -203,3 +291,4 @@ object MockTracked {
       .map({ case (msg, part) => MockTracked( msg, part, 1 ) })
 
 }
+
