@@ -2,7 +2,6 @@ package com.workflowfm.pew.stateless.instances.kafka
 
 import akka.Done
 import akka.kafka.scaladsl.Consumer.Control
-import com.workflowfm.pew._
 import com.workflowfm.pew.stateless.components._
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
@@ -46,7 +45,7 @@ object CompleteKafkaExecutor {
 /** Implements the full functionality of a Kafka Executor locally using a combined Sequencer/Reducer.
   * - Joined Sequencer and Reducer connector.
   * - Independent Atomic Process Executor.
-  */
+  */ /* TODO: Reimplement when seqReducers are a thing again.
 object SeqRedKafkaExecutor {
 
   import KafkaConnectors._
@@ -61,5 +60,4 @@ object SeqRedKafkaExecutor {
       indyAtomicExecutor( AtomicExecutor() )
     )
   }
-
-}
+} */

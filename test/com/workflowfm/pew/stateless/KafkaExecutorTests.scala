@@ -27,8 +27,12 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await( f1 ) should be ("PbISleptFor1s")
     ex.syncShutdown()
 
-    errors shouldBe empty
-    isAllTidy() should be (true)
+    val msgsOf = new MessageDrain( true )
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty
   }
 
   it should "execute atomic PbI twice concurrently" in {
@@ -41,8 +45,12 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f2) should be ("PbISleptFor1s")
     ex.syncShutdown()
 
-    errors shouldBe empty
-    isAllTidy() should be (true)
+    val msgsOf = new MessageDrain( true )
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty
   }
 
   it should "execute Rexample once" in {
@@ -53,8 +61,12 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f1) should be (("PbISleptFor2s","PcISleptFor1s"))
     ex.syncShutdown()
 
-    errors shouldBe empty
-    isAllTidy() should be (true)
+    val msgsOf = new MessageDrain( true )
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty
   }
 
   it should "execute Rexample once with same timings" in {
@@ -65,8 +77,12 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f1) should be (("PbISleptFor1s","PcISleptFor1s"))
     ex.syncShutdown()
 
-    errors shouldBe empty
-    isAllTidy() should be (true)
+    val msgsOf = new MessageDrain( true )
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty
   }
 
   it should "execute Rexample twice concurrently" in {
@@ -79,8 +95,12 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f2) should be (("PbISleptFor1s","PcISleptFor2s"))
     ex.syncShutdown()
 
-    errors shouldBe empty
-    isAllTidy() should be (true)
+    val msgsOf = new MessageDrain( true )
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty
   }
 
   it should "execute Rexample twice with same timings concurrently" in {
@@ -93,8 +113,12 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f2) should be (("PbISleptFor1s","PcISleptFor1s"))
     ex.syncShutdown()
 
-    errors shouldBe empty
-    isAllTidy() should be (true)
+    val msgsOf = new MessageDrain( true )
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty
   }
 
   it should "execute Rexample thrice concurrently" in {
@@ -109,8 +133,12 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f3) should be (("PbISleptFor1s","PcISleptFor1s"))
     ex.syncShutdown()
 
-    errors shouldBe empty
-    isAllTidy() should be (true)
+    val msgsOf = new MessageDrain( true )
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty
   }
 
   it should "execute Rexample twice, each with a differnt component" in {
@@ -123,8 +151,12 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f2) should be (("PbISleptFor1s","PcXSleptFor1s"))
     ex.syncShutdown()
 
-    errors shouldBe empty
-    isAllTidy() should be (true)
+    val msgsOf = new MessageDrain( true )
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty
   }
 
   it should "handle a failing atomic process" in {
@@ -135,9 +167,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     awaitErr( f1 ).map( _.getMessage ) shouldBe Right( "FailP" )
     ex.syncShutdown()
 
-    errors shouldBe empty
     val msgsOf = new MessageDrain( true )
-
     msgsOf[SequenceRequest] shouldBe empty
     msgsOf[SequenceFailure] shouldBe empty
     msgsOf[ReduceRequest] shouldBe empty
@@ -153,9 +183,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     awaitErr( f1 ).map( _.getMessage ) shouldBe Right( "Fail" )
     ex.syncShutdown()
 
-    errors shouldBe empty
     val msgsOf = new MessageDrain( true )
-
     msgsOf[SequenceRequest] shouldBe empty
     msgsOf[SequenceFailure] shouldBe empty
     msgsOf[ReduceRequest] shouldBe empty
@@ -177,9 +205,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     ex1.syncShutdown()
     ex2.syncShutdown()
 
-    errors shouldBe empty
     val msgsOf = new MessageDrain( true )
-
     msgsOf[SequenceRequest] shouldBe empty
     msgsOf[SequenceFailure] shouldBe empty
     msgsOf[ReduceRequest] shouldBe empty
@@ -198,7 +224,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     Thread.sleep(10.seconds.toMillis)
     ex.syncShutdown()
 
-    errors shouldBe empty
+    // Dont consume, we need the outstanding messages to resume.
     val msgsOf = new MessageDrain( false )
 
     // We should just be waiting on the assignments.
@@ -224,12 +250,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
 
     await(f2) should be (("PbISleptFor2s","PcISleptFor1s"))
 
-    // Not reliable when testing shutdowns and problems
-    // caught more helpfully by following checks.
-    // errors shouldBe empty
-
     val msgsOf = new MessageDrain( true )
-
     msgsOf[SequenceRequest] shouldBe empty
     msgsOf[SequenceFailure] shouldBe empty
     msgsOf[ReduceRequest] shouldBe empty
@@ -252,7 +273,6 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     // We don't care what state we leave the outstanding message in, provided we clean our own state.
     val ourMsg: AnyMsg => Boolean = piiId(_) != oldPii.id
 
-    errors shouldBe empty
     val msgsOf = new MessageDrain( true )
     msgsOf[SequenceRequest].filter( ourMsg ) shouldBe empty
     msgsOf[SequenceFailure].filter( ourMsg ) shouldBe empty
@@ -277,7 +297,6 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     await(f1) should be (("PbISleptFor2s","PcISleptFor1s"))
     ex.syncShutdown()
 
-    errors shouldBe empty
     val msgsOf = new MessageDrain( true )
     msgsOf[SequenceRequest] shouldBe empty
     msgsOf[SequenceFailure] shouldBe empty

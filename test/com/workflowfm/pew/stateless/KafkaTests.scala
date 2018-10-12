@@ -1,28 +1,26 @@
 package com.workflowfm.pew.stateless
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.Sink
-import com.workflowfm.pew.{PiProcessStore, SimpleProcessStore}
 import com.workflowfm.pew.execution.RexampleTypes.{R, Y}
 import com.workflowfm.pew.execution._
 import com.workflowfm.pew.stateless.StatelessMessages._
-import com.workflowfm.pew.stateless.instances.kafka.MinimalKafkaExecutor
-import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows
+import com.workflowfm.pew.stateless.instances.kafka.components.{KafkaWrapperFlows, Tracked, Transaction}
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.{BsonKafkaExecutorSettings, KafkaCodecRegistry}
+import com.workflowfm.pew.stateless.instances.kafka.{CompleteKafkaExecutor, MinimalKafkaExecutor}
+import com.workflowfm.pew.{PiProcessStore, SimpleProcessStore}
 
-import scala.collection.mutable
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, TimeoutException}
 import scala.reflect.ClassTag
-import scala.concurrent.duration._
 
 trait KafkaTests extends ProcessExecutorTester {
 
   import akka.Done
   import com.workflowfm.pew.execution.RexampleTypes.{B, Pc, Z}
 
-  import scala.concurrent.{Await, Promise}
   import scala.concurrent.duration.Duration
+  import scala.concurrent.{Await, Promise}
 
   class PcIWait( s: String = "PcI" ) extends Pc {
     override def iname: String = s
@@ -78,29 +76,9 @@ trait KafkaTests extends ProcessExecutorTester {
       failp
     )
 
-  val errors: mutable.Queue[String] = mutable.Queue()
-  val sentUniques: mutable.Set[Any] = mutable.Set()
-
-  def uniques: AnyMsg => Seq[Any] = {
-    case m: PiiUpdate           => Seq() // these are allowed to be duplicated.
-    case m: SequenceRequest     => Seq( ( "seqreq", m.piiId, m.request._1.id ) )
-    case m: ReduceRequest       => m.args.map( r => ("redreq", m.pii.id, r._1.id ) )
-    case m: Assignment          => Seq( ("ass", m.pii.id, m.callRef.id ) )
-    case m: PiiResult[_]        => Seq( ("res", m.pii.id ) )
-  }
 
   def makeExecutor(store: SimpleProcessStore): MinimalKafkaExecutor[(Y, Z)] = {
-    implicit val s: KafkaExecutorSettings = newSettings( store )
-
-    TestKafkaExecutor[(Y, Z)]( Sink.foreach[AnyMsg] {
-      message => {
-        println(s"Sending: $message")
-
-        val keys = uniques(message)
-        keys.filter( sentUniques.contains ).foreach( u => errors += s"Duplicate unique '$u'." )
-        keys.foreach( sentUniques.add )
-      }
-    })
+    CompleteKafkaExecutor[(Y, Z)]( newSettings( store ) )
   }
 
   val isPiiResult: AnyMsg => Boolean = _.isInstanceOf[PiiResult[_]]
@@ -112,16 +90,20 @@ trait KafkaTests extends ProcessExecutorTester {
     if (consume) println("!!! CONSUMING OUTSTANDING MESSAGES !!!")
 
     val fOutstanding: Future[Seq[AnyMsg]] =
-      ( if (consume)  KafkaWrapperFlows.srcAll.wireTap( _._2.commitScaladsl() )
-      else          KafkaWrapperFlows.srcAll )
-        .map( _._1 )
+      ( if (consume)
+          KafkaWrapperFlows.srcAll
+          .wireTap(
+            Transaction.sinkMulti("OutstandingConsumer")
+            .contramap[Transaction[AnyMsg]]( Tracked.freplace(_)(Seq()) )
+          )
+      else KafkaWrapperFlows.srcAll )
+        .map( _.value )
         .completionTimeout(5.seconds)
         .map( Some(_) )
         .recover({ case _: TimeoutException => None })
         .collect({ case Some( msg ) => msg })
         .runFold( Seq(): Seq[AnyMsg] )( _ :+ _ )( s.mat )
 
-    if (consume) errors.clear()
     Await.result( fOutstanding, Duration.Inf )
   }
 

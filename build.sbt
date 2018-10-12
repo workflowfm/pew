@@ -16,6 +16,7 @@ lazy val commonSettings = Seq (
 // For instance, this will actually download scalatest_2.9.2
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.0-SNAP10" % "test"
+libraryDependencies += "org.scalamock" %% "scalamock" % "4.1.0" % Test
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.4.12"

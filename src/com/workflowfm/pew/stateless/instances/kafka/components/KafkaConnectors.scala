@@ -1,8 +1,9 @@
 package com.workflowfm.pew.stateless.instances.kafka.components
 
 import akka.Done
-import akka.kafka.scaladsl.Consumer.Control
-import akka.stream.scaladsl.{Sink, Source}
+import akka.kafka.Subscriptions
+import akka.kafka.scaladsl.Consumer.{Control, DrainingControl}
+import akka.stream.scaladsl.{Keep, Sink, Source}
 import com.workflowfm.pew.stateless.StatelessMessages
 import com.workflowfm.pew.stateless.components._
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
@@ -62,13 +63,14 @@ object KafkaConnectors {
     * @return Control object for the running process.
     */
   def indySequencer( implicit s: KafkaExecutorSettings ): Control
-    = run(
-      srcPiiHistory
-      groupBy( Int.MaxValue, _.part )
-      via flowSequencer
-      mergeSubstreams,
-      sinkTransactionalMulti( "Sequencer" )
-    )
+    = CommitTracked.sourcePartitioned( s.csPiiHistory, Subscriptions.topics(s.tnPiiHistory ) )
+      .groupBy( Int.MaxValue, _.part )
+      .via( flowSequencer )
+      .mergeSubstreams
+      .toMat( CommitTracked.sinkMulti )( Keep.both )
+      .mapMaterializedValue( DrainingControl.apply )  // Add shutdown control object.
+      .named( this.getClass.getSimpleName )           // Name for debugging.
+      .run()( s.mat )
 
   /** Run a reducer directly off the output of a Sequencer. Doing this negates the need
     * for a ReduceRequest topic, however it does necessitate the consumption of multiple
@@ -78,15 +80,16 @@ object KafkaConnectors {
     * @param s KafkaExecutorSettings controlling the interface with the Kafka Driver.
     * @return Control object for the running process.
     */
-  def seqReducer( reducer: Reducer )(implicit s: KafkaExecutorSettings ): Control
-    = run[Seq[AnyMsg]](
-      srcPiiHistory
-      groupBy( Int.MaxValue, _.part )
-      via flowSequencer
-      map ( _.map( _.collect({ case m: ReduceRequest => reducer respond m }).flatten ) )
-      mergeSubstreams,
-      sinkTransactionalMulti( "SeqReducer" )
-    )
+  /* TODO: Reimplement when we can do many-to-many transactions.
+    def seqReducer( reducer: Reducer )(implicit s: KafkaExecutorSettings ): Control
+      = run[Seq[AnyMsg]](
+        srcPiiHistory
+        groupBy( Int.MaxValue, _.part )
+        via flowSequencer
+        map ( _.map( _.collect({ case m: ReduceRequest => reducer respond m }).flatten ) )
+        mergeSubstreams,
+        sinkTransactionalMulti( "SeqReducer" )
+    )*/
 
   /** Run a AtomicExecutor off of the Assignment topic.
     *
@@ -96,7 +99,7 @@ object KafkaConnectors {
     * @return Control object for the running process.
     */
   def indyAtomicExecutor( exec: AtomicExecutor, threadsPerPart: Int = 1 )( implicit s: KafkaExecutorSettings ): Control
-    = run[AnyMsg](
+    = run(
       srcAssignment
       groupBy( Int.MaxValue, _.part )
       via flowRespond( exec )

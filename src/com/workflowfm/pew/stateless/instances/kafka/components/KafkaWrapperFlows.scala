@@ -7,6 +7,7 @@ import akka.stream.scaladsl._
 import com.workflowfm.pew.stateless.components.StatelessComponent
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.{AnyKey, AnyRes}
+import org.bson.types.ObjectId
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -19,7 +20,6 @@ object KafkaWrapperFlows {
 
   import Consumer._
   import ConsumerMessage._
-  import Producer._
   import ProducerMessage._
   import Subscriptions._
   import com.workflowfm.pew.stateless.StatelessMessages._
@@ -30,20 +30,10 @@ object KafkaWrapperFlows {
   /** Wrapper type for tracking the offset to commit when a producer eventually writes
     * this object.
     */
-  case class Tracked[V](
-      value: V,
-      partOffset: PartitionOffset
-    ) {
 
-    def part: Int = partOffset.key.partition
-    def offset: Long = partOffset.offset
 
-    def map[W]( fn: V => W ): Tracked[W]
-      = Tracked( fn(value), partOffset )
-  }
-
-  def track[V]( message: TransactionalMessage[_, V] ): Tracked[V]
-    = Tracked[V]( message.record.value, message.partitionOffset )
+//  def track[V]( message: TransactionalMessage[_, V] ): Tracked[V]
+//    = Tracked[V]( message.record.value, message.partitionOffset )
 
   /// KAFKA CONSUMER / AKKA SOURCES ///
 
@@ -51,15 +41,15 @@ object KafkaWrapperFlows {
     *
     * @return Akka source containing messages published to the `ReduceRequest` topic.
     */
-  def srcReduceRequest( implicit s: KafkaExecutorSettings ): Source[Tracked[ReduceRequest], Control]
-    = Transactional.source( s.csReduceRequest, topics( s.tnReduceRequest ) ).map( track )
+  def srcReduceRequest( implicit s: KafkaExecutorSettings ): Source[Transaction[ReduceRequest], Control]
+    = Transaction.source( s.csReduceRequest, topics( s.tnReduceRequest ) )
 
   /** Kafka Consumer for the `Assignment` topic.
     *
     * @return Akka source containing messages published to the `Assignment` topic.
     */
-  def srcAssignment( implicit s: KafkaExecutorSettings ): Source[Tracked[Assignment], Control]
-    = Transactional.source( s.csAssignment, topics( s.tnAssignment ) ).map( track )
+  def srcAssignment( implicit s: KafkaExecutorSettings ): Source[Transaction[Assignment], Control]
+    = Transaction.source( s.csAssignment, topics( s.tnAssignment ) )
 
   /** Synchronous handling intended for consuming a single `PiiHistory` partition. Blocks until a ReduceRequest is
     * released by receiving both a PiiUpdate *and* at least one SequenceRequest. All SequenceRequests received are
@@ -67,9 +57,9 @@ object KafkaWrapperFlows {
     *
     * @return Akka flow capable of sequencing a single `PiiHistory` partition into a ReduceRequest stream.
     */
-  def flowSequencer: Flow[Tracked[PiiHistory], Tracked[Seq[AnyMsg]], NotUsed]
-    = Flow[Tracked[PiiHistory]]
-      .scan( new SequenceResponseBuilder )(_ next _)
+  def flowSequencer[T[X] <: Tracked[X]]: Flow[T[PiiHistory], T[Seq[AnyMsg]], NotUsed]
+    = Flow[T[PiiHistory]]
+      .scan( new SequenceResponseBuilder[T] )( _ next _ )
       .map( _.response )
       .collect({ case Some( m ) => m })
 
@@ -79,8 +69,8 @@ object KafkaWrapperFlows {
     * @param flowPartition Flow with which to process each partition before they are merged into the output source.
     * @return Akka source containing the processed output messages of each partition.
     */
-  def srcPiiHistory( implicit s: KafkaExecutorSettings ): Source[Tracked[PiiHistory], Control]
-    = Transactional.source( s.csPiiHistory, topics( s.tnPiiHistory ) ).map( track )
+  def srcPiiHistory( implicit s: KafkaExecutorSettings ): Source[Transaction[PiiHistory], Control]
+    = Transaction.source( s.csPiiHistory, topics( s.tnPiiHistory ) )
 
   /** Kafka Consumer for the `Result` topic. Configurable Group Id to allow control of the starting point
     * of consumption.
@@ -88,21 +78,18 @@ object KafkaWrapperFlows {
     * @param groupId GroupId for the Kafka Consumer.
     * @return Akka source containing messages published to the `Results` topic.
     */
-  def srcResult( groupId: String )( implicit s: KafkaExecutorSettings ): Source[Tracked[PiiResult[AnyRes]], Control]
-    = Transactional.source( s.csResult withGroupId groupId, topics( s.tnResult ) ).map( track )
+  def srcResult( groupId: String )( implicit s: KafkaExecutorSettings ): Source[Transaction[PiiResult[AnyRes]], Control]
+    = Transaction.source( s.csResult withGroupId groupId, topics( s.tnResult ) )
 
   /** Kafka Consumers for each topic merged into a single Akka source.
     *
     * @return Merged source for all topics.
     */
-  def srcAll( implicit s: KafkaExecutorSettings ): Source[(AnyMsg, CommittableOffset), Control] = {
+  def srcAll( implicit s: KafkaExecutorSettings ): Source[Transaction[AnyMsg], Control] = {
 
-//    def src[V <: AnyMsg]( cs: ConsumerSettings[_, V], topic: String ): Source[Tracked[AnyMsg], Control]
-//      = Transactional.source( cs, topics( topic ) ).map( track ).map( _.map( _.asInstanceOf[AnyMsg] ) )
-
-    def src[V <: AnyMsg]( cs: ConsumerSettings[_, V], topic: String ): Source[(AnyMsg, CommittableOffset), Control]
-      = Consumer.committableSource( cs, topics( topic ) )
-        .map( m => (m.record.value, m.committableOffset) )
+    def src[V <: AnyMsg]( cs: ConsumerSettings[_, V], topic: String ): Source[Transaction[AnyMsg], Control]
+      = Transaction.source( cs, topics( topic ) )
+        .map( Tracked.fmap( _.asInstanceOf[AnyMsg] ) )
 
     Seq(
       src(s.csReduceRequest, s.tnReduceRequest),
@@ -116,22 +103,21 @@ object KafkaWrapperFlows {
 
   /// STREAM PROCESSING / AKKA FLOWS ///
 
-  def flowRespond[In, Out]( component: StatelessComponent[In, Out] )
-    : Flow[ Tracked[In], Tracked[Out], NotUsed ]
-      = Flow[ Tracked[In] ]
-        .map( _.map( component.respond ) )
+  def flowRespond[T[X] <: Tracked[X], In, Out]( component: StatelessComponent[In, Out] )
+    : Flow[ T[In], T[Out], NotUsed ]
+      = Flow[ T[In] ]
+        .map( Tracked.fmap( component.respond ) )
 
-  def flowRespondAll[In, Out]( component: StatelessComponent[In, Out] )
-    : Flow[ Tracked[Seq[In]], Tracked[Seq[Out]], NotUsed ]
-      = Flow[ Tracked[Seq[In]] ]
-        .map( _.map( _.map( component.respond ) ) )
+  def flowRespondAll[T[X] <: Tracked[X], In, Out]( component: StatelessComponent[In, Out] )
+    : Flow[ T[Seq[In]], T[Seq[Out]], NotUsed ]
+      = Flow[ T[Seq[In]] ]
+        .map( Tracked.fmap( _ map component.respond ) )
 
-  def flowWaitFuture[T]( parallelism: Int )( implicit s: KafkaExecutorSettings )
-    : Flow[ Tracked[Future[T]], Tracked[T], NotUsed ]
-      = Flow[ Tracked[Future[T]] ]
-        .mapAsync( parallelism )(
-          msg => msg.value.map( vNew => msg.map( _ => vNew ) )( s.execCtx )
-        )
+  def flowWaitFuture[T[X] <: Tracked[X], Msg]( parallelism: Int )( implicit s: KafkaExecutorSettings )
+    : Flow[ T[Future[Msg]], T[Msg], NotUsed ] = {
+
+    Flow[ T[Future[Msg]] ].mapAsync( parallelism )( Tracked.exposeFuture(_)(s.execCtx) )
+  }
 
   def flowCheck[T]: Flow[Tracked[T], T, NotUsed]
     = Flow[Tracked[T]]
@@ -146,11 +132,13 @@ object KafkaWrapperFlows {
   /// KAFKA PRODUCER / AKKA SINKS ///
 
   def sinkPlain( implicit s: KafkaExecutorSettings ): Sink[AnyMsg, Future[Done]]
-    = plainSink( s.psAllMessages )
+    = Producer.plainSink( s.psAllMessages )
       .contramap( s.record )
 
-  def sinkTransactional( id: String )( implicit s: KafkaExecutorSettings ): Sink[Tracked[AnyMsg], Future[Done]]
-    = Transactional.sink( s.psAllMessages, id )
+  def sinkTransactional( meh: String )( implicit s: KafkaExecutorSettings ): Sink[Transaction[AnyMsg], Future[Done]]
+    = {
+    val id = ObjectId.get
+    Transactional.sink(s.psAllMessages, id.toString)
       .contramap(
         tracked =>
           Message(
@@ -158,9 +146,12 @@ object KafkaWrapperFlows {
             tracked.partOffset
           )
       )
+  }
 
-  def sinkTransactionalMulti( id: String )( implicit s: KafkaExecutorSettings ): Sink[Tracked[Seq[AnyMsg]], Future[Done]]
-    = Transactional.sink( s.psAllMessages, id )
+  def sinkTransactionalMulti( meh: String )( implicit s: KafkaExecutorSettings ): Sink[Transaction[Seq[AnyMsg]], Future[Done]]
+    = {
+    val id = ObjectId.get
+    Transactional.sink( s.psAllMessages, id.toString )
       .contramap(
         tracked =>
           MultiMessage(
@@ -171,10 +162,11 @@ object KafkaWrapperFlows {
             tracked.partOffset
           )
       )
+  }
 
   /// OTHER FUNCTIONALITY ///
 
-  def run[T]( source: Source[Tracked[T], Control], sink: Sink[Tracked[T], Future[Done]] )( implicit s: KafkaExecutorSettings ): Control
+  def run[T]( source: Source[T, Control], sink: Sink[T, Future[Done]] )( implicit s: KafkaExecutorSettings ): Control
     = source
       .toMat( sink )( Keep.both )
       .mapMaterializedValue( DrainingControl.apply )  // Add shutdown control object.
