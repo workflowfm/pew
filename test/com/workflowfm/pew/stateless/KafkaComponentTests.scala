@@ -1,7 +1,11 @@
 package com.workflowfm.pew.stateless
 
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.Sink
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.components.AtomicExecutor
+import com.workflowfm.pew.stateless.instances.kafka.components.MockTracked
+import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows.flowSequencer
 import com.workflowfm.pew.{PiInstance, PiItem, PiObject}
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
@@ -12,36 +16,17 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 @RunWith(classOf[JUnitRunner])
 class KafkaComponentTests extends FlatSpec with MockFactory with Matchers with BeforeAndAfterAll with KafkaTests {
 
-  /*
-
   def fixtureSequenceRequest = new {
     val p1 = PiInstance( ObjectId.get, pbi, PiObject(1) )
     val p2 = PiInstance( ObjectId.get, pbi, PiObject(1) )
 
-    def committable( part: Int ): CommittableOffset = {
-      val partitionOffset = PartitionOffset(GroupTopicPartition("test", "test", part), 1)
-
-      val mockOffset = mock[CommittableOffsetImpl]
-      (mockOffset.partitionOffset _).stubs().returning( partitionOffset )
-      (mockOffset.commitScaladsl _).stubs()
-      (mockOffset.commitJavadsl _).stubs()
-
-      mockOffset
-    }
-
-    def runSequencer( history: (PiiHistory, Int)* ): Seq[Seq[AnyMsg]]
+    def runSequencer( history: (PiiHistory, Int)* ): Seq[MockTracked[Seq[AnyMsg]]]
       = await(
-        Source
-          .fromIterator( () => history.iterator )
-          .groupBy( Int.MaxValue, _._2 )
-          .zip( Source(1 to 2000) )
-          .map({
-            case ((msg, part), i) =>
-              ( msg, committable( part ) )
-          })
+        MockTracked
+          .source( history )
+          .groupBy( Int.MaxValue, _.part )
           .via( flowSequencer )
           .mergeSubstreams
-          .map( _._1 )
           .runWith( Sink.seq )( ActorMaterializer() )
       )
 
@@ -63,7 +48,8 @@ class KafkaComponentTests extends FlatSpec with MockFactory with Matchers with B
     )
 
     res should have size 1
-    res.head should have size 1
+    res.head.value should have size 1
+    res.head.consuming shouldBe 2
   }
 
   it should "sequence 2 PiiUpdates from different Piis and 1 SequenceRequest" in {
@@ -75,7 +61,8 @@ class KafkaComponentTests extends FlatSpec with MockFactory with Matchers with B
     )
 
     res should (have size 1)
-    res.head should (have size 2)
+    res.head.value should (have size 2)
+    res.head.consuming shouldBe 3
   }
 
   it should "sequence 4 PiiUpdate of 2 Piis and 1 SequenceRequest" in {
@@ -90,7 +77,8 @@ class KafkaComponentTests extends FlatSpec with MockFactory with Matchers with B
     )
 
     res should (have size 1)
-    res.head should (have size 2)
+    res.head.value should (have size 2)
+    res.head.consuming shouldBe 5
   }
 
   it should "sequence only 1 of 2 PiiUpdates on different partitions with 1 SequenceRequest" in {
@@ -102,8 +90,8 @@ class KafkaComponentTests extends FlatSpec with MockFactory with Matchers with B
     )
 
     res should (have size 1)
-    res.head should (have size 1)
-    res.head shouldBe 2
+    res.head.value should (have size 1)
+    res.head.consuming shouldBe 2
   }
 
   it should "not sequence a PiiUpdate and SequenceRequest for different Piis" in {
@@ -124,8 +112,6 @@ class KafkaComponentTests extends FlatSpec with MockFactory with Matchers with B
 
     ) shouldBe empty
   }
-
-  */
 
   it should "respond to Assignments with a correct SequenceRequest" in {
     val atomExec: AtomicExecutor = AtomicExecutor()

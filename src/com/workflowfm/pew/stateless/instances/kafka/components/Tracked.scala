@@ -1,6 +1,6 @@
 package com.workflowfm.pew.stateless.instances.kafka.components
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.kafka.ConsumerMessage.{Committable, CommittableOffset, CommittableOffsetBatch, PartitionOffset}
 import akka.kafka.scaladsl.Consumer.Control
 import akka.kafka.scaladsl.{Consumer, Producer, Transactional}
@@ -175,5 +175,31 @@ object Transaction {
         )
       )
   }
+
+}
+
+case class MockTracked[Value](
+    value: Value,
+    part: Int,
+    consuming: Long // Number of messages to consume.
+  ) extends Tracked[Value] {
+
+  override protected def map[NewValue](fn: Value => NewValue): Tracked[NewValue]
+    = copy( value = fn( value ) )
+
+  override protected def fold[NewValue](fn: (Value, NewValue) => Value)(other: Tracked[NewValue]): Tracked[Value] = {
+    require( other.isInstanceOf[MockTracked[NewValue]] )
+    val that: MockTracked[NewValue] = other.asInstanceOf[MockTracked[NewValue]]
+
+    require( part == that.part )
+    copy( value = fn( value, that.value ), consuming = consuming + that.consuming )
+  }
+}
+
+object MockTracked {
+
+  def source[Value]( messages: Seq[(Value, Int)] ): Source[MockTracked[Value], NotUsed]
+    = Source.fromIterator( () => messages.iterator )
+      .map({ case (msg, part) => MockTracked( msg, part, 1 ) })
 
 }
