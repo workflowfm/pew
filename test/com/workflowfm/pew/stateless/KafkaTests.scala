@@ -89,10 +89,12 @@ trait KafkaTests extends ProcessExecutorTester {
 
     if (consume) println("!!! CONSUMING OUTSTANDING MESSAGES !!!")
 
-    val fOutstanding: Future[Seq[AnyMsg]] = (
-        if (consume)  KafkaWrapperFlows.srcAll.wireTap(_.commit)
-        else          KafkaWrapperFlows.srcAll
-      )
+    val fOutstanding: Future[Seq[AnyMsg]]
+      = KafkaWrapperFlows.srcAll
+        .wireTap( msg =>
+          if (consume)  msg.commit.commitScaladsl()
+          else          ()
+        )
         .map( _.value )
         .completionTimeout(5.seconds)
         .map( Some(_) )
