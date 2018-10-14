@@ -105,15 +105,17 @@ trait KafkaTests extends ProcessExecutorTester {
     Await.result( fOutstanding, Duration.Inf )
   }
 
-  class MessageDrain( consume: Boolean = false ) {
-
-    val msgMap: Map[Class[_], Seq[AnyMsg]] =
-      outstanding( consume )
+  class MessageMap( messages: Seq[AnyMsg] ) {
+    val msgMap: Map[Class[_], Seq[AnyMsg]]
+      = messages
         .groupBy[Class[_]]( _.getClass )
         .withDefaultValue[Seq[AnyMsg]]( Seq() )
 
     def apply[T]( implicit ct: ClassTag[T] ): Seq[T]
       = msgMap( ct.runtimeClass ).asInstanceOf[Seq[T]]
   }
+
+  class MessageDrain( consume: Boolean = false )
+    extends MessageMap( outstanding( consume ) )
 
 }
