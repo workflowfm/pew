@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll with KafkaTests {
 
   // Ensure there are no outstanding messages before starting testing.
-  isAllTidy()
+  new MessageDrain( true )
 
   it should "execute atomic PbI once" in {
 

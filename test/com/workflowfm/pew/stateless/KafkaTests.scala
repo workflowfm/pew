@@ -105,9 +105,6 @@ trait KafkaTests extends ProcessExecutorTester {
     Await.result( fOutstanding, Duration.Inf )
   }
 
-  def isAllTidy( isValid: AnyMsg => Boolean = isPiiResult ): Boolean
-    = outstanding( true ).forall( isValid )
-
   class MessageDrain( consume: Boolean = false ) {
 
     val msgMap: Map[Class[_], Seq[AnyMsg]] =
