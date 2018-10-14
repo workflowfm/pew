@@ -38,6 +38,7 @@ object KafkaConnectors {
     */
   def sendMessages( msgs: AnyMsg* )( implicit s: KafkaExecutorSettings ): Future[Done]
     = Untracked.source( msgs )
+      .via( flowLogOut )
       .runWith( Untracked.sink )( s.mat )
 
   /** Run an independent reducer off of a ReduceRequest topic. This allows a
@@ -51,7 +52,9 @@ object KafkaConnectors {
   def indyReducer( red: Reducer )(implicit s: KafkaExecutorSettings ): Control
     = run(
       srcReduceRequest[PartTracked]
-      via flowRespond( red ),
+      via flowLogIn
+      via flowRespond( red )
+      via flowLogOut,
       Tracked.sinkMulti[PartTracked, AnyMsg]
     )
 
@@ -64,8 +67,10 @@ object KafkaConnectors {
   def indySequencer( implicit s: KafkaExecutorSettings ): Control
     = run(
       srcPiiHistory[PartTracked]
+      via flowLogIn
       groupBy( Int.MaxValue, _.part )
       via flowSequencer
+      via flowLogOut
       mergeSubstreams,
       Tracked.sinkMulti[PartTracked, AnyMsg]
     )
@@ -98,12 +103,14 @@ object KafkaConnectors {
     */
   def indyAtomicExecutor( exec: AtomicExecutor, threadsPerPart: Int = 1 )( implicit s: KafkaExecutorSettings ): Control
     = run(
-      srcAssignment[Transaction]
+      srcAssignment[PartTracked]
+      via flowLogIn
       groupBy( Int.MaxValue, _.part )
       via flowRespond( exec )
       via flowWaitFuture( threadsPerPart )
+      via flowLogOut
       mergeSubstreams,
-      Tracked.sink[Transaction, AnyMsg]
+      Tracked.sink[PartTracked, AnyMsg]
     )
 
   /** Restart a terminated ResultListener group, join an existing group, or start a ResultListener with a specific

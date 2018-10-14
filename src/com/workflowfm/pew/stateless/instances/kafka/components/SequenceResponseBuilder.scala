@@ -69,7 +69,7 @@ case class PartialResponse(
   * @param responses A map of partial responses for PiInstances that need reducing.
   */
 class SequenceResponseBuilder[T[X] <: Tracked[X]](
-   val consuming: Seq[T[PiiHistory]],
+   val consuming: immutable.List[T[PiiHistory]],
    val responses: immutable.HashMap[ObjectId, PartialResponse],
  ) {
 
@@ -78,7 +78,7 @@ class SequenceResponseBuilder[T[X] <: Tracked[X]](
 
   /** @return An empty response builder that consumes no messages.
     */
-  def this() = this( Seq(), new immutable.HashMap )
+  def this() = this( List(), new immutable.HashMap )
 
   /** MultiMessage response for the consumed messages, or None if the
     * consumed messages lack sufficient information for a response.
@@ -97,7 +97,7 @@ class SequenceResponseBuilder[T[X] <: Tracked[X]](
     // otherwise we would lose their state information when they are consumed.
     // Additionally, for performance: do not emmit empty responses.
     if ( messages.isEmpty || messages.exists( _.isEmpty ) ) None
-    else Some( Tracked.freplace( Tracked.flatten(consuming) )( messages.flatten ) )
+    else Some( Tracked.freplace( Tracked.flatten(consuming.reverse) )( messages.flatten ) )
 
   } else None // If there is no reduce request with a payload, wait for one.
 
@@ -121,13 +121,16 @@ class SequenceResponseBuilder[T[X] <: Tracked[X]](
       new SequenceResponseBuilder(
 
         // The new message needs to be consumed with when this message commits.
-        msgIn +: consuming,
+        msgIn :: consuming,
 
         // Update partial results:
-        msgIn.value match {
-          case msg: SequenceRequest => update( msg.piiId, _ update msg.request )
-          case msg: PiiUpdate       => update( msg.pii.id, _ update msg.pii )
-          case msg: SequenceFailure => update( msg.piiId, _ merge msg )
-        }
+        update(
+          piiId( msgIn.value ),
+          msgIn.value match {
+            case msg: SequenceRequest => _ update msg.request
+            case msg: PiiUpdate       => _ update msg.pii
+            case msg: SequenceFailure => _ merge msg
+          }
+        )
       )
 }

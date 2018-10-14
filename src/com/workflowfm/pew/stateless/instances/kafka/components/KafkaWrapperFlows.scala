@@ -88,6 +88,12 @@ object KafkaWrapperFlows {
 
   /// STREAM PROCESSING / AKKA FLOWS ///
 
+  def flowLogIn[T <: Tracked[_]]: Flow[ T, T, NotUsed ]
+    = Flow[T].wireTap( m => println(s"Received: $m.") )
+
+  def flowLogOut[T <: Tracked[_]]: Flow[ T, T, NotUsed ]
+    = Flow[T].wireTap( m => println( s"Sending: $m.") )
+
   def flowRespond[T[X] <: Tracked[X], In, Out]( component: StatelessComponent[In, Out] )
     : Flow[ T[In], T[Out], NotUsed ]
       = Flow[ T[In] ]
@@ -125,7 +131,6 @@ object KafkaWrapperFlows {
 
   def run[T]( source: Source[T, Control], sink: Sink[T, Future[Done]] )( implicit s: KafkaExecutorSettings ): Control
     = source
-      .wireTap( m => println(s"Sending: $m") )
       .toMat( sink )( Keep.both )
       .mapMaterializedValue( DrainingControl.apply )  // Add shutdown control object.
       .named( this.getClass.getSimpleName )           // Name for debugging.

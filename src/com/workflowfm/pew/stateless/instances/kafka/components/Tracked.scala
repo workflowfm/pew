@@ -75,9 +75,7 @@ object Tracked {
   }
 }
 
-trait HasCommittable[Value]
-  extends Tracked[Value] {
-
+trait HasCommittable[Value] extends Tracked[Value] {
   def commit: Committable
 }
 
@@ -207,7 +205,8 @@ case class Transaction[Value](
     require( other.isInstanceOf[Transaction[NewValue]] )
     val that = other.asInstanceOf[Transaction[NewValue]]
 
-    require( partOffset.key == that.partOffset.key)
+    require( partOffset.key == that.partOffset.key, "Trying to merge offsets of different partitions." )
+    require( partOffset.offset + 1 == that.partOffset.offset, "Skipping Consumer message." )
     copy(
       value = fn( value, that.value ),
       partOffset = partOffset.copy( offset = Math.max( offset, that.offset ) )
@@ -231,23 +230,23 @@ object Transaction
   override def sink[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[Transaction[V], Future[Done]] = {
     val id = ObjectId.get.toString
     Transactional.sink( s.psAllMessages, id )
-      .contramap( msg =>
-        ProducerMessage.Message(
-          s.record( msg.value ),
-          msg.partOffset
-        )
+    .contramap( msg =>
+      ProducerMessage.Message(
+        s.record( msg.value ),
+        msg.partOffset
       )
+    )
   }
 
   override def sinkMulti[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[Transaction[Seq[V]], Future[Done]] = {
     val id = ObjectId.get.toString
     Transactional.sink( s.psAllMessages, id )
-      .contramap( msgs =>
-        ProducerMessage.MultiMessage(
-          msgs.value.map(s.record).to,
-          msgs.partOffset
-        )
+    .contramap( msgs =>
+      ProducerMessage.MultiMessage(
+        msgs.value.map(s.record).to,
+        msgs.partOffset
       )
+    )
   }
 }
 
