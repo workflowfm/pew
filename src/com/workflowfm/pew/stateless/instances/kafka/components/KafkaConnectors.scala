@@ -50,9 +50,9 @@ object KafkaConnectors {
     */
   def indyReducer( red: Reducer )(implicit s: KafkaExecutorSettings ): Control
     = run(
-      srcReduceRequest
+      srcReduceRequest[PartTracked]
       via flowRespond( red ),
-      Transaction.sinkMulti[AnyMsg]( "Reducer" )
+      Tracked.sinkMulti[PartTracked, AnyMsg]
     )
 
   /** Run an independent sequencer off of a PiiHistory topic, outputting sequenced
@@ -63,11 +63,11 @@ object KafkaConnectors {
     */
   def indySequencer( implicit s: KafkaExecutorSettings ): Control
     = run(
-      srcPiiHistory
+      srcPiiHistory[PartTracked]
       groupBy( Int.MaxValue, _.part )
       via flowSequencer
       mergeSubstreams,
-      CommitTracked.sinkMulti[AnyMsg]
+      Tracked.sinkMulti[PartTracked, AnyMsg]
     )
 
   /** Run a reducer directly off the output of a Sequencer. Doing this negates the need
@@ -98,12 +98,12 @@ object KafkaConnectors {
     */
   def indyAtomicExecutor( exec: AtomicExecutor, threadsPerPart: Int = 1 )( implicit s: KafkaExecutorSettings ): Control
     = run(
-      srcAssignment
+      srcAssignment[Transaction]
       groupBy( Int.MaxValue, _.part )
       via flowRespond( exec )
       via flowWaitFuture( threadsPerPart )
       mergeSubstreams,
-      Transaction.sink[AnyMsg]( "Executor" )
+      Tracked.sink[Transaction, AnyMsg]
     )
 
   /** Restart a terminated ResultListener group, join an existing group, or start a ResultListener with a specific
@@ -114,7 +114,7 @@ object KafkaConnectors {
     */
   def specificResultListener( groupId: String )( resl: ResultListener )(implicit s: KafkaExecutorSettings ): Control
     = run(
-      srcResult( groupId )
+      srcResult[Untracked]( groupId )
       via flowRespond( resl ),
       Sink.ignore
     )
