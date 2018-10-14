@@ -106,6 +106,7 @@ trait KafkaTests extends ProcessExecutorTester {
   }
 
   class MessageMap( messages: Seq[AnyMsg] ) {
+
     val msgMap: Map[Class[_], Seq[AnyMsg]]
       = messages
         .groupBy[Class[_]]( _.getClass )
