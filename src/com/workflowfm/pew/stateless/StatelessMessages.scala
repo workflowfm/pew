@@ -86,6 +86,7 @@ object StatelessMessages {
     = msg match {
       case m: ReduceRequest     => m.pii.id
       case m: SequenceRequest   => m.piiId
+      case m: SequenceFailure   => m.piiId
       case m: PiiUpdate         => m.pii.id
       case m: Assignment        => m.pii.id
       case m: PiiResult[_]      => m.pii.id

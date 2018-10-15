@@ -2,7 +2,7 @@ package com.workflowfm.pew.stateless.component
 
 import com.workflowfm.pew.{PiInstance, PiObject}
 import com.workflowfm.pew.stateless.{CallRef, KafkaTests}
-import com.workflowfm.pew.stateless.StatelessMessages.{PiiHistory, PiiUpdate, ReduceRequest, SequenceRequest}
+import com.workflowfm.pew.stateless.StatelessMessages._
 import org.bson.types.ObjectId
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
@@ -45,11 +45,16 @@ abstract class KafkaComponentTests
 
   }
 
+  val ree = RemoteExecutorException("test")
+
   def update( pii: PiInstance[ObjectId], part: Int ): (PiiHistory, Int)
     = ( PiiUpdate( pii ), part )
 
   val result = (CallRef(0), PiObject(0))
 
-  def seqreq( pii: PiInstance[ObjectId], part: Int ): (PiiHistory, Int)
-    = ( SequenceRequest( pii.id, result ), part )
+  def seqreq( pii: PiInstance[ObjectId], res: (CallRef, PiObject), part: Int ): (PiiHistory, Int)
+    = ( SequenceRequest( pii.id, res ), part )
+
+  def seqfail( pii: PiInstance[ObjectId], ref: CallRef, part: Int ): (PiiHistory, Int)
+    = ( SequenceFailure( pii.id, ref, RemoteExecutorException("test") ), part )
 }
