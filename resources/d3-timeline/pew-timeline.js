@@ -63,4 +63,4 @@ function displayResults(tag,data) {
 		.datum(data).call(chart);
 }
 displayResults("#resources",resourceData);
-displayResults("#simulations",simulationData);
+displayResults("#workflows",workflowData);

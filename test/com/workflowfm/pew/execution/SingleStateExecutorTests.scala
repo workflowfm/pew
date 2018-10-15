@@ -17,22 +17,44 @@ import com.workflowfm.pew._
 @RunWith(classOf[JUnitRunner])
 class SingleStateExecutorTests extends FlatSpec with Matchers with ProcessExecutorTester {
   implicit val system: ActorSystem = ActorSystem("SingleStateExecutorTests")
-  implicit val executionContext = system.dispatchers.lookup("akka.my-dispatcher")  
+  implicit val executionContext = ExecutionContext.global//system.dispatchers.lookup("akka.my-dispatcher")  
   
   val pai = new PaI
   val pbi = new PbI
   val pci = new PcI
   val ri = new R(pai,pbi,pci)
+  val pcif = new PcIF
+  val rif = new R(pai,pbi,pcif)
   
   "SingleStateExecutor" should "execute Rexample concurrently" in {
-		exe(new SingleStateExecutor(pai,pbi,pci,ri),ri,13)//.isEmpty should be( false )
-		exe(new SingleStateExecutor(pai,pbi,pci,ri),ri,31)//.isEmpty should be( false )
+    val executor = new SingleStateExecutor(pai,pbi,pci,ri)
+    executor.subscribe(new PrintEventHandler("printer"))
+		exe(executor,ri,13)//.isEmpty should be( false )
+		//exe(new SingleStateExecutor(pai,pbi,pci,ri),ri,31)//.isEmpty should be( false )
 	}
 	
+  "SingleStateExecutor" should "handle a failing component process" in {
+    val ex = new SingleStateExecutor(pai,pbi,pcif,rif)
+    val f1 = rif(21)(ex)//ex.execute(rif,Seq(21)) 
+   
+    try {
+      await(f1)
+    } catch {
+      case (e:Exception) => e.getMessage.contains("Exception: Fail") should be (true)
+    }
+	}
   
+//  it should "fail properly when a component process doesn't exist" in {
+//    val ex = new SingleStateExecutor(rbad)
+//    ex.subscribe(new PrintEventHandler("printer"))
+//    val f1 = rif(21)(ex)
+//    
+//    a [ProcessExecutor.NoSuchInstanceException] should be thrownBy await(f1)
+//	}
   
 	"SingleStateExecutor" should "execute C1" in {
-		exe(new SingleStateExecutor(P1,C1),C1,("OH","HAI!")) should be( Some("OH++HAI!") )
+	  val executor = new SingleStateExecutor(P1,C1)
+		exe(executor,C1,("OH","HAI!")) should be( "OH++HAI!" )
 	}
 	
 	object P1 extends AtomicProcess { // X,Y -> (X++Y)
@@ -55,7 +77,7 @@ class SingleStateExecutorTests extends FlatSpec with Matchers with ProcessExecut
 	
 	
 	"SingleStateExecutor" should "execute C2" in {
-		exe(new SingleStateExecutor(P2A,P2B,C2),C2,"HI:") should be( Some("HI:AABB") )
+		exe(new SingleStateExecutor(P2A,P2B,C2),C2,"HI:") should be( "HI:AABB" )
 	}
 	
 	object P2A extends AtomicProcess { // X -> XAA
@@ -88,7 +110,7 @@ class SingleStateExecutorTests extends FlatSpec with Matchers with ProcessExecut
 	
 	
   "SingleStateExecutor" should "execute C3" in {
-		exe(new SingleStateExecutor(P3A,P3B,C3),C3,"HI:") should be( Some(("HI:AARR","HI:BB")) )
+		exe(new SingleStateExecutor(P3A,P3B,C3),C3,"HI:") should be( ("HI:AARR","HI:BB") )
 	}
 	
 	object P3A extends AtomicProcess { // X -> (XAA,XBB)
@@ -176,9 +198,9 @@ package object RexampleTypes
   
   	override val body = PiCut("z16","z15","z5",ParInI("z15","buf13","cPc_B_1",ParOut("z13","b13","oPc_Z_",PiId("buf13","b13","m14"),PiCall<("Pc","cPc_B_1","oPc_Z_"))),PiCut("z8","z7","oPa_lB_A_x_B_rB_",ParInI("z7","cPb_A_1","buf5",ParOut("z5","oPb_Y_","b5",PiCall<("Pb","cPb_A_1","oPb_Y_"),PiId("buf5","b5","m6"))),PiCall<("Pa","cPa_X_1","oPa_lB_A_x_B_rB_")))
   	
-  	def apply(x:X)(implicit executor:FutureExecutor): Future[(Y,Z)] = {
+  	def apply(x:X)(implicit executor:ProcessExecutor[_]): Future[(Y,Z)] = {
 		  implicit val context:ExecutionContext = executor.context
-		  executor.execute(this,Seq(x)).flatMap(_ map(_.asInstanceOf[(Y,Z)]))
+		  executor.execute(this,Seq(x)).map(_.asInstanceOf[(Y,Z)])
 	  }
 }
 	class BadR(pa:Pa,pb:Pb,pc:Pc) extends CompositeProcess { // (X) => (Y,Z)
@@ -191,8 +213,10 @@ package object RexampleTypes
   
   	override val body = PiCut("z16","z15","z5",ParInI("z15","buf13","cPc_B_1",ParOut("z13","b13","oPc_Z_",PiId("buf13","b13","m14"),PiCall<("Pc","cPc_B_1","oPc_Z_"))),PiCut("z8","z7","oPa_lB_A_x_B_rB_",ParInI("z7","cPb_A_1","buf5",ParOut("z5","oPb_Y_","b5",PiCall<("Pb","cPb_A_1","oPb_Y_"),PiId("buf5","b5","m6"))),PiCall<("Pa","cPa_X_1","oPa_lB_A_x_B_rB_")))
   	
-  	def apply(x:X)(implicit executor:FutureExecutor): Option[(Y,Z)] =
-  		executor.execute(this,Seq(x)).asInstanceOf[Option[(Y,Z)]]
+  	def apply(x:X)(implicit executor:ProcessExecutor[_]): Future[Option[(Y,Z)]] = {
+  	  implicit val context:ExecutionContext = executor.context
+  		executor.execute(this,Seq(x)).map(_.asInstanceOf[Option[(Y,Z)]])
+  	}
 }
 }
 class PaI extends Pa {

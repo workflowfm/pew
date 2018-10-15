@@ -30,8 +30,9 @@ import org.mongodb.scala.Observer
 import org.mongodb.scala.ReadConcern
 import org.mongodb.scala.WriteConcern
 
-class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, handler: PiEventHandler[ObjectId,ResultT], processes:PiProcessStore, timeout:Duration=10.seconds)(implicit val context: ExecutionContext = ExecutionContext.global) extends ProcessExecutor[ResultT] { 
-
+class MongoExecutor(client:MongoClient, db:String, collection:String, processes:PiProcessStore)(implicit val context: ExecutionContext = ExecutionContext.global) extends ProcessExecutor[ObjectId] with SimplePiObservable[ObjectId] { 
+  def this(client:MongoClient, db:String, collection:String, l:PiProcess*) = this(client,db,collection,SimpleProcessStore(l :_*))
+  
   final val CAS_MAX_ATTEMPTS = 10
   final val CAS_WAIT_MS = 1
   
@@ -42,80 +43,99 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
     withWriteConcern(WriteConcern.MAJORITY);
   val col:MongoCollection[PiInstance[ObjectId]] = database.getCollection(collection)
 
-  
-  def call(p:PiProcess,args:PiObject*):Future[ResultT] = {
-    val promise = Promise[ResultT]()
-    
+  override def init(p:PiProcess,args:Seq[PiObject]):Future[ObjectId] = {
     val oid = new ObjectId
 	  val inst = PiInstance(oid,p,args:_*)
-	  val ret = handler.start(inst)
-	  val ni = inst.reduce
-    if (ni.completed) ni.result match {
-		  case None => {
-			  handler.failure(ni,ProcessExecutor.NoResultException(ni.id.toString()))
-			  promise.success(ret)
-		  }
-		  case Some(res) => {
-			  handler.success(ni, res)
-			  promise.success(ret)
-		  }
-	  } else try {
-		  val (toCall,res) = ni.handleThreads(handleThread(ni))
-      col.insertOne(res).toFuture().onComplete({
-        case Success(_) => {
-          val futureCalls = toCall flatMap (res.piFutureOf)
-  			  try {
-  			    (toCall zip futureCalls) map runThread(res)
-  			    promise.success(ret)
-  			  } catch {
-  			    case (e:Exception) => promise.failure(e)
-  			  }
-        }
-        case Failure(e) => promise.failure(e)
-		  })
-	  } catch {
-	    case (e:Exception) => {
-	      handler.failure(ni,e)
-	      promise.failure(e)
-      }
-    }
-	 promise.future
+    col.insertOne(inst).toFuture() map (_=>oid)
   }
   
-  final def postResult(id:ObjectId, ref:Int, res:PiObject):Future[Unit] = {
-		val promise = Promise[Unit]()
-		postResult(id,ref,res,0,promise)
-    promise.future
+  override def start(id:ObjectId):Unit = {
+    val promise=Promise[PiInstance[ObjectId]]()
+    update(id,startUpdate,0,promise)
+    promise.future.recover({
+      case PiException => Unit
+      case t:Throwable => publish(PiEventException(id,t))
+    })
+  }
+//
+//	  val ni = inst.reduce
+//    if (ni.completed) ni.result match {
+//		  case None => {
+//			  publish(PiEventFailure(ni,ProcessExecutor.NoResultException(ni.id.toString())))
+//		  }
+//		  case Some(res) => {
+//			  publish(PiEventResult(ni, res))
+//		  }
+//	  } else try {
+//		  val (toCall,res) = ni.handleThreads(handleThread(ni))
+//      col.insertOne(res).toFuture().onComplete({
+//        case Success(_) => {
+//          val futureCalls = toCall flatMap (res.piFutureOf)
+//  			  try {
+//  			    (toCall zip futureCalls) map runThread(res)
+//  			  } catch {
+//  			    case (e:Exception) => promise.failure(e)
+//  			  }
+//        }
+//        case Failure(e) => promise.failure(e)
+//		  })
+//	  } catch {
+//	    case (e:Exception) => {
+//	      publish(PiEventFailure(ni,e))
+//      }
+//    }
+//	 Future.successful(oid)
+
+  
+  def startUpdate(i:PiInstance[ObjectId]):PiInstance[ObjectId] = {
+    publish(PiEventStart(i))
+    i.reduce
   }
   
+  final def postResult(id:ObjectId, ref:Int, res:PiObject):Unit = {
+    publish(PiEventReturn(id,ref,res))
+    val promise=Promise[PiInstance[ObjectId]]()
+		update(id,postResultUpdate(ref,res),0,promise)
+		promise.future.recover({
+      case PiException => Unit
+      case t:Throwable => publish(PiEventException(id,t))
+    })
+  }
   
+  def postResultUpdate(ref:Int, res:PiObject)(i:PiInstance[ObjectId]):PiInstance[ObjectId] = {
+    System.err.println("*** [" + i.id + "] Handling result for thread " + ref + " : " + res)
+	  i.postResult(ref, res).reduce	  
+  }
   
-  final def postResult(id:ObjectId, ref:Int, res:PiObject, attempt:Int, promise:Promise[Unit]):Unit = try {
-		System.err.println("*** [" + id + "] Got result for thread " + ref + " : " + res)
-    implicit val iid:ObjectId = id   
+  // We give a promise as an argument instead of returning a Future in order to avoid chaining promises at each recursive call.
+  final def update(id:ObjectId, f:PiInstance[ObjectId]=>PiInstance[ObjectId], attempt:Int, promise:Promise[PiInstance[ObjectId]] ):Unit = try {
+    implicit val iid:ObjectId = id  
      
     val obs = client.startSession(ClientSessionOptions.builder.causallyConsistent(true).build()) safeThen { 
       case Seq(session:ClientSession) => { 
-      System.err.println("*** [" + id + "] Session started: " + ref)
+      System.err.println("*** [" + id + "] Session started")
       col.find(session,equal("_id",id)) safeThen {
         case Seq() => Future {
-          System.err.println("*** [" + id + "] CAS (pre): " + ref + " - Closing session")
+          System.err.println("*** [" + id + "] CAS (pre) - Closing session")
           session.close()
           if (attempt < CAS_MAX_ATTEMPTS) throw CASException
-          else throw ProcessExecutor.NoSuchInstanceException(id.toString())
+          else {
+            publish(PiFailureNoSuchInstance(id))
+            throw PiException
+          }
         }
         case Seq(i:PiInstance[ObjectId]) => {
           System.err.println("*** [" + id + "] Got PiInstance: " + i)
-          val (toCall,resobs) = postResult(i,ref,res,col,session)      
+          val (toCall,resobs) = put(i,f(i),col,session) //postResult(i,ref,res,col,session)      
           resobs safeThen {
             case Seq() => Future {
-              System.err.println("*** [" + id + "] CAS (post): " + ref + " - Closing session")
+              System.err.println("*** [" + id + "] CAS (post) - Closing session")
               session.close()
               if (attempt < CAS_MAX_ATTEMPTS) throw CASException
-              else throw CASFailureException(id.toString(),ref)
+              else throw CASFailureException(id.toString())
             }  
             case Seq(_) => Future {
-              System.err.println("*** [" + id + "] Closing session: " + ref)
+              System.err.println("*** [" + id + "] Closing session")
               session.close()
               (toCall,i)
             }
@@ -125,54 +145,51 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
      }}
     obs.onComplete({
       case Success((toCall,i)) => { 
-        System.err.println("*** [" + id + "] Success: " + ref)
+        System.err.println("*** [" + id + "] Success")
         try {
           toCall map runThread(i)
-          promise.success(Unit)
+          promise.success(i)
         } catch {
           case (e:Exception) => promise.failure(e)
         }
       }
-      case Failure(CASException) => System.err.println("*** [" + id + "] CAS Retry: " + ref + " - attempt: " + (attempt+1)); Thread.sleep(CAS_WAIT_MS); postResult(id,ref,res,attempt+1,promise)
+      case Failure(CASException) => System.err.println("*** [" + id + "] CAS Retry - attempt: " + (attempt+1)); Thread.sleep(CAS_WAIT_MS); update(id,f,attempt+1,promise)
       case Failure(e) => { 
-        System.err.println("*** [" + id + "] Failed: " + ref + " - " + e.getLocalizedMessage)
+        System.err.println("*** [" + id + "] Failed: " + e.getLocalizedMessage)
         promise.failure(e)
       }
     })
   } catch {
     case (e:Exception) => { // this should never happen!
-      System.err.println("*** [" + id + "] FATAL: " + ref)
+      System.err.println("*** [" + id + "] FATAL")
       e.printStackTrace()
-      handler.failure(id,e)
+      publish(PiEventException(id,e))
       Future.failed(e)
     }
   }
-  
-  
-  def postResult(i:PiInstance[ObjectId], ref:Int, res:PiObject, col:MongoCollection[PiInstance[ObjectId]], session:ClientSession):(Seq[(Int,PiFuture)],Observable[_]) = {
-    System.err.println("*** [" + i.id + "] Handling result for thread " + ref + " : " + res)
-    val unique = i.called
-	  val ni = i.postResult(ref, res).reduce
-	  if (ni.completed) ni.result match {
+
+ 
+  def put(i:PiInstance[ObjectId], ni:PiInstance[ObjectId], col:MongoCollection[PiInstance[ObjectId]], session:ClientSession):(Seq[(Int,PiFuture)],Observable[_]) = {
+     val unique = i.called
+     if (ni.completed) ni.result match {
 		  case None => {   
 		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
-		    System.err.println("*** [" + i.id + "] Completed with no result!")
-		    (Seq(),(col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen { case _ => handler.failure(ni,ProcessExecutor.NoResultException(ni.id.toString()))}))
+		    //System.err.println("*** [" + ni.id + "] Completed with no result!")
+		    (Seq(),(col.findOneAndDelete(session,and(equal("_id",ni.id),equal("calls",unique))) andThen { case _ => publish(PiFailureNoResult(ni))}))
 		  }
 		  case Some(res) => {
-		    System.err.println("*** [" + i.id + "] Completed with result!")
+		    //System.err.println("*** [" + ni.id + "] Completed with result!")
 		    // Delete first, then announce the result, so that we don't do anything (like close the pool) early
-		    (Seq(),(col.findOneAndDelete(session,and(equal("_id",i.id),equal("calls",unique))) andThen {case _ => handler.success(i,res)}))
+		    (Seq(),(col.findOneAndDelete(session,and(equal("_id",ni.id),equal("calls",unique))) andThen {case _ => publish(PiEventResult(ni, res))}))
 		  }
 		} else {
-		  System.err.println("*** [" + i.id + "] Handling threads after: " + ref)
+		  //System.err.println("*** [" + i.id + "] Handling threads after: " + ref)
 		  val (toCall,resi) = ni.handleThreads(handleThread(ni)) // may throw exception!
 		  val futureCalls = toCall flatMap (resi.piFutureOf)
-		  System.err.println("*** [" + i.id + "] Updating state after: " + ref)
+		  //System.err.println("*** [" + i.id + "] Updating state after: " + ref)
 			(toCall zip futureCalls,col.findOneAndReplace(session,and(equal("_id",i.id),equal("calls",unique)), resi))
 		}
   }
- 
   
   def handleThread(i:PiInstance[ObjectId])(ref:Int,f:PiFuture):Boolean = {
      System.err.println("*** [" + i.id + "] Handling thread: " + ref + " (" + f.fun + ")")
@@ -180,12 +197,14 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
     case PiFuture(name, outChan, args) => i.getProc(name) match {
       case None => {
         System.err.println("*** [" + i.id + "] ERROR *** Unable to find process: " + name)
-        throw ProcessExecutor.UnknownProcessException(name)
+        publish(PiFailureUnknownProcess(i,name))
+        throw PiException
       }
       case Some(p:AtomicProcess) => true
       case Some(p:CompositeProcess) => { 
         System.err.println("*** [" + i.id + "] Executor encountered composite process thread: " + name)
-        throw ProcessExecutor.AtomicProcessIsCompositeException(name) 
+        publish(PiFailureAtomicProcessIsComposite(i,name))
+        throw PiException 
       }
     }
   } }
@@ -198,18 +217,22 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
       case None => {
         // This should never happen! We already checked!
         System.err.println("*** [" + i.id + "] ERROR *** Unable to find process: " + name + " even though we checked already")
-        handler.failure(i.id,ProcessExecutor.UnknownProcessException(name))
+        publish(PiFailureUnknownProcess(i, name))
       }
       case Some(p:AtomicProcess) => {
-        p.run(args map (_.obj)).onComplete{ 
-          case Success(res) => postResult(i.id,ref,res).recover({case t:Throwable => handler.failure(i.id,t)})
-          case Failure (ex) => handler.failure(i.id,ex)
+        val objs = args map (_.obj)
+        p.run(objs).onComplete{ 
+          case Success(res) => {
+
+            postResult(i.id,ref,res)
+          }
+          case Failure (ex) => publish(PiEventProcessException(i.id,ref,ex))
         }
         System.err.println("*** [" + i.id + "] Called process: " + p.name + " ref:" + ref)
       }
       case Some(p:CompositeProcess) => {// This should never happen! We already checked! 
         System.err.println("*** [" + i.id + "] Executor encountered composite process thread: " + name)
-        handler.failure(i.id,ProcessExecutor.AtomicProcessIsCompositeException(name))
+        publish(PiFailureAtomicProcessIsComposite(i, name))
       }
     }
   } }
@@ -234,22 +257,18 @@ class MongoExecutor[ResultT](client:MongoClient, db:String, collection:String, h
   }
 
   final case object CASException extends Exception("CAS")
-  final case class CASFailureException(val id:String, val ref:Int, private val cause: Throwable = None.orNull)
-                    extends Exception("Compare-and-swap failed after " + CAS_MAX_ATTEMPTS + " attempts for id: " + id + " - call id: " + ref, cause)  
-
-  override def simulationReady:Boolean = false
-  
-  override def execute(process:PiProcess,args:Seq[Any]):Future[ResultT] =
-    call(process,args map PiObject.apply :_*)
-}
+  final case object PiException extends Exception("Pi")
+  final case class CASFailureException(val id:String, private val cause: Throwable = None.orNull)
+                    extends Exception("Compare-and-swap failed after " + CAS_MAX_ATTEMPTS + " attempts for id: " + id , cause)  
+  }
 
 
 
-class MongoFutureExecutor(client:MongoClient, db:String, collection:String, processes:PiProcessStore,timeout:Duration=10.seconds)(override implicit val context: ExecutionContext = ExecutionContext.global) 
-  extends MongoExecutor[PromiseHandler.ResultT](client, db, collection, new PromiseHandler[ObjectId], processes:PiProcessStore,timeout)(context) with FutureExecutor 
-    
-object MongoFutureExecutor {
-  def apply(client:MongoClient, db:String, collection:String, l:PiProcess*) = new MongoFutureExecutor(client,db,collection,SimpleProcessStore(l :_*))  
-}
+//class MongoFutureExecutor(client:MongoClient, db:String, collection:String, processes:PiProcessStore,timeout:Duration=10.seconds)(override implicit val context: ExecutionContext = ExecutionContext.global) 
+//  extends MongoExecutor[PromiseHandler.ResultT](client, db, collection, new PromiseHandler[ObjectId], processes:PiProcessStore,timeout)(context) with FutureExecutor 
+//    
+//object MongoFutureExecutor {
+//  def apply(client:MongoClient, db:String, collection:String, l:PiProcess*) = new MongoFutureExecutor(client,db,collection,SimpleProcessStore(l :_*))  
+//}
 
     

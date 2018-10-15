@@ -5,6 +5,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+import com.workflowfm.pew.metrics._
 
 object Task {
   sealed trait Priority extends Ordered[Priority] {

@@ -61,15 +61,6 @@ trait ProcessExecutorTester {
       throw e
     }
   }
-  
-  def awaitf[A](f:Future[Future[A]]):A = try {
-    Await.result(Await.result(f,15.seconds),15.seconds)
-  } catch {
-    case e:Throwable => {
-      System.out.println("=== RESULT FAILED! ===")
-      throw e
-    }
-  }
 
   def awaitErr[A]( f: Future[A] ): Either[A, Throwable]
     = try {
@@ -77,5 +68,14 @@ trait ProcessExecutorTester {
     } catch {
       case e: Throwable => Right( e )
     }
+
+//  def awaitf[A](f:Future[Future[A]]):A = try {
+//    Await.result(Await.result(f,15.seconds),15.seconds)
+//  } catch {
+//    case e:Throwable => {
+//      System.out.println("=== RESULT FAILED! ===")
+//      throw e
+//    }
+//  }
 
 }

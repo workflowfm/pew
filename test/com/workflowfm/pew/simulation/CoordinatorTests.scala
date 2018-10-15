@@ -10,6 +10,9 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import com.workflowfm.pew._
 import com.workflowfm.pew.execution._
+import com.workflowfm.pew.metrics.MetricsPrinter
+import com.workflowfm.pew.metrics.MetricsOutputs
+import com.workflowfm.pew.metrics.MetricsActor
 
 
 @RunWith(classOf[JUnitRunner])
@@ -131,7 +134,7 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
       
       done.time should be (3)
       done.metrics.resourceMetrics.isEmpty should be (true)
-      done.metrics.simulationMetrics.size should be (1)
+      done.metrics.workflowMetrics.size should be (1)
       done.metrics.taskMetrics.size should be (1)
     }
     
@@ -149,7 +152,7 @@ class CoordinatorTests extends TestKit(ActorSystem("CoordinatorTests")) with Wor
       
       done.time should be (3)
       done.metrics.resourceMetrics.isEmpty should be (true)
-      done.metrics.simulationMetrics.size should be (2)
+      done.metrics.workflowMetrics.size should be (2)
       done.metrics.taskMetrics.size should be (2)
     }
   }
