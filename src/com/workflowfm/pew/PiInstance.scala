@@ -85,12 +85,15 @@ trait PiInstanceMutableStore[T] {
   def simulationReady:Boolean
 }
 
-case class SimpleInstanceStore(m:Map[Int,PiInstance[Int]]) extends PiInstanceStore[Int] {
-  def get(id:Int) = m.get(id)
-  def put(i:PiInstance[Int]) = copy(m = m + (i.id->i))
-  def del(id:Int) = copy(m = m - id)
-  def simulationReady:Boolean = m.values.forall(_.simulationReady)
+case class SimpleInstanceStore[T](m: Map[T,PiInstance[T]]) extends PiInstanceStore[T] {
+
+  override def get(id: T): Option[PiInstance[T]] = m.get(id)
+  override def put(i: PiInstance[T]): SimpleInstanceStore[T] = copy(m = m + (i.id->i))
+  override def del(id: T): SimpleInstanceStore[T] = copy(m = m - id)
+  override def simulationReady: Boolean = m.values.forall(_.simulationReady)
 }
+
 object SimpleInstanceStore {
-  def apply(l:PiInstance[Int]*):SimpleInstanceStore = (SimpleInstanceStore(Map[Int,PiInstance[Int]]()) /: l) (_.put(_))
+  def apply[T](l: PiInstance[T]*): SimpleInstanceStore[T]
+    = (SimpleInstanceStore( Map[T, PiInstance[T]]() ) /: l) (_.put(_))
 }

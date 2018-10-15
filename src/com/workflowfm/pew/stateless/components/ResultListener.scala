@@ -1,37 +1,38 @@
 package com.workflowfm.pew.stateless.components
 
 import com.workflowfm.pew.stateless.StatelessMessages.PiiResult
-import com.workflowfm.pew.{PiEventHandler, PiObject}
+import com.workflowfm.pew._
 import org.bson.types.ObjectId
 
 import scala.language.implicitConversions
 
-class ResultListener(
-    handlers: Seq[PiEventHandler[ObjectId, _]]
+class ResultListener
+  extends StatelessComponent[PiiResult[Any], Unit]
+  with PiObservable[ObjectId] with SimplePiObservable[ObjectId] {
 
-  ) extends StatelessComponent[PiiResult[Any], Unit] {
+  override def respond: PiiResult[Any] => Unit = piiResult => {
+    val pii: PiInstance[ObjectId] = piiResult.pii
+    publish( piiResult.res match {
 
-  import com.workflowfm.pew.stateless.StatelessMessages._
+      case failure: Throwable => PiEventException( pii.id, failure )
 
-  override def respond: PiiResult[Any] => Unit = {
-    case PiiResult( pii, content ) =>
-      content match {
-        case failure: Throwable =>
-          handlers foreach (_.failure( pii, failure ))
+      case _: PiObject =>
+        piiResult.pii.result match {
+          case Some( piiRes ) => PiEventResult( pii, piiRes )
+          case None           => PiFailureNoResult( pii )
+        }
 
-        case _: PiObject =>
-          pii.result match {
-            case Some( piiRes ) => handlers foreach (_.success( pii, piiRes ))
-            case None           => System.err.println( "Success with no result" )
-          }
-
-        case result =>
-          handlers foreach ( _.success( pii, result ) )
-      }
+      case result => PiEventResult( pii, result )
+    })
   }
 }
 
 object ResultListener {
-  def apply( handlers: PiEventHandler[ObjectId, _]* ): ResultListener
-    = new ResultListener( handlers.toSeq )
+
+  def apply( handlers: PiEventHandler[ObjectId]* ): ResultListener = {
+    val newResultListener: ResultListener = new ResultListener
+    handlers foreach newResultListener.subscribe
+    newResultListener
+  }
+
 }

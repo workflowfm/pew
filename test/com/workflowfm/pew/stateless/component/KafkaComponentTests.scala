@@ -1,15 +1,13 @@
 package com.workflowfm.pew.stateless.component
 
-import com.workflowfm.pew.{PiInstance, PiObject}
-import com.workflowfm.pew.stateless.{CallRef, KafkaTests}
 import com.workflowfm.pew.stateless.StatelessMessages._
+import com.workflowfm.pew.stateless.{CallRef, KafkaTests}
+import com.workflowfm.pew.{PiInstance, PiObject}
 import org.bson.types.ObjectId
-import org.scalamock.scalatest.MockFactory
 import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 
 abstract class KafkaComponentTests
   extends FlatSpec
-  with MockFactory
   with Matchers
   with BeforeAndAfterAll
   with KafkaTests {

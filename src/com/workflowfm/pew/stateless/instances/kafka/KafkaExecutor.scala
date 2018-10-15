@@ -11,8 +11,8 @@ import scala.concurrent.{ExecutionContext, Future}
 /** Wrapper for a CustomKafkaExecutor that controls the lifecycle of an arbitrary collection
   * of local Kafka connectors.
   */
-class CustomKafkaExecutor[ResultT]( components: Control* )( implicit settings: KafkaExecutorSettings )
-  extends MinimalKafkaExecutor[ResultT]()( settings ) {
+class CustomKafkaExecutor( components: Control* )( implicit settings: KafkaExecutorSettings )
+  extends MinimalKafkaExecutor()( settings ) {
 
   val allControls: Seq[Control] = components
 
@@ -29,11 +29,11 @@ object CompleteKafkaExecutor {
   import KafkaConnectors._
 
   def apply[ResultT]( implicit settings: KafkaExecutorSettings )
-    : CustomKafkaExecutor[ResultT] = {
+    : CustomKafkaExecutor = {
 
     implicit val execCtx: ExecutionContext = settings.execCtx
 
-    new CustomKafkaExecutor[ResultT](
+    new CustomKafkaExecutor(
       indySequencer,
       indyReducer( new Reducer ),
       indyAtomicExecutor( AtomicExecutor() )

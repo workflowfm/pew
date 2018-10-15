@@ -77,7 +77,7 @@ trait KafkaTests extends ProcessExecutorTester {
     )
 
 
-  def makeExecutor(store: SimpleProcessStore): MinimalKafkaExecutor[(Y, Z)] = {
+  def makeExecutor(store: SimpleProcessStore): MinimalKafkaExecutor = {
     CompleteKafkaExecutor[(Y, Z)]( newSettings( store ) )
   }
 

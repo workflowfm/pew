@@ -1,8 +1,9 @@
 package com.workflowfm.pew
 
-import scala.concurrent.{Promise,Future}
-import scala.collection.immutable.Queue
 import org.apache.commons.lang3.exception.ExceptionUtils
+
+import scala.collection.immutable.Queue
+import scala.concurrent.Promise
 
 sealed trait PiEvent[KeyT] {
   def id:KeyT
@@ -130,4 +131,11 @@ trait SimplePiObservable[T] extends PiObservable[T] {
   def publish(evt:PiEvent[T]) = {
     handlers = handlers filterNot (_(evt))
   }
+}
+
+trait DelegatedPiObservable[T] extends PiObservable[T] {
+  val worker: PiObservable[T]
+
+  override def subscribe( handler: PiEventHandler[T] ): Unit = worker.subscribe( handler )
+  override def unsubscribe( handlerName: String ): Unit = worker.unsubscribe( handlerName )
 }

@@ -1,10 +1,8 @@
 package com.workflowfm.pew.stateless
 
-import com.workflowfm.pew.{PiInstance, PiObject}
-import com.workflowfm.pew.execution.RexampleTypes._
 import com.workflowfm.pew.stateless.StatelessMessages._
-import com.workflowfm.pew.stateless.components.Reducer
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
+import com.workflowfm.pew.{PiInstance, PiObject, PromiseHandler}
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
 import org.scalatest._
@@ -213,49 +211,63 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     msgsOf[PiiUpdate] shouldBe empty
    }
 
-  // Fix PiiId to stop the partitions for messages from changing all the time.
-  val ourPiiId: ObjectId = new ObjectId( 10: Int, 7: Int, 9: Short, 56: Int )
+  private def fixShutdown1 = new {
+
+    val ourPiiId: ObjectId = {
+      val ex = makeExecutor(shutdownProcessStore)
+      val futId: Future[ObjectId] = ex.call(ri, Seq(21))
+
+      Thread.sleep(10.seconds.toMillis)
+      ex.syncShutdown()
+
+      // The future is created with Future.success.
+      futId.value.get.get
+    }
+
+    val handler = new PromiseHandler[ObjectId]( "testhandler", ourPiiId )
+
+    // Dont consume, we need the outstanding messages to resume.
+    val fstMsgs: MessageMap = new MessageDrain( false )
+
+    {
+      val ex = makeExecutor( completeProcessStore )
+      ex.subscribe(handler)
+      pciw.continue()
+    }
+
+    val sndMsgs: MessageMap = new MessageDrain( true )
+  }
 
   it should "an executor should shutdown correctly" in {
 
-    val ex = makeExecutor(shutdownProcessStore)
-    ex.executeWith(ourPiiId, ri, Seq(21))
-
-    Thread.sleep(10.seconds.toMillis)
-    ex.syncShutdown()
-
-    // Dont consume, we need the outstanding messages to resume.
-    val msgsOf = new MessageDrain( false )
+    val f = fixShutdown1
 
     // We should just be waiting on the assignments.
-    msgsOf[ReduceRequest] shouldBe empty
-    msgsOf[SequenceRequest] shouldBe empty
-    msgsOf[SequenceFailure] shouldBe empty
-    msgsOf[PiiUpdate] should (have size 1)
+    f.fstMsgs[ReduceRequest] shouldBe empty
+    f.fstMsgs[SequenceRequest] shouldBe empty
+    f.fstMsgs[SequenceFailure] shouldBe empty
+    f.fstMsgs[PiiUpdate] should (have size 1)
 
     // Depending on whether the assignments ended up in different partitions.
-    msgsOf[Assignment] should (have size 1 or have size 2)
+    f.fstMsgs[Assignment] should (have size 1 or have size 2)
 
     // We must be waiting on *ALL* active assignments.
-    val calledIds: Seq[Int] = msgsOf[PiiUpdate].filter( _.pii.id == ourPiiId ).head.pii.called
-    val assignedIds: Seq[Int] = msgsOf[Assignment].filter( _.pii.id == ourPiiId ).map( _.callRef.id )
+    val calledIds: Seq[Int] = f.fstMsgs[PiiUpdate].filter( _.pii.id == f.ourPiiId ).head.pii.called
+    val assignedIds: Seq[Int] = f.fstMsgs[Assignment].filter( _.pii.id == f.ourPiiId ).map( _.callRef.id )
     calledIds should contain theSameElementsAs assignedIds
   }
 
   it should "resume execution after a shutdown" in {
 
-    val ex = makeExecutor( completeProcessStore )
-    val f2: Future[(Y,Z)] = ex.connect( ourPiiId, ri, Seq(21) )._2
-    pciw.continue()
+    val f = fixShutdown1
 
-    await(f2) should be (("PbISleptFor2s","PcISleptFor1s"))
+    await( f.handler.future ) should be (("PbISleptFor2s","PcISleptFor1s"))
 
-    val msgsOf = new MessageDrain( true )
-    msgsOf[SequenceRequest] shouldBe empty
-    msgsOf[SequenceFailure] shouldBe empty
-    msgsOf[ReduceRequest] shouldBe empty
-    msgsOf[Assignment] shouldBe empty
-    msgsOf[PiiUpdate] shouldBe empty
+    f.sndMsgs[SequenceRequest] shouldBe empty
+    f.sndMsgs[SequenceFailure] shouldBe empty
+    f.sndMsgs[ReduceRequest] shouldBe empty
+    f.sndMsgs[Assignment] shouldBe empty
+    f.sndMsgs[PiiUpdate] shouldBe empty
   }
 
   it should "execute correctly with an outstanding PiiUpdate" in {

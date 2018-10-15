@@ -1,15 +1,13 @@
 package com.workflowfm.pew.execution
 
+import akka.actor._
+import akka.pattern.ask
+import akka.util.Timeout
 import com.workflowfm.pew._
 
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.util.{Success, Failure}
-
-import akka.actor._
-import akka.pattern.ask
-import akka.pattern.pipe
-import akka.util.Timeout
+import scala.util.{Failure, Success}
 
 class AkkaPiEventHandler(handler:PiEventHandler[Int]) extends Actor {
   def receive = {
@@ -37,8 +35,8 @@ trait AkkaPiObservable extends PiObservable[Int] {
 
 class AkkaExecutor(store:PiInstanceStore[Int], processes:PiProcessStore)(override implicit val system: ActorSystem, override implicit val context: ExecutionContext = ExecutionContext.global, implicit val timeout:FiniteDuration = 10.seconds) extends SimulatorExecutor[Int] with AkkaPiObservable {
   def this(store:PiInstanceStore[Int], l:PiProcess*)(implicit system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration) = this(store,SimpleProcessStore(l :_*))
-  def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration,l:PiProcess*) = this(SimpleInstanceStore(),SimpleProcessStore(l :_*))(system,context,timeout)
-  def this(l:PiProcess*)(implicit system: ActorSystem) = this(SimpleInstanceStore(),SimpleProcessStore(l :_*))(system,ExecutionContext.global,10.seconds)
+  def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration,l:PiProcess*) = this(SimpleInstanceStore[Int](),SimpleProcessStore(l :_*))(system,context,timeout)
+  def this(l:PiProcess*)(implicit system: ActorSystem) = this(SimpleInstanceStore[Int](),SimpleProcessStore(l :_*))(system,ExecutionContext.global,10.seconds)
   
   val execActor = system.actorOf(AkkaExecutor.execprops(store,processes))
   implicit val tOut = Timeout(timeout) 

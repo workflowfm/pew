@@ -1,13 +1,11 @@
 package com.workflowfm.pew.stateless.component
 
-import com.workflowfm.pew.{PiInstance, PiItem, PiObject}
-import com.workflowfm.pew.stateless.{CallRef, KafkaTests}
+import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.{Assignment, SequenceRequest}
 import com.workflowfm.pew.stateless.components.AtomicExecutor
+import com.workflowfm.pew.{PiInstance, PiItem, PiObject}
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
-import org.scalamock.scalatest.MockFactory
-import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
