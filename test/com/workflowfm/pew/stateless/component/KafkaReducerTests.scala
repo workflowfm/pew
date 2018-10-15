@@ -66,4 +66,17 @@ class KafkaReducerTests extends KafkaComponentTests {
     msgsOf.value[Assignment] shouldBe empty
     msgsOf.value[PiiResult[_]] should have size 1
   }
+
+  it should "handle an irreducible PiInstance in a ReduceRequest" in {
+    val msgsOf
+      = runReducer(
+        ( ReduceRequest( eg1.pInProgress, Seq() ), 1 )
+      )
+
+    msgsOf.consuming shouldBe 1
+    msgsOf.value[PiiUpdate] should have size 1
+    msgsOf.value[Assignment] shouldBe empty
+    msgsOf.value[PiiResult[_]] shouldBe empty
+  }
+
 }

@@ -1,6 +1,6 @@
 package com.workflowfm.pew.stateless
 
-import com.workflowfm.pew.PiInstance
+import com.workflowfm.pew.{PiInstance, PiObject}
 import com.workflowfm.pew.execution.RexampleTypes._
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.components.Reducer
@@ -283,11 +283,18 @@ class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
 
   it should "execute correctly with an outstanding an *irreducible* PiiUpdate" in {
 
-    // Construct and send a fully reduced PiiUpdate message to test robustness.
     val oldMsg: PiiUpdate
-      = ( new Reducer ).piiReduce(
-          PiInstance.forCall( ObjectId.get, ri, 2, 1 )
-        ).collect({ case update: PiiUpdate => update }).head
+      = PiiUpdate(
+        PiInstance( ObjectId.get, ri, PiObject(13) )
+        .reduce
+        .handleThreads((_, _) => true)._2
+      )
+
+    // Construct and send a fully reduced PiiUpdate message to test robustness.
+//    val oldMsg: PiiUpdate
+//      = ( new Reducer ).piiReduce(
+//          PiInstance.forCall( ObjectId.get, ri, 2, 1 )
+//        ).collect({ case update: PiiUpdate => update }).head
 
     KafkaConnectors.sendMessages( oldMsg )( newSettings( completeProcessStore ) )
 

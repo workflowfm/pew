@@ -167,4 +167,20 @@ class KafkaSequencerTests extends KafkaComponentTests  {
     msgsOf[PiiResult[_]] should have size 1
   }
 
+  it should "correctly handle an outstanding irreducible PiiUpdate" in {
+    val res = runSequencer(
+      update( eg1.pInProgress, 1 ),
+      update( p1, 1 ),
+      seqreq( p1, result, 1 ),
+    )
+
+    res should (have size 1)
+    res.head.consuming shouldBe 3
+
+    val msgsOf = new MessageMap( res.head.value )
+    msgsOf[ReduceRequest] should have size 2
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[PiiResult[_]] shouldBe empty
+  }
+
 }
