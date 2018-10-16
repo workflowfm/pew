@@ -16,6 +16,7 @@ class SequenceFailureCodec(
 
   ) extends Codec[SequenceFailure] {
 
+  import com.workflowfm.pew.mongodb.bson.BsonUtil._
   import PewCodecs._
 
   val msgTypeN = "msgType"

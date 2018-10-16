@@ -11,6 +11,8 @@ import org.bson.{BsonReader, BsonWriter}
 class ReduceRequestCodec( piiCodec: Codec[PiiT], refCodec: Codec[CallRef], objCodec: Codec[PiObject] )
   extends Codec[ReduceRequest] {
 
+  import com.workflowfm.pew.mongodb.bson.BsonUtil._
+
   val msgTypeN = "msgType"
   val msgType = "ReduceRequest"
 
