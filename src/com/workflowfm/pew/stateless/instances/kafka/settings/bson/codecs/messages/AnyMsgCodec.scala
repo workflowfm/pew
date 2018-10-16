@@ -1,17 +1,17 @@
-package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs
+package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messages
 
 import com.workflowfm.pew.stateless.StatelessMessages
 import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
-import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings._
-import org.bson.{BsonReader, BsonWriter}
+import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs
 import org.bson.codecs._
 import org.bson.codecs.configuration.CodecRegistry
+import org.bson.{BsonReader, BsonWriter}
 
 class AnyMsgCodec( reg: CodecRegistry )
   extends Codec[AnyMsg] {
 
-  import StatelessMessages._
   import PewCodecs._
+  import StatelessMessages._
 
   val piiUpdateN = "PiiUpdate"
   val assgnN = "Assignment"
@@ -25,7 +25,7 @@ class AnyMsgCodec( reg: CodecRegistry )
   private val seqReq: Codec[SequenceRequest] = reg.get( classOf[SequenceRequest] )
   private val seqfail: Codec[SequenceFailure] = reg.get( classOf[SequenceFailure] )
   private val redReq: Codec[ReduceRequest] = reg.get( classOf[ReduceRequest] )
-  private val result: Codec[PiiResult[AnyRes]] = reg.get( classOf[PiiResult[AnyRes]] )
+  private val result: Codec[PiiLog] = reg.get( classOf[PiiLog] )
 
   override def encode(writer: BsonWriter, value: AnyMsg, ctx: EncoderContext): Unit = {
     value match {
@@ -34,7 +34,7 @@ class AnyMsgCodec( reg: CodecRegistry )
       case m: SequenceFailure => seqfail.encode( writer, m, ctx )
       case m: ReduceRequest   => redReq.encode( writer, m, ctx )
       case m: Assignment      => assgn.encode( writer, m, ctx )
-      case m: PiiResult[_]    => result.encode( writer, m.asInstanceOf[PiiResult[AnyRes]], ctx )
+      case m: PiiLog          => result.encode( writer, m, ctx )
       case m => throw new IllegalArgumentException( s"Unsupported type '${m.getClass.getSimpleName}'." )
     }
   }

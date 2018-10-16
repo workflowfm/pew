@@ -4,6 +4,9 @@ import com.workflowfm.pew._
 import com.workflowfm.pew.mongodb.bson._
 import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs._
+import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.content.{AnyResCodec, CallRefCodec, ThrowableCodec}
+import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.keys.{AnyKeyCodec, KeyPiiIdCallCodec, KeyPiiIdCodec}
+import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messages._
 import org.bson.codecs.Codec
 import org.bson.codecs.configuration.CodecRegistry
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
@@ -43,7 +46,7 @@ class KafkaCodecRegistry(
   private val seqReq = new SequenceRequestCodec( callRef, obj )
   private val seqfail = new SequenceFailureCodec( piInst, callRef, obj, throwable )
   private val redReq = new ReduceRequestCodec( piInst, callRef, obj )
-  private val res = new ResultCodec( piInst, anyres )
+  private val res = new PiiLogCodec( this )
   private val piiHistory = new PiiHistoryCodec( seqReq, update, seqfail)
 
   // Initialised after both Keys & Msgs as it depends on them all.
@@ -62,6 +65,18 @@ class KafkaCodecRegistry(
 
   override def get[T]( clazz: Class[T], reg: CodecRegistry )
     : Codec[T] = ( clazz match {
+
+    case PIEVENT              =>
+    case PISTART              =>
+    case PIRESULT             =>
+    case PICALL               =>
+    case PIRETURN             =>
+    case PINORES              =>
+    case PIUNKNOWN            =>
+    case PIFAPIS              =>
+    case PIFNSI               =>
+    case PIEXCEPT             =>
+    case PIPROCEXCEPT         =>
 
     case OBJCLASS             => obj
     case CHANCLASS            => chan
@@ -82,7 +97,7 @@ class KafkaCodecRegistry(
     case SEQUENCE_REQ         => seqReq
     case SEQFAIL_REQ          => seqfail
     case REDUCE_REQUEST       => redReq
-    case RESULT_ANY_MSG       => res
+    case PIILOG               => res
 
     case PII_HISTORY          => piiHistory
 

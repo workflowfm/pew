@@ -3,12 +3,8 @@ package com.workflowfm.pew.stateless.instances.kafka.settings
 import akka.actor._
 import akka.kafka._
 import akka.stream._
-import com.workflowfm.pew.PiProcessStore
-import com.workflowfm.pew.stateless.CallRef
-import com.workflowfm.pew.stateless.StatelessMessages
-import com.workflowfm.pew.stateless.instances.kafka.settings.bson.KafkaCodecRegistry
+import com.workflowfm.pew.stateless.{CallRef, StatelessMessages}
 import org.apache.kafka.clients.producer.ProducerRecord
-import org.bson.codecs.configuration.CodecRegistry
 import org.bson.types.ObjectId
 
 import scala.concurrent.ExecutionContext
@@ -61,7 +57,7 @@ abstract class KafkaExecutorSettings(
   val csPiiHistory:       ConsumerSettings[KeyPiiId, PiiHistory]
   val csSequenceRequest:  ConsumerSettings[KeyPiiId, SequenceRequest]
   val csReduceRequest:    ConsumerSettings[KeyPiiId, ReduceRequest]
-  val csResult:           ConsumerSettings[KeyPiiId, PiiResult[AnyRes]]
+  val csResult:           ConsumerSettings[KeyPiiId, PiiLog]
 
   // Kafka - (PiiId, CallRef) keyed consumer topic settings
   val csAssignment:       ConsumerSettings[KeyPiiIdCall, Assignment]

@@ -2,17 +2,16 @@ package com.workflowfm.pew.stateless
 
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
-import com.workflowfm.pew.{PiInstance, PiObject, PromiseHandler}
+import com.workflowfm.pew.{PewTestSuite, PiInstance, PiObject, PromiseHandler}
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
-import org.scalatest._
 import org.scalatest.junit.JUnitRunner
 
 import scala.concurrent._
 import scala.concurrent.duration._
 
 @RunWith(classOf[JUnitRunner])
-class KafkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll with KafkaTests {
+class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   // Ensure there are no outstanding messages before starting testing.
   new MessageDrain( true )

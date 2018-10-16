@@ -1,7 +1,8 @@
-package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs
+package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messages
 
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.SequenceFailure
+import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs
 import com.workflowfm.pew.{PiInstance, PiObject}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.types.ObjectId

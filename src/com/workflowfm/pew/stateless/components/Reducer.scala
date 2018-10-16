@@ -1,7 +1,7 @@
 package com.workflowfm.pew.stateless.components
 
 import com.workflowfm.pew._
-import com.workflowfm.pew.execution.ProcessExecutor.{AtomicProcessIsCompositeException, NoResultException, UnknownProcessException}
+import com.workflowfm.pew.execution.ProcessExecutor.{AtomicProcessIsCompositeException, UnknownProcessException}
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, ReduceRequest}
 import org.bson.types.ObjectId
@@ -25,8 +25,8 @@ class Reducer(
     val piiReduced: PiInstance[ObjectId] = pii.reduce
 
     if (piiReduced.completed) Seq( piiReduced.result match {
-      case Some(_) => new ResultSuccess( piiReduced, piiReduced.process.output._1 )
-      case None =>    new ResultFailure( piiReduced, NoResultException( piiReduced.id.toString ) )
+      case Some(result) => PiiLog( PiEventResult( piiReduced, result ) )
+      case None         => PiiLog( PiFailureNoResult( piiReduced ) )
 
     }) else {
 

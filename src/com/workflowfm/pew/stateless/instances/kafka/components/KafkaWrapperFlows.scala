@@ -6,7 +6,6 @@ import akka.kafka.scaladsl._
 import akka.stream.scaladsl._
 import com.workflowfm.pew.stateless.components.StatelessComponent
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
-import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.AnyRes
 
 import scala.concurrent.Future
 
@@ -63,7 +62,7 @@ object KafkaWrapperFlows {
     * @param groupId GroupId for the Kafka Consumer.
     * @return Akka source containing messages published to the `Results` topic.
     */
-  def srcResult[T[X] <: Tracked[X]]( groupId: String )( implicit s: KafkaExecutorSettings, f: TrackedSource[T] ): Source[T[PiiResult[AnyRes]], Control]
+  def srcResult[T[X] <: Tracked[X]]( groupId: String )( implicit s: KafkaExecutorSettings, f: TrackedSource[T] ): Source[T[PiiLog], Control]
     = Tracked.source( s.csResult withGroupId groupId, topics( s.tnResult ) )
 
   /** Kafka Consumers for each topic merged into a single Akka source.

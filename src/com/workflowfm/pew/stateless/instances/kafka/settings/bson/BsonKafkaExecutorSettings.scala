@@ -58,7 +58,7 @@ class BsonKafkaExecutorSettings(
   val csPiiHistory:       ConsumerSettings[KeyPiiId, PiiHistory]        = consSettings
   val csSequenceRequest:  ConsumerSettings[KeyPiiId, SequenceRequest]   = consSettings
   val csReduceRequest:    ConsumerSettings[KeyPiiId, ReduceRequest]     = consSettings
-  val csResult:           ConsumerSettings[KeyPiiId, PiiResult[AnyRes]] = consSettings
+  val csResult:           ConsumerSettings[KeyPiiId, PiiLog]            = consSettings
 
   // Kafka - (PiiId, CallRef) keyed consumer topic settings
   val csAssignment:       ConsumerSettings[KeyPiiIdCall, Assignment]    = consSettings
@@ -72,7 +72,7 @@ class BsonKafkaExecutorSettings(
     case m: SequenceFailure     => new ProducerRecord( tnPiiHistory, KeyPiiId(m.piiId), m )
     case m: ReduceRequest       => new ProducerRecord( tnReduceRequest, KeyPiiId(m.pii.id), m )
     case m: Assignment          => new ProducerRecord( tnAssignment, KeyPiiIdCall(m.pii.id, m.callRef), m )
-    case m: PiiResult[_]        => new ProducerRecord( tnResult, KeyPiiId(m.pii.id), m )
+    case m: PiiLog              => new ProducerRecord( tnResult, KeyPiiId(m.piiId), m )
   }
 
 }

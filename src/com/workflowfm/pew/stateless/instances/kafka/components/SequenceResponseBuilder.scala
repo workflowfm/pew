@@ -2,7 +2,7 @@ package com.workflowfm.pew.stateless.instances.kafka.components
 
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages._
-import com.workflowfm.pew.{PiInstance, PiObject}
+import com.workflowfm.pew.{PiEventProcessException, PiInstance, PiObject}
 import org.bson.types.ObjectId
 
 import scala.collection.immutable
@@ -33,7 +33,8 @@ case class PartialResponse(
   def message: Option[AnyMsg]
     = pii.map( pii =>
         if (failures.nonEmpty) {
-          if (hasPayload) new ResultFailure( pii, failures.head._2 )
+          val fail = failures.head
+          if (hasPayload) PiiLog( PiEventProcessException( pii.id, fail._1.id, fail._2 ) )
           else            SequenceFailure( pii, results, failures )
 
         } else ReduceRequest( pii, results )

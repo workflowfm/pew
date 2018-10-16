@@ -1,8 +1,8 @@
-package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs
+package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messages
 
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.ReduceRequest
-import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs.PiiT
+import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs._
 import com.workflowfm.pew.{PiInstance, PiObject}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.types.ObjectId
@@ -10,8 +10,6 @@ import org.bson.{BsonReader, BsonWriter}
 
 class ReduceRequestCodec( piiCodec: Codec[PiiT], refCodec: Codec[CallRef], objCodec: Codec[PiObject] )
   extends Codec[ReduceRequest] {
-
-  import PewCodecs._
 
   val msgTypeN = "msgType"
   val msgType = "ReduceRequest"

@@ -15,7 +15,19 @@ object PewCodecs {
 
   type PiiT     = PiInstance[ObjectId]
   type PiResT   = PiResource
-  type ResMsgT  = PiiResult[AnyRes]
+  type ResMsgT  = PiiLog
+
+  val PIEVENT:    Class[PiEvent[ObjectId]] = classOf[PiEvent[ObjectId]]
+  val PISTART: Class[PiEventStart[ObjectId]] = classOf[PiEventStart[ObjectId]]
+  val PIRESULT: Class[PiEventResult[ObjectId]] = classOf[PiEventResult[ObjectId]]
+  val PICALL: Class[PiEventCall[ObjectId]] = classOf[PiEventCall[ObjectId]]
+  val PIRETURN: Class[PiEventReturn[ObjectId]] = classOf[PiEventReturn[ObjectId]]
+  val PINORES: Class[PiFailureNoResult[ObjectId]] = classOf[PiFailureNoResult[ObjectId]]
+  val PIUNKNOWN: Class[PiFailureUnknownProcess[ObjectId]] = classOf[PiFailureUnknownProcess[ObjectId]]
+  val PIFAPIS: Class[PiFailureAtomicProcessIsComposite[ObjectId]] = classOf[PiFailureAtomicProcessIsComposite[ObjectId]]
+  val PIFNSI: Class[PiFailureNoSuchInstance[ObjectId]] = classOf[PiFailureNoSuchInstance[ObjectId]]
+  val PIEXCEPT: Class[PiEventException[ObjectId]] = classOf[PiEventException[ObjectId]]
+  val PIPROCEXCEPT: Class[PiEventProcessException[ObjectId]] = classOf[PiEventProcessException[ObjectId]]
 
   val ANY_KEY:          Class[AnyKey]           = classOf[AnyKey]
   val ANY_MSG:          Class[AnyMsg]           = classOf[AnyMsg]
@@ -31,7 +43,7 @@ object PewCodecs {
   val REDUCE_REQUEST:   Class[ReduceRequest]    = classOf[ReduceRequest]
   val SEQUENCE_REQ:     Class[SequenceRequest]  = classOf[SequenceRequest]
   val SEQFAIL_REQ:      Class[SequenceFailure]  = classOf[SequenceFailure]
-  val RESULT_ANY_MSG:   Class[ResMsgT]          = classOf[ResMsgT]
+  val PIILOG:           Class[PiiLog]           = classOf[PiiLog]
 
   def writeArray[T]( writer: BsonWriter, name: String, col: Seq[T] )( fn: T => Unit ): Unit = {
     writer.writeStartArray( name )

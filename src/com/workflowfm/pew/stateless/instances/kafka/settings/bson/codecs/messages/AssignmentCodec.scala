@@ -1,8 +1,9 @@
-package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs
+package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messages
 
 import com.workflowfm.pew.PiResource
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.Assignment
+import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs.{PiResT, PiiT}
 import org.bson._
 import org.bson.codecs._

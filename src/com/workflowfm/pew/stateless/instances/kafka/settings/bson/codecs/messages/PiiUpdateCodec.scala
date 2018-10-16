@@ -1,16 +1,14 @@
-package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs
+package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messages
 
 import com.workflowfm.pew.PiInstance
 import com.workflowfm.pew.stateless.StatelessMessages.PiiUpdate
-import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs.PiiT
-import org.bson.{BsonReader, BsonWriter}
+import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs._
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.types.ObjectId
+import org.bson.{BsonReader, BsonWriter}
 
 class PiiUpdateCodec( piiCodec: Codec[PiiT] )
   extends Codec[PiiUpdate] {
-
-  import PewCodecs._
 
   val msgTypeN = "msgType"
   val msgType = "PiiUpdate"

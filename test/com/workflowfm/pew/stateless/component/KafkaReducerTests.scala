@@ -2,9 +2,11 @@ package com.workflowfm.pew.stateless.component
 
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
+import com.workflowfm.pew.PewTestSuite
+import com.workflowfm.pew.stateless.KafkaExampleTypes
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.components.Reducer
-import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows.{flowRespond, flowSequencer}
+import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows.flowRespond
 import com.workflowfm.pew.stateless.instances.kafka.components.{MockTracked, Tracked}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -12,7 +14,7 @@ import org.scalatest.junit.JUnitRunner
 import scala.concurrent.Future
 
 @RunWith(classOf[JUnitRunner])
-class KafkaReducerTests extends KafkaComponentTests {
+class KafkaReducerTests extends PewTestSuite with KafkaExampleTypes {
 
   def runReducer(history: (ReduceRequest, Int)*): MockTracked[MessageMap] = {
     val fut: Future[ Seq[MockTracked[Seq[AnyMsg]]] ]
@@ -38,7 +40,7 @@ class KafkaReducerTests extends KafkaComponentTests {
     msgsOf.consuming shouldBe 1
     msgsOf.value[PiiUpdate] should have size 1
     msgsOf.value[Assignment] should have size 1
-    msgsOf.value[PiiResult[_]] shouldBe empty
+    msgsOf.value[PiiLog] shouldBe empty
 
     // msgsOf.value[PiiUpdate].head.pii.state.calls should have size 1
   }
@@ -52,7 +54,7 @@ class KafkaReducerTests extends KafkaComponentTests {
     msgsOf.consuming shouldBe 1
     msgsOf.value[PiiUpdate] should have size 1
     msgsOf.value[Assignment] should have size 2
-    msgsOf.value[PiiResult[_]] shouldBe empty
+    msgsOf.value[PiiLog] shouldBe empty
   }
 
   it should "handle a ReduceRequest completing a PiInstance" in {
@@ -64,7 +66,7 @@ class KafkaReducerTests extends KafkaComponentTests {
     msgsOf.consuming shouldBe 1
     msgsOf.value[PiiUpdate] shouldBe empty
     msgsOf.value[Assignment] shouldBe empty
-    msgsOf.value[PiiResult[_]] should have size 1
+    msgsOf.value[PiiLog] should have size 1
   }
 
   it should "handle an irreducible PiInstance in a ReduceRequest" in {
@@ -76,7 +78,7 @@ class KafkaReducerTests extends KafkaComponentTests {
     msgsOf.consuming shouldBe 1
     msgsOf.value[PiiUpdate] should have size 1
     msgsOf.value[Assignment] shouldBe empty
-    msgsOf.value[PiiResult[_]] shouldBe empty
+    msgsOf.value[PiiLog] shouldBe empty
   }
 
 }

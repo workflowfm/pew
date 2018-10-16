@@ -2,6 +2,8 @@ package com.workflowfm.pew.stateless.component
 
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
+import com.workflowfm.pew.PewTestSuite
+import com.workflowfm.pew.stateless.KafkaExampleTypes
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows.flowSequencer
 import com.workflowfm.pew.stateless.instances.kafka.components.MockTracked
@@ -9,7 +11,7 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class KafkaSequencerTests extends KafkaComponentTests  {
+class KafkaSequencerTests extends PewTestSuite with KafkaExampleTypes {
 
   def runSequencer(history: (PiiHistory, Int)*): Seq[MockTracked[Seq[AnyMsg]]]
     = await(
@@ -98,7 +100,7 @@ class KafkaSequencerTests extends KafkaComponentTests  {
     val msgsOf = new MessageMap( res.head.value )
     msgsOf[ReduceRequest] shouldBe empty
     msgsOf[SequenceFailure] shouldBe empty
-    msgsOf[PiiResult[_]] should have size 1
+    msgsOf[PiiLog] should have size 1
   }
 
   it should "correctly complete a tangled SequenceFailure" in {
@@ -116,7 +118,7 @@ class KafkaSequencerTests extends KafkaComponentTests  {
     val msgsOf = new MessageMap( res.head.value )
     msgsOf[ReduceRequest] should have size 1
     msgsOf[SequenceFailure] shouldBe empty
-    msgsOf[PiiResult[_]] should have size 1
+    msgsOf[PiiLog] should have size 1
   }
 
   it should "correctly send a partially complete SequenceFailure" in {
@@ -133,7 +135,7 @@ class KafkaSequencerTests extends KafkaComponentTests  {
     val msgsOf = new MessageMap( res.head.value )
     msgsOf[ReduceRequest] should have size 1
     msgsOf[SequenceFailure] should have size 1
-    msgsOf[PiiResult[_]] shouldBe empty
+    msgsOf[PiiLog] shouldBe empty
   }
 
   it should "not send an incomplete SequenceFailure" in {
@@ -148,8 +150,8 @@ class KafkaSequencerTests extends KafkaComponentTests  {
 
   it should "correctly resume and complete a partial SequenceFailure" in {
     val res = runSequencer(
-      ( SequenceFailure( eg1.pFinishing, Seq(), Seq((eg1.r2._1, ree)) ), 1 ),
-      seqreq( eg1.pFinishing, eg1.r3, 1 )
+      ( eg1.sfFinishing22, 1 ),
+      ( eg1.srFinishing3, 1 )
     )
 
     res should (have size 1)
@@ -158,7 +160,7 @@ class KafkaSequencerTests extends KafkaComponentTests  {
     val msgsOf = new MessageMap( res.head.value )
     msgsOf[ReduceRequest] shouldBe empty
     msgsOf[SequenceFailure] shouldBe empty
-    msgsOf[PiiResult[_]] should have size 1
+    msgsOf[PiiLog] should have size 1
   }
 
   it should "correctly handle an outstanding irreducible PiiUpdate" in {
@@ -174,7 +176,7 @@ class KafkaSequencerTests extends KafkaComponentTests  {
     val msgsOf = new MessageMap( res.head.value )
     msgsOf[ReduceRequest] should have size 2
     msgsOf[SequenceFailure] shouldBe empty
-    msgsOf[PiiResult[_]] shouldBe empty
+    msgsOf[PiiLog] shouldBe empty
   }
 
 }

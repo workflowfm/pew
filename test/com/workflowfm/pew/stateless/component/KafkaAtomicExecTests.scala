@@ -1,15 +1,15 @@
 package com.workflowfm.pew.stateless.component
 
-import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.{Assignment, SequenceRequest}
 import com.workflowfm.pew.stateless.components.AtomicExecutor
-import com.workflowfm.pew.{PiInstance, PiItem, PiObject}
+import com.workflowfm.pew.stateless.{CallRef, KafkaExampleTypes}
+import com.workflowfm.pew.{PewTestSuite, PiInstance, PiItem, PiObject}
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class KafkaAtomicExecTests extends KafkaComponentTests {
+class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
 
   it should "respond to Assignments with a correct SequenceRequest" in {
     val atomExec: AtomicExecutor = AtomicExecutor()

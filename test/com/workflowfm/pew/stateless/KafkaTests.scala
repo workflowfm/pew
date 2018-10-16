@@ -8,11 +8,11 @@ import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.{BsonKafkaExecutorSettings, KafkaCodecRegistry}
 import com.workflowfm.pew.stateless.instances.kafka.{CompleteKafkaExecutor, MinimalKafkaExecutor}
+import com.workflowfm.pew.util.ClassMap
 import com.workflowfm.pew.{PiProcessStore, SimpleProcessStore}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, TimeoutException}
-import scala.reflect.ClassTag
 
 trait KafkaTests extends ProcessExecutorTester {
 
@@ -81,7 +81,7 @@ trait KafkaTests extends ProcessExecutorTester {
     CompleteKafkaExecutor[(Y, Z)]( newSettings( store ) )
   }
 
-  val isPiiResult: AnyMsg => Boolean = _.isInstanceOf[PiiResult[_]]
+  // val isPiiResult: AnyMsg => Boolean = _.isInstanceOf[PiiResult[_]]
 
   // TODO: Fix consumer shutdown: https://github.com/akka/alpakka-kafka/issues/166
   def outstanding( consume: Boolean ): Seq[ AnyMsg ] = {
@@ -105,16 +105,8 @@ trait KafkaTests extends ProcessExecutorTester {
     Await.result( fOutstanding, Duration.Inf )
   }
 
-  class MessageMap( messages: Seq[AnyMsg] ) {
-
-    val msgMap: Map[Class[_], Seq[AnyMsg]]
-      = messages
-        .groupBy[Class[_]]( _.getClass )
-        .withDefaultValue[Seq[AnyMsg]]( Seq() )
-
-    def apply[T]( implicit ct: ClassTag[T] ): Seq[T]
-      = msgMap( ct.runtimeClass ).asInstanceOf[Seq[T]]
-  }
+  class MessageMap( messages: Seq[AnyMsg] )
+    extends ClassMap[AnyMsg]( messages )
 
   class MessageDrain( consume: Boolean = false )
     extends MessageMap( outstanding( consume ) )
