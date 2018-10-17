@@ -2,13 +2,12 @@ package com.workflowfm.pew.stateless.component
 
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
+import com.workflowfm.pew._
 import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, Assignment, SequenceFailure, SequenceRequest}
 import com.workflowfm.pew.stateless.components.AtomicExecutor
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows.{flowRespond, flowWaitFuture}
 import com.workflowfm.pew.stateless.instances.kafka.components.{MockTracked, Tracked}
 import com.workflowfm.pew.stateless.{CallRef, KafkaExampleTypes}
-import com.workflowfm.pew._
-import com.workflowfm.pew.util.ClassMap
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -115,9 +114,6 @@ class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
     msgsOf.consuming shouldBe 1
     msgsOf.value[SequenceRequest] shouldBe empty
     msgsOf.value[SequenceFailure] should have size 1
-
-    val errors = new ClassMap[PiEvent[ObjectId]]( msgsOf.value[SequenceFailure].head.failures )
-    errors[PiEventProcessException[ObjectId]] should have size 1
   }
 
   it should "continue processing Assignments after an exception" in {
@@ -130,9 +126,6 @@ class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
     msgsOf.consuming shouldBe 2
     msgsOf.value[SequenceRequest] should have size 1
     msgsOf.value[SequenceFailure] should have size 1
-
-    val errors = new ClassMap[PiEvent[ObjectId]]( msgsOf.value[SequenceFailure].head.failures )
-    errors[PiEventProcessException[ObjectId]] should have size 1
   }
 
   it should "correctly respond to a CompositeProcess" in {
@@ -145,9 +138,6 @@ class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
     msgsOf.consuming shouldBe 2
     msgsOf.value[SequenceRequest] should have size 1
     msgsOf.value[SequenceFailure] should have size 1
-
-    val errors = new ClassMap[PiEvent[ObjectId]]( msgsOf.value[SequenceFailure].head.failures )
-    errors[PiFailureAtomicProcessIsComposite[ObjectId]] should have size 1
   }
 
   it should "handle an unknown PiProcess" in {
@@ -160,9 +150,6 @@ class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
     msgsOf.consuming shouldBe 2
     msgsOf.value[SequenceRequest] should have size 1
     msgsOf.value[SequenceFailure] should have size 1
-
-    val errors = new ClassMap[PiEvent[ObjectId]]( msgsOf.value[SequenceFailure].head.failures )
-    errors[PiFailureUnknownProcess[ObjectId]] should have size 1
   }
 
 
