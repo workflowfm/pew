@@ -4,13 +4,15 @@ import com.workflowfm.pew._
 import com.workflowfm.pew.mongodb.bson._
 import com.workflowfm.pew.mongodb.bson.auto.{AutoCodecRegistryExt, SuperclassCodec}
 import com.workflowfm.pew.mongodb.bson.events._
+import com.workflowfm.pew.mongodb.bson.helper.{ObjectIdCodec, Tuple2Codec}
+import com.workflowfm.pew.mongodb.bson.pitypes._
 import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, PiiHistory}
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.AnyKey
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.content.{CallRefCodec, ThrowableCodec}
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.keys.{KeyPiiIdCallCodec, KeyPiiIdCodec}
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messages._
 import org.bson.codecs.Codec
-import org.bson.codecs.configuration.CodecRegistry
+import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
 import org.bson.types.ObjectId
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 
@@ -18,13 +20,14 @@ class KafkaCodecRegistry(
     processes: PiProcessStore,
     override val baseRegistry: CodecRegistry = DEFAULT_CODEC_REGISTRY
 
-  ) extends PiCodecProvider( processes )
-  with AutoCodecRegistryExt {
+  ) extends CodecProvider with AutoCodecRegistryExt {
 
   // AnyCodec for encoding arbitrary objects
   // (Note: All types must have codecs present in this object
   // when it is actually time to encode/decode them at runtime)
   private val anyc: Codec[Any] = new AnyCodec( this )
+
+  new Tuple2Codec( anyc ) with AutoCodec
 
   new PiObjectCodec() with AutoCodec
 

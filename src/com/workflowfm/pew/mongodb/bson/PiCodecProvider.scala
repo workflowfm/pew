@@ -1,6 +1,7 @@
 package com.workflowfm.pew.mongodb.bson
 
 import com.workflowfm.pew._
+import com.workflowfm.pew.mongodb.bson.pitypes._
 import org.bson.codecs._
 import org.bson.codecs.configuration.CodecProvider
 import org.bson.codecs.configuration.CodecRegistry
@@ -27,7 +28,7 @@ class PiCodecProvider(processes:PiProcessStore = SimpleProcessStore()) extends C
   
   override def get[T](clazz:Class[T], registry:CodecRegistry):Codec[T]
     = (clazz match {
-      case OBJIDCLASS     => new ObjectIdCodec()
+      case OBJIDCLASS     => new helper.ObjectIdCodec()
       case PIPROCCLASS    => new PiProcessCodec( processes )
       case OBJCLASS       => new PiObjectCodec(registry)
       case CHANCLASS      => new ChanCodec

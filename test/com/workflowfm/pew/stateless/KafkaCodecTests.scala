@@ -1,9 +1,9 @@
 package com.workflowfm.pew.stateless
 
+import com.workflowfm.pew._
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.{AnyKey, KeyPiiId, KeyPiiIdCall}
-import com.workflowfm.pew.stateless.instances.kafka.settings.bson.{CodecWrapper, KafkaCodecRegistry}
-import com.workflowfm.pew._
+import com.workflowfm.pew.stateless.instances.kafka.settings.bson.CodecWrapper
 import org.bson.codecs.Codec
 import org.bson.codecs.configuration.CodecRegistry
 import org.bson.types.ObjectId
@@ -14,12 +14,9 @@ import org.scalatest.junit.JUnitRunner
 import scala.reflect.ClassTag
 
 @RunWith(classOf[JUnitRunner])
-class KafkaCodecTests
-  extends PewTestSuite
-  with KafkaExampleTypes {
+class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
 
-  // Serialisation
-  val registry: CodecRegistry = new KafkaCodecRegistry( completeProcessStore )
+  val registry: CodecRegistry = completeProcessSettings.reg
 
   def testCodec[T]( tOriginal: T )( implicit ct: ClassTag[T], codec: Codec[T] ): scalatest.Assertion = {
 

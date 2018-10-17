@@ -18,7 +18,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "execute atomic PbI once" in {
 
-    val ex = makeExecutor(completeProcessStore)
+    val ex = makeExecutor( completeProcessSettings )
     val f1 = ex.execute( pbi, Seq(1) )
 
     await( f1 ) should be ("PbISleptFor1s")
@@ -34,7 +34,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "execute atomic PbI twice concurrently" in {
 
-    val ex = makeExecutor(completeProcessStore)
+    val ex = makeExecutor( completeProcessSettings )
     val f1 = ex.execute(pbi,Seq(2))
     val f2 = ex.execute(pbi,Seq(1))
 
@@ -52,7 +52,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "execute Rexample once" in {
 
-    val ex = makeExecutor(completeProcessStore)
+    val ex = makeExecutor( completeProcessSettings )
     val f1 = ex.execute(ri,Seq(21))
 
     await(f1) should be (("PbISleptFor2s","PcISleptFor1s"))
@@ -68,7 +68,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "execute Rexample once with same timings" in {
 
-    val ex = makeExecutor(completeProcessStore)
+    val ex = makeExecutor( completeProcessSettings )
     val f1 = ex.execute(ri,Seq(11))
 
     await(f1) should be (("PbISleptFor1s","PcISleptFor1s"))
@@ -84,7 +84,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "execute Rexample twice concurrently" in {
 
-    val ex = makeExecutor(completeProcessStore)
+    val ex = makeExecutor( completeProcessSettings )
     val f1 = ex.execute(ri,Seq(31))
     val f2 = ex.execute(ri,Seq(12))
 
@@ -102,7 +102,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "execute Rexample twice with same timings concurrently" in {
 
-    val ex = makeExecutor(completeProcessStore)
+    val ex = makeExecutor( completeProcessSettings )
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri,Seq(11))
 
@@ -120,7 +120,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "execute Rexample thrice concurrently" in {
 
-    val ex = makeExecutor(completeProcessStore)
+    val ex = makeExecutor( completeProcessSettings )
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri,Seq(11))
     val f3 = ex.execute(ri,Seq(11))
@@ -140,7 +140,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "execute Rexample twice, each with a differnt component" in {
 
-    val ex = makeExecutor( completeProcessStore )
+    val ex = makeExecutor( completeProcessSettings )
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri2,Seq(11))
 
@@ -158,7 +158,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "handle a failing atomic process" in {
 
-    val ex = makeExecutor( failureProcessStore )
+    val ex = makeExecutor( failureProcessSettings )
     val f1 = ex.execute( failp, Seq(1) )
 
     awaitErr( f1 ).map( _.getMessage ) shouldBe Right( "FailP" )
@@ -174,7 +174,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "handle a failing composite process" in {
 
-    val ex = makeExecutor( failureProcessStore )
+    val ex = makeExecutor( failureProcessSettings )
     val f1 = ex.execute( rif, Seq(21) )
 
     awaitErr( f1 ).map( _.getMessage ) shouldBe Right( "Fail" )
@@ -190,8 +190,8 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "2 separate executors should execute with same timings concurrently" in {
 
-    val ex1 = makeExecutor(completeProcessStore)
-    val ex2 = makeExecutor(completeProcessStore)
+    val ex1 = makeExecutor( completeProcessSettings )
+    val ex2 = makeExecutor( completeProcessSettings )
 
     val f1 = ex1.execute(ri,Seq(11))
     val f2 = ex2.execute(ri,Seq(11))
@@ -213,7 +213,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
   private def fixShutdown1 = new {
 
     val ourPiiId: ObjectId = {
-      val ex = makeExecutor(shutdownProcessStore)
+      val ex = makeExecutor( shutdownProcessSettings )
       val futId: Future[ObjectId] = ex.call(ri, Seq(21))
 
       Thread.sleep(10.seconds.toMillis)
@@ -229,7 +229,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
     val fstMsgs: MessageMap = new MessageDrain( false )
 
     {
-      val ex = makeExecutor( completeProcessStore )
+      val ex = makeExecutor( completeProcessSettings )
       ex.subscribe(handler)
       pciw.continue()
     }
@@ -273,9 +273,9 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
     // Construct and send an outstanding PiiUpdate message to test robustness.
     val oldPii: PiInstance[ObjectId] = PiInstance.forCall( ObjectId.get, ri, 2, 1 )
-    KafkaConnectors.sendMessages( PiiUpdate( oldPii ) )( newSettings( completeProcessStore ) )
+    KafkaConnectors.sendMessages( PiiUpdate( oldPii ) )( completeProcessSettings )
 
-    val ex = makeExecutor(completeProcessStore)
+    val ex = makeExecutor( completeProcessSettings )
     val f1 = ex.execute(ri, Seq(21))
 
     await(f1) should be (("PbISleptFor2s","PcISleptFor1s"))
@@ -307,9 +307,9 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 //          PiInstance.forCall( ObjectId.get, ri, 2, 1 )
 //        ).collect({ case update: PiiUpdate => update }).head
 
-    KafkaConnectors.sendMessages( oldMsg )( newSettings( completeProcessStore ) )
+    KafkaConnectors.sendMessages( oldMsg )( completeProcessSettings )
 
-    val ex = makeExecutor(completeProcessStore)
+    val ex = makeExecutor( completeProcessSettings )
     val f1 = ex.execute(ri, Seq(21))
 
     await(f1) should be (("PbISleptFor2s","PcISleptFor1s"))

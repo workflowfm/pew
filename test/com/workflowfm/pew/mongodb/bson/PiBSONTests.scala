@@ -4,6 +4,7 @@ import java.nio.ByteBuffer
 import java.util
 
 import com.workflowfm.pew._
+import com.workflowfm.pew.mongodb.bson.pitypes.{PiObjectCodec, TermCodec}
 import org.bson._
 import org.bson.codecs._
 import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromProviders, fromRegistries}

@@ -52,40 +52,40 @@ trait KafkaTests extends ProcessExecutorTester {
   implicit val system: ActorSystem = ActorSystem("AkkaExecutorTests")
   implicit val executionContext: ExecutionContext = ExecutionContext.global //sys
 
-  val newSettings: PiProcessStore => KafkaExecutorSettings = piStore =>
-    new BsonKafkaExecutorSettings( new KafkaCodecRegistry( piStore ), system, executionContext )
+  def newSettings( piStore: PiProcessStore ): BsonKafkaExecutorSettings
+    = new BsonKafkaExecutorSettings( new KafkaCodecRegistry( piStore ), system, executionContext )
 
-  val completeProcessStore
-    = SimpleProcessStore(
+  val completeProcessSettings
+    = newSettings( SimpleProcessStore(
       pai, pbi, pci, pci2,
       ri, // ri2, rif,
       failp
-    )
+    ))
 
-  val failureProcessStore
-    = SimpleProcessStore(
+  val failureProcessSettings
+    = newSettings( SimpleProcessStore(
       pai, pbi, pcif, pci2,
       ri, ri2, rif,
       failp
-    )
+    ))
 
-  val shutdownProcessStore
-    = SimpleProcessStore(
+  val shutdownProcessSettings
+    = newSettings( SimpleProcessStore(
       pai, pbi, pciw, pci2,
       ri, ri2, rif,
       failp
-    )
+    ))
 
 
-  def makeExecutor(store: SimpleProcessStore): MinimalKafkaExecutor = {
-    CompleteKafkaExecutor[(Y, Z)]( newSettings( store ) )
+  def makeExecutor( settings: KafkaExecutorSettings ): MinimalKafkaExecutor = {
+    CompleteKafkaExecutor[(Y, Z)]( settings )
   }
 
   // val isPiiResult: AnyMsg => Boolean = _.isInstanceOf[PiiResult[_]]
 
   // TODO: Fix consumer shutdown: https://github.com/akka/alpakka-kafka/issues/166
   def outstanding( consume: Boolean ): Seq[ AnyMsg ] = {
-    implicit val s: KafkaExecutorSettings = newSettings( completeProcessStore )
+    implicit val s: KafkaExecutorSettings = completeProcessSettings
 
     if (consume) println("!!! CONSUMING OUTSTANDING MESSAGES !!!")
 

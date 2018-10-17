@@ -1,4 +1,4 @@
-package com.workflowfm.pew.mongodb.bson
+package com.workflowfm.pew.mongodb.bson.pitypes
 
 import com.workflowfm.pew.{PiProcess, PiProcessStore}
 import org.bson.codecs.configuration.CodecConfigurationException
