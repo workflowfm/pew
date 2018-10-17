@@ -6,7 +6,7 @@ import com.workflowfm.pew.mongodb.bson.auto.{AutoCodecRegistryExt, SuperclassCod
 import com.workflowfm.pew.mongodb.bson.events._
 import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, PiiHistory}
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.AnyKey
-import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.content.{AnyResCodec, CallRefCodec, ThrowableCodec}
+import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.content.{CallRefCodec, ThrowableCodec}
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.keys.{KeyPiiIdCallCodec, KeyPiiIdCodec}
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messages._
 import org.bson.codecs.Codec
@@ -55,7 +55,6 @@ class KafkaCodecRegistry(
 
   // Needs to be initialised before any 'ResultCodec' which depend on it.
   private val throwable = new ThrowableCodec with AutoCodec
-  val anyres: Codec[Any] = new AnyResCodec( obj, throwable ) with AutoCodec
 
   // These use the PEW-REST Key codecs, need to be initialised after PEW
   private val callRef = new CallRefCodec with AutoCodec
