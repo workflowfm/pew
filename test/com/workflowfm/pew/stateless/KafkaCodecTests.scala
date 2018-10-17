@@ -27,7 +27,40 @@ class KafkaCodecTests
     val bytes = wrapper.serialize( "FakeTopic", tOriginal )
     val tReserialized = wrapper.deserialize( "FakeTopic", bytes )
 
-    tReserialized shouldBe tOriginal
+    tReserialized shouldEqual tOriginal
+  }
+
+  it should "correctly (de)serialise PiProcesses" in {
+    implicit val codec: Codec[PiProcess] = registry.get( classOf[PiProcess] )
+    codec shouldNot be (null)
+
+    // Atomic Processes
+    testCodec[PiProcess]( pai )
+    testCodec[PiProcess]( pbi )
+    testCodec[PiProcess]( pci)
+
+    // Composite Processes
+    testCodec[PiProcess]( ri )
+  }
+
+  it should "correctly (de)serialise PiState" in {
+    implicit val codec: Codec[PiState] = registry.get( classOf[PiState] )
+    codec shouldNot be (null)
+
+    testCodec( eg1.pNew.state )
+    testCodec( eg1.pInProgress.state )
+    testCodec( eg1.pFinishing.state )
+    testCodec( eg1.pCompleted.state )
+  }
+
+  it should "correctly (de)serialise PiInstances" in {
+    implicit val codec: Codec[PiInstance[ObjectId]] = registry.get( classOf[PiInstance[ObjectId]] )
+    codec shouldNot be (null)
+
+    testCodec( eg1.pNew )
+    testCodec( eg1.pInProgress )
+    testCodec( eg1.pFinishing )
+    testCodec( eg1.pCompleted )
   }
 
   it should "correctly (de)serialise KeyPiiIds" in {

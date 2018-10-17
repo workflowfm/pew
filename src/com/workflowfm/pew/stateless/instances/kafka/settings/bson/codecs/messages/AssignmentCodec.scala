@@ -1,26 +1,21 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messages
 
 import com.workflowfm.pew.PiResource
+import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.Assignment
-import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs.{PiResT, PiiT}
 import org.bson._
 import org.bson.codecs._
-
-import scala.collection.mutable
 
 class AssignmentCodec(
     piiCodec:     Codec[PiiT],
     callRefCodec: Codec[CallRef],
     piResCodec:   Codec[PiResT]
 
-  ) extends Codec[Assignment] {
+  ) extends ClassCodec[Assignment] {
 
-  import PewCodecs._
-
-  val msgTypeN = "msgType"
-  val msgType = "Assignment"
+  import com.workflowfm.pew.mongodb.bson.BsonUtil._
 
   val uuidN = "uuid"
   val piiN = "pii"
@@ -29,9 +24,7 @@ class AssignmentCodec(
   val argsN = "args"
   val resN = "res"
 
-  override def decode(reader: BsonReader, ctx: DecoderContext): Assignment = {
-    reader.readStartDocument()
-    reader.readString( msgTypeN )
+  override def decodeBody(reader: BsonReader, ctx: DecoderContext): Assignment = {
 
     reader.readName( piiN )
     val pii = ctx.decodeWithChildContext( piiCodec, reader )
@@ -42,12 +35,8 @@ class AssignmentCodec(
     reader.readName( procN )
     val proc = reader.readString()
 
-    reader.readName( argsN )
-    reader.readStartArray()
-    var args: mutable.Queue[PiResource] = mutable.Queue()
-
-    while ( reader.readBsonType() != BsonType.END_OF_DOCUMENT )
-      args += {
+    val args: List[PiResource]
+      = readArray( reader, argsN ) { () =>
         reader.readStartDocument()
 
         reader.readName( refN )
@@ -57,15 +46,10 @@ class AssignmentCodec(
         arg
       }
 
-    reader.readEndArray()
-
-    reader.readEndDocument()
     Assignment( pii, callRef, proc, args )
   }
 
-  override def encode(writer: BsonWriter, value: Assignment, ctx: EncoderContext): Unit = {
-    writer.writeStartDocument()
-    writer.writeString( msgTypeN, msgType )
+  override def encodeBody(writer: BsonWriter, value: Assignment, ctx: EncoderContext): Unit = {
 
     writer.writeName( piiN )
     ctx.encodeWithChildContext( piiCodec, writer, value.pii )
@@ -76,21 +60,14 @@ class AssignmentCodec(
     writer.writeName( procN )
     writer.writeString( value.process )
 
-    writer.writeName( argsN )
-    writer.writeStartArray()
-    for ( res: PiResource <- value.args ) {
-      writer.writeStartDocument()
+    writeArray( writer, argsN, value.args ) {
+      arg =>
+        writer.writeStartDocument()
 
-      writer.writeName( refN )
-      ctx.encodeWithChildContext( piResCodec, writer, res )
+        writer.writeName( refN )
+        ctx.encodeWithChildContext( piResCodec, writer, arg )
 
-      writer.writeEndDocument()
+        writer.writeEndDocument()
     }
-    writer.writeEndArray()
-
-    writer.writeEndDocument()
   }
-
-  override def getEncoderClass: Class[Assignment] = ASSIGNMENT
-
 }

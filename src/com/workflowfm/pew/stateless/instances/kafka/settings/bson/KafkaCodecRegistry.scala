@@ -2,12 +2,12 @@ package com.workflowfm.pew.stateless.instances.kafka.settings.bson
 
 import com.workflowfm.pew._
 import com.workflowfm.pew.mongodb.bson._
-import com.workflowfm.pew.mongodb.bson.auto.{AutoCodecRegistry, SuperclassCodec}
+import com.workflowfm.pew.mongodb.bson.auto.{AutoCodecRegistryExt, SuperclassCodec}
 import com.workflowfm.pew.mongodb.bson.events._
-import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
-import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs._
+import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, PiiHistory}
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.AnyKey
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.content.{AnyResCodec, CallRefCodec, ThrowableCodec}
-import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.keys.{AnyKeyCodec, KeyPiiIdCallCodec, KeyPiiIdCodec}
+import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.keys.{KeyPiiIdCallCodec, KeyPiiIdCodec}
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messages._
 import org.bson.codecs.Codec
 import org.bson.codecs.configuration.CodecRegistry
@@ -16,32 +16,31 @@ import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 
 class KafkaCodecRegistry(
     processes: PiProcessStore,
-    baseRegistry: CodecRegistry = DEFAULT_CODEC_REGISTRY
+    override val baseRegistry: CodecRegistry = DEFAULT_CODEC_REGISTRY
 
   ) extends PiCodecProvider( processes )
-  with AutoCodecRegistry {
-
-  import PewCodecs._
+  with AutoCodecRegistryExt {
 
   // AnyCodec for encoding arbitrary objects
   // (Note: All types must have codecs present in this object
   // when it is actually time to encode/decode them at runtime)
   private val anyc: Codec[Any] = new AnyCodec( this )
 
+  new PiObjectCodec() with AutoCodec
+
   // Keep explicit references to these PEW codec instances,
   // We don't have a registry that includes them.
-  private val idc = new ObjectIdCodec()
-  private val procc = new PiProcessCodec( processes )
-  private val obj = new PiObjectCodec(this)
-  private val term = new TermCodec(this)
-  private val chan = new ChanCodec(this)
-  private val chanMap = new ChanMapCodec(this)
-  private val piRes = new PiResourceCodec(this)
-  private val fut =  new PiFutureCodec(this)
-  private val piState = new PiStateCodec(this, processes)
-  private val piInst = new PiInstanceCodec(this, processes)
+  private val idc = new ObjectIdCodec() with AutoCodec
+  private val procc = new PiProcessCodec( processes ) with AutoCodec
+  private val obj = new PiObjectCodec( this ) with AutoCodec
+  private val term = new TermCodec(this) with AutoCodec
+  private val chan = new ChanCodec with AutoCodec
+  private val chanMap = new ChanMapCodec(this) with AutoCodec
+  private val piRes = new PiResourceCodec(this) with AutoCodec
+  private val fut =  new PiFutureCodec(this) with AutoCodec
+  private val piState = new PiStateCodec(this, processes) with AutoCodec
+  private val piInst = new PiInstanceCodec(this, processes) with AutoCodec
 
-  private val peEvent = new SuperclassCodec[PiEvent[ObjectId]] with AutoCodec
   new PiEventCallCodec[ObjectId]( idc, obj, procc ) with AutoCodec
   new PiEventExceptionCodec[ObjectId]( idc ) with AutoCodec
   new PiEventProcessExceptionCodec[ObjectId]( idc ) with AutoCodec
@@ -52,70 +51,29 @@ class KafkaCodecRegistry(
   new PiFailureNoResultCodec[ObjectId]( piInst ) with AutoCodec
   new PiFailureNoSuchInstanceCodec[ObjectId]( idc ) with AutoCodec
   new PiFailureUnknownProcessCodec[ObjectId]( piInst ) with AutoCodec
+  private val peEvent = new SuperclassCodec[PiEvent[ObjectId]] with AutoCodec
 
   // Needs to be initialised before any 'ResultCodec' which depend on it.
-  private val throwable = new ThrowableCodec
-  val anyres: Codec[Any] = new AnyResCodec( obj, throwable )
+  private val throwable = new ThrowableCodec with AutoCodec
+  val anyres: Codec[Any] = new AnyResCodec( obj, throwable ) with AutoCodec
 
   // These use the PEW-REST Key codecs, need to be initialised after PEW
-  private val callRef = new CallRefCodec
-  private val keyPiiId = new KeyPiiIdCodec
-  private val keyPiiIdCall = new KeyPiiIdCallCodec( callRef )
+  private val callRef = new CallRefCodec with AutoCodec
+  private val keyPiiId = new KeyPiiIdCodec with AutoCodec
+  private val keyPiiIdCall = new KeyPiiIdCallCodec( callRef ) with AutoCodec
 
-  // These use the PEW-REST Mgs codecs, need to be initialised after PEW
-  private val update = new PiiUpdateCodec( piInst )
-  private val assgn = new AssignmentCodec( piInst, callRef, piRes )
-  private val seqReq = new SequenceRequestCodec( callRef, obj )
-  private val seqfail = new SequenceFailureCodec( piInst, callRef, obj, throwable )
-  private val redReq = new ReduceRequestCodec( piInst, callRef, obj )
-  private val res = new PiiLogCodec( peEvent )
-  private val piiHistory = new PiiHistoryCodec( seqReq, update, seqfail)
+  // These use the PEW-REST Msg codecs, need to be initialised after PEW
+  private val update = new PiiUpdateCodec( piInst ) with AutoCodec
+  private val assgn = new AssignmentCodec( piInst, callRef, piRes ) with AutoCodec
+  private val seqReq = new SequenceRequestCodec( callRef, obj ) with AutoCodec
+  private val seqfail = new SequenceFailureCodec( piInst, callRef, obj, throwable ) with AutoCodec
+  private val redReq = new ReduceRequestCodec( piInst, callRef, obj ) with AutoCodec
+  private val res = new PiiLogCodec( peEvent ) with AutoCodec
+
+  private val piiHistory = new SuperclassCodec[PiiHistory] with AutoCodec
+
 
   // Initialised after both Keys & Msgs as it depends on them all.
-  private val anykey = new AnyKeyCodec( keyPiiId, keyPiiIdCall )
-  val anymsg: Codec[AnyMsg] = new AnyMsgCodec( this )
-
-  /** Implement the get[T] method from Codec*REGISTRY*,
-    * - Needed by the PEW codecs which interface with this as a CodecRegistry.
-    *
-    * @return Necessary codec from baseRegistry for basic types or our own codec
-    *         instances from PEW or PEW-REST types.
-    */
-  override def get[T](clazz: Class[T]): Codec[T]
-    = get( clazz, baseRegistry )
-
-  override def get[T]( clazz: Class[T], reg: CodecRegistry )
-    : Codec[T] = ( clazz match {
-
-    case OBJCLASS             => obj
-    case CHANCLASS            => chan
-    case CHANMAPCLASS         => chanMap
-    case RESOURCECLASS        => piRes
-    case FUTURECLASS          => fut
-    case STATECLASS           => piState
-    case TERMCLASS            => term
-    case INSTANCECLASS        => piInst
-
-    case THROWABLE            => throwable
-    case CALL_REF             => callRef
-    case KEY_PII_ID           => keyPiiId
-    case KEY_PII_ID_CALL      => keyPiiIdCall
-
-    case PII_UPDATE           => update
-    case ASSIGNMENT           => assgn
-    case SEQUENCE_REQ         => seqReq
-    case SEQFAIL_REQ          => seqfail
-    case REDUCE_REQUEST       => redReq
-    case PIILOG               => res
-
-    case PII_HISTORY          => piiHistory
-
-    // TODO, How are these being differentiated, they're the same type ?!?!?!
-    case ANY_KEY              => anykey
-    case ANY_MSG              => anymsg
-    case ANY_RES              => anyres
-
-    case _                    => reg.get( clazz )
-
-  }).asInstanceOf[ Codec[T] ]
+  private val anykey = new SuperclassCodec[AnyKey] with AutoCodec
+  val anymsg: Codec[AnyMsg] = new SuperclassCodec[AnyMsg] with AutoCodec
 }

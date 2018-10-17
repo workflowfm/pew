@@ -1,21 +1,18 @@
 package com.workflowfm.pew.mongodb.bson
 
-import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import com.workflowfm.pew._
-import org.bson.types._
 import org.bson._
 import org.bson.codecs._
-import org.bson.codecs.configuration.CodecProvider
-import org.bson.codecs.configuration.CodecRegistry
-import scala.collection.mutable.Queue
-import org.bson.codecs.configuration.CodecConfigurationException
+import org.bson.codecs.configuration.{CodecConfigurationException, CodecRegistry}
 
 class PiStateCodec(registry:CodecRegistry,processes:PiProcessStore) extends Codec[PiState] { 
   val chanCodec:Codec[Chan] = registry.get(classOf[Chan])
   val termCodec:Codec[Term] = registry.get(classOf[Term])
   val futureCodec:Codec[PiFuture] = registry.get(classOf[PiFuture])
   val cmapCodec:Codec[ChanMap] = registry.get(classOf[ChanMap])
-  
+
+  import BsonUtil._
+
   override def encode(writer: BsonWriter, value: PiState, encoderContext: EncoderContext): Unit = { 
 	  writer.writeStartDocument()
 //	  writer.writeName("_t")
@@ -85,80 +82,72 @@ class PiStateCodec(registry:CodecRegistry,processes:PiProcessStore) extends Code
 	  reader.readStartDocument()
 //	  reader.readName("_t")
 //	  reader.readString("PiState")
-	  
-	  reader.readName("inputs")
-	  reader.readStartArray()
-    var inputs:Queue[(Chan,Input)] = Queue()
-    while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
-      reader.readStartDocument()
-      reader.readName("c")
-      val c = decoderContext.decodeWithChildContext(chanCodec,reader)
-      reader.readName("i")
-      val i = decoderContext.decodeWithChildContext(termCodec,reader).asInstanceOf[Input] // TODO handle exception
-      reader.readEndDocument()
-    	inputs+=((c,i))
-    }
-    reader.readEndArray()
 
-    reader.readName("outputs")
-	  reader.readStartArray()
-    var outputs:Queue[(Chan,Output)] = Queue()
-    while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
-      reader.readStartDocument()
-      reader.readName("c")
-      val c = decoderContext.decodeWithChildContext(chanCodec,reader)
-      reader.readName("o")
-      val o = decoderContext.decodeWithChildContext(termCodec,reader).asInstanceOf[Output] // TODO handle exception
-      reader.readEndDocument()
-    	outputs+=((c,o))
-    }
-    reader.readEndArray()
+    val inputs: List[(Chan, Input)]
+      = readArray( reader, "inputs" ) { () =>
+        reader.readStartDocument()
+        reader.readName("c")
+        val c = decoderContext.decodeWithChildContext(chanCodec,reader)
+        reader.readName("i")
+        val i = decoderContext.decodeWithChildContext(termCodec,reader).asInstanceOf[Input] // TODO handle exception
+        reader.readEndDocument()
+        (c,i)
+      }
 
-    reader.readName("calls")
-	  reader.readStartArray()
-    var calls:Queue[PiFuture] = Queue()
-    while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
-      val f = decoderContext.decodeWithChildContext(futureCodec,reader)
-    	calls+=f
-    }
-    reader.readEndArray()
+    val outputs: List[(Chan, Output)]
+      = readArray( reader, "outputs" ) { () =>
+        reader.readStartDocument()
+        reader.readName("c")
+        val c = decoderContext.decodeWithChildContext(chanCodec,reader)
+        reader.readName("o")
+        val o = decoderContext.decodeWithChildContext(termCodec,reader).asInstanceOf[Output] // TODO handle exception
+        reader.readEndDocument()
+        (c,o)
+      }
 
-    reader.readName("threads")
-	  reader.readStartArray()
-    var threads:Queue[(Int,PiFuture)] = Queue()
-    while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
-      reader.readStartDocument()
-      reader.readName("i")
-      val i = reader.readInt32()
-      reader.readName("t")
-      val t = decoderContext.decodeWithChildContext(futureCodec,reader)
-    	reader.readEndDocument()
-      threads+=((i,t))
-    }
-    reader.readEndArray()
+    val calls: List[PiFuture]
+      = readArray( reader, "calls" ) { () =>
+        decoderContext.decodeWithChildContext(futureCodec,reader)
+      }
+
+    val threads: List[(Int, PiFuture)]
+      = readArray( reader, "threads" ) { () =>
+        reader.readStartDocument()
+        reader.readName("i")
+        val i = reader.readInt32()
+        reader.readName("t")
+        val t = decoderContext.decodeWithChildContext(futureCodec,reader)
+        reader.readEndDocument()
+        (i,t)
+      }
     
     reader.readName("tCtr")
     val tCtr = reader.readInt32()
     
     reader.readName("fCtr")
     val fCtr = reader.readInt32()
-    
-    reader.readName("procs")
-	  reader.readStartArray()
-    var procs:Queue[PiProcess] = Queue()
-    while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
-      val name = reader.readString()
-      processes.get(name) match {
-        case None => throw new CodecConfigurationException("Unknown PiProcess: " + name)
-        case Some(p) => procs+=p
+
+    val procs: List[PiProcess]
+      = readArray( reader, "procs" ) { () =>
+        val processName: String = reader.readString()
+        processes.get( processName ) match {
+          case None => throw new CodecConfigurationException("Unknown PiProcess: " + processName)
+          case Some( process ) => process
+        }
       }
-    }
-    reader.readEndArray()
     
     reader.readName("map")
     val cMap = decoderContext.decodeWithChildContext(cmapCodec,reader)
     
 	  reader.readEndDocument()
-	  PiState(Map(inputs:_*),Map(outputs:_*),calls.toList,Map(threads:_*),tCtr,fCtr,PiProcessStore.mapOf(procs:_*),cMap)
+	  PiState(
+      Map(inputs:_*),
+      Map(outputs:_*),
+      calls,
+      Map(threads:_*),
+      tCtr,fCtr,
+      PiProcessStore.mapOf(procs:_*),
+      cMap
+    )
   }
 }

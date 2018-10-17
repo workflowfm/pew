@@ -2,6 +2,7 @@ package com.workflowfm.pew.mongodb.bson
 
 import org.bson.{BsonReader, BsonType, BsonWriter}
 
+import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable
 
 object BsonUtil {
@@ -12,16 +13,21 @@ object BsonUtil {
     writer.writeEndArray()
   }
 
-  def readArray[T]( reader: BsonReader, name: String )( fn: () => T ): Seq[T] = {
+  def readArray[Elem, That]
+    ( reader: BsonReader, name: String )
+    ( fn: () => Elem )
+    ( implicit builder: CanBuildFrom[_, Elem, That] )
+    : That = {
+
     reader.readName( name )
     reader.readStartArray()
-    var args: mutable.Queue[T] = mutable.Queue()
+    var args: mutable.Builder[Elem, That] = builder.apply()
 
     while (reader.readBsonType() != BsonType.END_OF_DOCUMENT)
       args += fn()
 
     reader.readEndArray()
-    args
+    args.result()
   }
 
 }

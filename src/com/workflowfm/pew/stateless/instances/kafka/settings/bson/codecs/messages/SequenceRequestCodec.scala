@@ -1,28 +1,22 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messages
 
 import com.workflowfm.pew.PiObject
+import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.SequenceRequest
-import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs._
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.{BsonReader, BsonWriter}
 
 class SequenceRequestCodec(
     refCodec: Codec[CallRef],
     objCodec: Codec[PiObject]
-  ) extends Codec[SequenceRequest] {
-
-  val msgTypeN = "msgType"
-  val msgType = "SequenceRequest"
+  ) extends ClassCodec[SequenceRequest] {
 
   val idN = "_id"
   val refN = "callRef"
   val objN = "piObj"
 
-  override def decode(reader: BsonReader, ctx: DecoderContext): SequenceRequest = {
-    reader.readStartDocument()
-
-    reader.readString( msgTypeN )
+  override def decodeBody(reader: BsonReader, ctx: DecoderContext): SequenceRequest = {
 
     reader.readName( idN )
     val piiId = reader.readObjectId()
@@ -33,14 +27,10 @@ class SequenceRequestCodec(
     reader.readName( objN )
     val obj: PiObject = ctx.decodeWithChildContext( objCodec, reader )
 
-    reader.readEndDocument()
     SequenceRequest( piiId, (ref, obj) )
   }
 
-  override def encode(writer: BsonWriter, value: SequenceRequest, ctx: EncoderContext): Unit = {
-    writer.writeStartDocument()
-
-    writer.writeString( msgTypeN, msgType )
+  override def encodeBody(writer: BsonWriter, value: SequenceRequest, ctx: EncoderContext): Unit = {
 
     writer.writeName( idN )
     writer.writeObjectId( value.piiId )
@@ -52,10 +42,6 @@ class SequenceRequestCodec(
 
     writer.writeName( objN )
     ctx.encodeWithChildContext( objCodec, writer, piObj )
-
-    writer.writeEndDocument()
   }
-
-  override def getEncoderClass: Class[SequenceRequest] = SEQUENCE_REQ
 
 }

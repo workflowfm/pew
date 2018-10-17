@@ -63,6 +63,8 @@ class SuperclassCodec[T]( implicit ct: ClassTag[T] )
       byClassId.update( codec._typeVal, codec )
     }
 
+  def knownChildren: Iterable[ClassCodec[_]] = byClass.values
+
   override def decode(reader: BsonReader, ctx: DecoderContext): T = {
     val mark: BsonReaderMark = reader.getMark
 

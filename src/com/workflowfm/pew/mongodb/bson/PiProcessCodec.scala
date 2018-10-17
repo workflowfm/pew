@@ -8,15 +8,30 @@ import org.bson.{BsonReader, BsonWriter}
 class PiProcessCodec( store: PiProcessStore )
   extends Codec[PiProcess] {
 
-  override def encode(writer: BsonWriter, value: PiProcess, ctx: EncoderContext): Unit
-    = writer.writeString( value.iname )
+  val processNameN = "name"
 
-  override def decode(reader: BsonReader, ctx: DecoderContext): PiProcess = {
-    val name: String = reader.readString()
+  def getPiProcess( name: String ): PiProcess = {
     store.get( name ) match {
       case None => throw new CodecConfigurationException(s"Unknown PiProcess: $name")
       case Some( proc ) => proc
     }
+  }
+
+  override def encode(writer: BsonWriter, value: PiProcess, ctx: EncoderContext): Unit = {
+    val processName: String = value.iname
+    require( value == getPiProcess( processName ), s"PiProcess '$processName' couldn't be recovered." )
+
+    writer.writeStartDocument()
+    writer.writeString( processNameN, processName )
+    writer.writeEndDocument()
+  }
+
+  override def decode(reader: BsonReader, ctx: DecoderContext): PiProcess = {
+    reader.readStartDocument()
+    val processName: String = reader.readString( processNameN )
+    reader.readEndDocument()
+
+    getPiProcess( processName )
   }
 
   override def getEncoderClass: Class[PiProcess]

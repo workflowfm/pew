@@ -1,18 +1,18 @@
 package com.workflowfm.pew.mongodb.bson
 
-import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import com.workflowfm.pew._
-import org.bson.types._
 import org.bson._
 import org.bson.codecs._
-import org.bson.codecs.configuration.CodecProvider
-import org.bson.codecs.configuration.CodecRegistry
-import org.bson.codecs.configuration.CodecRegistries
-import scala.collection.mutable.Queue
+import org.bson.codecs.configuration.{CodecProvider, CodecRegistries, CodecRegistry}
+import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
+
+import scala.collection.mutable.ArrayBuffer
 
 class TermCodec(registry: CodecRegistry) extends Codec[Term] { 
   def this() = this(CodecRegistries.fromRegistries(CodecRegistries.fromCodecs(new PiObjectCodec),DEFAULT_CODEC_REGISTRY))
-  
+
+  import BsonUtil._
+
   val piobjCodec:Codec[PiObject] = registry.get(classOf[PiObject])
   
   override def encode(writer: BsonWriter, value: Term, encoderContext: EncoderContext): Unit = {
@@ -127,10 +127,10 @@ class TermCodec(registry: CodecRegistry) extends Codec[Term] {
      	  writer.writeString("PiCall")
         writer.writeName("name")
         writer.writeString(name)
-        writer.writeName("args")
-        writer.writeStartArray()
-        for (arg <- args) encoderContext.encodeWithChildContext(piobjCodec,writer,arg)
-        writer.writeEndArray()
+
+        writeArray( writer, "args", args ) {
+          encoderContext.encodeWithChildContext( piobjCodec, writer, _ )
+        }
       }
 //encoderContext.encodeWithChildContext(this,writer,r)
 
@@ -251,15 +251,15 @@ class TermCodec(registry: CodecRegistry) extends Codec[Term] {
       case "PiCall" => {
         reader.readName("name")
         val n = reader.readString()
-        reader.readName("args")
-        reader.readStartArray()
-        var args:Queue[Chan] = Queue()
-        while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
-          val a = decoderContext.decodeWithChildContext(piobjCodec,reader).asInstanceOf[Chan]
-          args+=a
-        }
-        reader.readEndArray()
-        PiCall(n,args.toSeq)
+
+        val args: ArrayBuffer[Chan]
+          = readArray( reader, "args" ) { () =>
+              decoderContext
+              .decodeWithChildContext( piobjCodec, reader )
+              .asInstanceOf[Chan]
+          }
+
+        PiCall( n, args )
       }      
       //        val l = decoderContext.decodeWithChildContext(this,reader)
     }

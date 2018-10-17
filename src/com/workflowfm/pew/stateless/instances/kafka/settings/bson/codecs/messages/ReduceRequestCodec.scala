@@ -1,5 +1,6 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messages
 
+import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.ReduceRequest
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs._
@@ -9,21 +10,16 @@ import org.bson.types.ObjectId
 import org.bson.{BsonReader, BsonWriter}
 
 class ReduceRequestCodec( piiCodec: Codec[PiiT], refCodec: Codec[CallRef], objCodec: Codec[PiObject] )
-  extends Codec[ReduceRequest] {
+  extends ClassCodec[ReduceRequest] {
 
   import com.workflowfm.pew.mongodb.bson.BsonUtil._
-
-  val msgTypeN = "msgType"
-  val msgType = "ReduceRequest"
 
   val piiN = "pii"
   val argsN = "args"
   val refN = "ref"
   val objN = "obj"
 
-  override def decode(reader: BsonReader, ctx: DecoderContext): ReduceRequest = {
-    reader.readStartDocument()
-    reader.readString( msgTypeN )
+  override def decodeBody(reader: BsonReader, ctx: DecoderContext): ReduceRequest = {
 
     reader.readName( piiN )
     val pii: PiInstance[ObjectId] = ctx.decodeWithChildContext( piiCodec, reader )
@@ -41,13 +37,10 @@ class ReduceRequestCodec( piiCodec: Codec[PiiT], refCodec: Codec[CallRef], objCo
       (ref, obj)
     }
 
-    reader.readEndDocument()
     ReduceRequest( pii, args )
   }
 
-  override def encode(writer: BsonWriter, value: ReduceRequest, ctx: EncoderContext): Unit = {
-    writer.writeStartDocument()
-    writer.writeString( msgTypeN, msgType )
+  override def encodeBody(writer: BsonWriter, value: ReduceRequest, ctx: EncoderContext): Unit = {
 
     writer.writeName( piiN )
     ctx.encodeWithChildContext( piiCodec, writer, value.pii )
@@ -64,10 +57,6 @@ class ReduceRequestCodec( piiCodec: Codec[PiiT], refCodec: Codec[CallRef], objCo
 
         writer.writeEndDocument()
     }
-
-    writer.writeEndDocument()
   }
-
-  override def getEncoderClass: Class[ReduceRequest] = REDUCE_REQUEST
 
 }

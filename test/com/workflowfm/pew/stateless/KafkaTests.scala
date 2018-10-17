@@ -58,7 +58,7 @@ trait KafkaTests extends ProcessExecutorTester {
   val completeProcessStore
     = SimpleProcessStore(
       pai, pbi, pci, pci2,
-      ri, ri2, rif,
+      ri, // ri2, rif,
       failp
     )
 

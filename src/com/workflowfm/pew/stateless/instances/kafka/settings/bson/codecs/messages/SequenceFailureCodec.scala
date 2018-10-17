@@ -1,8 +1,8 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messages
 
+import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.SequenceFailure
-import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs
 import com.workflowfm.pew.{PiInstance, PiObject}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.types.ObjectId
@@ -14,13 +14,9 @@ class SequenceFailureCodec(
     objCodec: Codec[PiObject],
     errCodec: Codec[Throwable]
 
-  ) extends Codec[SequenceFailure] {
+  ) extends ClassCodec[SequenceFailure] {
 
   import com.workflowfm.pew.mongodb.bson.BsonUtil._
-  import PewCodecs._
-
-  val msgTypeN = "msgType"
-  val msgType = "SequenceFailure"
 
   val hasPiiN = "hasPii"
   val piiN = "pii"
@@ -30,9 +26,7 @@ class SequenceFailureCodec(
   val objN = "obj"
   val failN = "err"
 
-  override def decode(reader: BsonReader, ctx: DecoderContext): SequenceFailure = {
-    reader.readStartDocument()
-    reader.readString( msgTypeN )
+  override def decodeBody(reader: BsonReader, ctx: DecoderContext): SequenceFailure = {
 
     val hasPii: Boolean = reader.readBoolean( hasPiiN )
     reader.readName( piiN )
@@ -69,8 +63,6 @@ class SequenceFailureCodec(
       (ref, fail)
     }
 
-    reader.readEndDocument()
-
     SequenceFailure(
       eitherPii,
       results,
@@ -78,9 +70,7 @@ class SequenceFailureCodec(
     )
   }
 
-  override def encode(writer: BsonWriter, value: SequenceFailure, ctx: EncoderContext): Unit = {
-    writer.writeStartDocument()
-    writer.writeString( msgTypeN, msgType )
+  override def encodeBody(writer: BsonWriter, value: SequenceFailure, ctx: EncoderContext): Unit = {
 
     writer.writeBoolean( hasPiiN, value.pii.isRight )
     writer.writeName( piiN )
@@ -115,9 +105,5 @@ class SequenceFailureCodec(
 
         writer.writeEndDocument()
     }
-
-    writer.writeEndDocument()
   }
-
-  override def getEncoderClass: Class[SequenceFailure] = SEQFAIL_REQ
 }

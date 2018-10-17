@@ -23,6 +23,7 @@ class AnyCodec( registry: CodecRegistry )
     Class.forName( className ) // throw a ClassNotFound error if we won't be able to decode this.
     writer.writeString( classN, className )
 
+    writer.writeName( childN )
     ctx.encodeWithChildContext( codec( value.getClass ), writer, value )
 
     writer.writeEndDocument()
@@ -34,6 +35,7 @@ class AnyCodec( registry: CodecRegistry )
 
     val anyClass: Class[_] = Class.forName( reader.readString( classN ) )
 
+    reader.readName( childN )
     val anyValue: Any = ctx.decodeWithChildContext[Any]( codec( anyClass ), reader )
 
     reader.readEndDocument()

@@ -11,12 +11,8 @@ class PiFailureNoResultCodec[T]( piiCodec: Codec[PiInstance[T]] )
   val piiN: String = "pii"
 
   override def encodeBody(writer: BsonWriter, value: PiFailureNoResult[T], ctx: EncoderContext): Unit = {
-    writer.writeStartDocument()
-
     writer.writeName( piiN )
     ctx.encodeWithChildContext( piiCodec, writer, value.i )
-
-    writer.writeEndDocument()
   }
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): PiFailureNoResult[T] = {

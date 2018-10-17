@@ -1,24 +1,20 @@
 package com.workflowfm.pew.mongodb.bson
 
-import org.mongodb.scala.bson.collection.immutable.Document
-import org.mongodb.scala.bson.codecs.Macros
-import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
-import com.workflowfm.pew._
-
-import org.bson.types._
-import org.bson._
-import org.bson.codecs._
-import org.bson.codecs.configuration.{CodecProvider, CodecRegistry, CodecRegistries}
-import org.bson.codecs.configuration.CodecRegistries.{fromRegistries, fromProviders, fromCodecs}
-
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import org.bson.io._
-
 import java.nio.ByteBuffer
 import java.util
+
+import com.workflowfm.pew._
+import org.bson._
+import org.bson.codecs._
+import org.bson.codecs.configuration.CodecRegistries.{fromCodecs, fromProviders, fromRegistries}
+import org.bson.codecs.configuration.{CodecProvider, CodecRegistries}
+import org.bson.io._
+import org.bson.types._
+import org.junit.runner.RunWith
+import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
+import org.mongodb.scala.bson.collection.immutable.Document
+import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.junit.JUnitRunner
 
 import scala.collection.JavaConverters._
 import scala.language.implicitConversions
