@@ -8,7 +8,7 @@ import com.workflowfm.pew.mongodb.bson.helper.{ObjectIdCodec, Tuple2Codec}
 import com.workflowfm.pew.mongodb.bson.pitypes._
 import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, PiiHistory}
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.AnyKey
-import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.content.{CallRefCodec, ThrowableCodec}
+import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.content.CallRefCodec
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.keys.{KeyPiiIdCallCodec, KeyPiiIdCodec}
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messages._
 import org.bson.codecs.Codec
@@ -46,7 +46,7 @@ class KafkaCodecRegistry(
 
   new PiEventCallCodec[ObjectId]( idc, obj, procc ) with AutoCodec
   new PiEventExceptionCodec[ObjectId]( idc ) with AutoCodec
-  new PiEventProcessExceptionCodec[ObjectId]( idc ) with AutoCodec
+  private val peProcEx = new PiEventProcessExceptionCodec[ObjectId]( idc ) with AutoCodec
   new PiEventResultCodec[ObjectId]( piInst, anyc ) with AutoCodec
   new PiEventReturnCodec[ObjectId]( idc, anyc ) with AutoCodec
   new PiEventStartCodec[ObjectId]( piInst ) with AutoCodec
@@ -55,9 +55,6 @@ class KafkaCodecRegistry(
   new PiFailureNoSuchInstanceCodec[ObjectId]( idc ) with AutoCodec
   new PiFailureUnknownProcessCodec[ObjectId]( piInst ) with AutoCodec
   private val peEvent = new SuperclassCodec[PiEvent[ObjectId]] with AutoCodec
-
-  // Needs to be initialised before any 'ResultCodec' which depend on it.
-  private val throwable = new ThrowableCodec with AutoCodec
 
   // These use the PEW-REST Key codecs, need to be initialised after PEW
   private val callRef = new CallRefCodec with AutoCodec
@@ -68,7 +65,7 @@ class KafkaCodecRegistry(
   private val update = new PiiUpdateCodec( piInst ) with AutoCodec
   private val assgn = new AssignmentCodec( piInst, callRef, piRes ) with AutoCodec
   private val seqReq = new SequenceRequestCodec( callRef, obj ) with AutoCodec
-  private val seqfail = new SequenceFailureCodec( piInst, callRef, obj, throwable ) with AutoCodec
+  private val seqfail = new SequenceFailureCodec( piInst, callRef, obj, peProcEx ) with AutoCodec
   private val redReq = new ReduceRequestCodec( piInst, callRef, obj ) with AutoCodec
   private val res = new PiiLogCodec( peEvent ) with AutoCodec
 

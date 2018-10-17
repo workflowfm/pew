@@ -1,7 +1,7 @@
 package com.workflowfm.pew.stateless
 
 import com.workflowfm.pew.stateless.StatelessMessages._
-import com.workflowfm.pew.{AtomicProcess, PiInstance, PiObject, PiResource}
+import com.workflowfm.pew._
 import org.bson.types.ObjectId
 
 //noinspection TypeAnnotation
@@ -71,9 +71,11 @@ trait KafkaExampleTypes extends KafkaTests {
         Seq( PiResource( arg3, pci.inputs.head._1 ) )
       )
 
+    val pepeFinishing2 = PiEventProcessException( piiId, r2._1.id, testException )
+
     val sfFinishing21 = SequenceFailure( piiId, r2._1, testException )
-    val sfFinishing22 = SequenceFailure( pFinishing, Seq(), Seq( ( r2._1, testException ) ) )
-    val sfFinishing3 = SequenceFailure( pFinishing, Seq( r3 ), Seq( (r2._1, testException) ) )
+    val sfFinishing22 = SequenceFailure( pFinishing, Seq(), Seq( pepeFinishing2 ) )
+    val sfFinishing3 = SequenceFailure( pFinishing, Seq( r3 ), Seq( pepeFinishing2 ) )
 
     val srFinishing2 = SequenceRequest( piiId, r2 )
     val srFinishing3 = SequenceRequest( piiId, r3 )

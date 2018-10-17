@@ -3,7 +3,7 @@ package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messag
 import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.SequenceFailure
-import com.workflowfm.pew.{PiInstance, PiObject}
+import com.workflowfm.pew.{PiEventProcessException, PiInstance, PiObject}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.types.ObjectId
 import org.bson.{BsonReader, BsonWriter}
@@ -12,7 +12,7 @@ class SequenceFailureCodec(
     piiCodec: Codec[PiInstance[ObjectId]],
     refCodec: Codec[CallRef],
     objCodec: Codec[PiObject],
-    errCodec: Codec[Throwable]
+    errCodec: Codec[PiEventProcessException[ObjectId]]
 
   ) extends ClassCodec[SequenceFailure] {
 
@@ -51,16 +51,7 @@ class SequenceFailureCodec(
     }
 
     val failures = readArray( reader, failuresN ) { () =>
-      reader.readStartDocument()
-
-      reader.readName( refN )
-      val ref: CallRef = ctx.decodeWithChildContext( refCodec, reader )
-
-      reader.readName( failN )
-      val fail: Throwable = ctx.decodeWithChildContext( errCodec, reader )
-
-      reader.readEndDocument()
-      (ref, fail)
+      ctx.decodeWithChildContext( errCodec, reader )
     }
 
     SequenceFailure(
@@ -94,16 +85,7 @@ class SequenceFailureCodec(
     }
 
     writeArray( writer, failuresN, value.failures ) {
-      case ( ref, fail ) =>
-        writer.writeStartDocument()
-
-        writer.writeName( refN )
-        ctx.encodeWithChildContext( refCodec, writer, ref )
-
-        writer.writeName( failN )
-        ctx.encodeWithChildContext( errCodec, writer, fail )
-
-        writer.writeEndDocument()
+      ctx.encodeWithChildContext( errCodec, writer, _ )
     }
   }
 }

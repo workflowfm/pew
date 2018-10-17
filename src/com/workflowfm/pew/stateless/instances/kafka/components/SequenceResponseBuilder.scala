@@ -2,18 +2,21 @@ package com.workflowfm.pew.stateless.instances.kafka.components
 
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages._
-import com.workflowfm.pew.{PiEventProcessException, PiInstance, PiObject}
+import com.workflowfm.pew.{PiInstance, PiObject}
 import org.bson.types.ObjectId
 
 import scala.collection.immutable
 
 case class PartialResponse(
     pii:      Option[PiInstance[ObjectId]],
-    results:  immutable.Seq[(CallRef, PiObject)],
-    failures: immutable.Seq[(CallRef, Throwable)]
+    results:  immutable.Seq[CallResult],
+    failures: immutable.Seq[CallFailure]
   ) {
 
   def this() = this( None, immutable.Seq(), immutable.Seq() )
+
+  lazy val returnedCalls: Set[Int]
+    = ( ( results map (_._1.id) ) ++ ( failures map (_.ref) ) ).toSet
 
   /** We only *want* to send a response when we have actionable data to send:
     * - ReduceRequest <- The latest PiInstance *and* at least one call ref to sequence.
@@ -21,11 +24,8 @@ case class PartialResponse(
     */
   val hasPayload: Boolean
     = pii.exists( pii =>
-        if (failures.nonEmpty) {
-          val haveReturned: Set[Int] = ( ( results ++ failures ) map ( _._1 ) ).map( _.id ).toSet
-          pii.called.forall( haveReturned.contains )
-
-        } else results.nonEmpty
+        if (failures.nonEmpty)  pii.called.forall( returnedCalls.contains )
+        else                    results.nonEmpty
       )
 
   /** @return A full message which could be built with this data, or nothing.
@@ -33,8 +33,7 @@ case class PartialResponse(
   def message: Option[AnyMsg]
     = pii.map( pii =>
         if (failures.nonEmpty) {
-          val fail = failures.head
-          if (hasPayload) PiiLog( PiEventProcessException( pii.id, fail._1.id, fail._2 ) )
+          if (hasPayload) PiiLog( failures.head )
           else            SequenceFailure( pii, results, failures )
 
         } else ReduceRequest( pii, results )

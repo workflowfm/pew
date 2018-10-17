@@ -27,7 +27,7 @@ object StatelessMessages {
   ) extends PiiHistory
 
   type CallResult = (CallRef, PiObject)
-  type CallFailure = (CallRef, Throwable)
+  type CallFailure = PiEventProcessException[ObjectId]
 
   /** A PiiHistory message which helps collect outstanding SequenceRequests after a failure.
     *
@@ -51,9 +51,12 @@ object StatelessMessages {
 
   object SequenceFailure {
     def apply( id: ObjectId, ref: CallRef, err: Throwable ): SequenceFailure
-      = SequenceFailure( Left(id), Seq(), Seq((ref, err)) )
+      = SequenceFailure(
+        Left(id), Seq(),
+        Seq( PiEventProcessException( id, ref.id, err ) )
+      )
 
-    def apply( pii: PiInstance[ObjectId], results: Seq[(CallRef, PiObject)], failures: Seq[(CallRef, Throwable)] ): SequenceFailure
+    def apply( pii: PiInstance[ObjectId], results: Seq[CallResult], failures: Seq[CallFailure] ): SequenceFailure
       = SequenceFailure( Right( pii ), results, failures )
   }
 
@@ -79,9 +82,6 @@ object StatelessMessages {
   case class PiiLog( event: PiEvent[ObjectId] ) extends AnyMsg {
     def piiId: ObjectId = event.id
   }
-
-  // type ResultSuccess = PiiResult[PiObject]
-  // type ResultFailure = PiiResult[Throwable]
 
   def piiId( msg: AnyMsg ): ObjectId
     = msg match {

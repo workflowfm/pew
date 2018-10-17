@@ -4,7 +4,7 @@ import akka.kafka.ConsumerMessage.{Committable, CommittableOffset, CommittableOf
 import akka.kafka._
 import akka.kafka.scaladsl.Consumer.Control
 import akka.kafka.scaladsl.{Consumer, Producer, Transactional}
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Sink, Source}
 import akka.{Done, NotUsed}
 import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
@@ -298,7 +298,6 @@ case class MockTracked[Value](
     require( other.isInstanceOf[MockTracked[NewValue]] )
     val that: MockTracked[NewValue] = other.asInstanceOf[MockTracked[NewValue]]
 
-    require( part == that.part )
     copy( value = fn( value, that.value ), consuming = consuming + that.consuming )
   }
 }
