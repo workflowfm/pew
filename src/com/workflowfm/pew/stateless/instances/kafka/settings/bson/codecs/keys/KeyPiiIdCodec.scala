@@ -1,35 +1,23 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.keys
 
+import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.KeyPiiId
-import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs
-import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
+import org.bson.codecs.{DecoderContext, EncoderContext}
 import org.bson.{BsonReader, BsonWriter}
 
-class KeyPiiIdCodec
-  extends Codec[KeyPiiId] {
+class KeyPiiIdCodec extends ClassCodec[KeyPiiId] {
 
-  import PewCodecs._
+  val idN = "id"
 
-  val idN = "_id"
-
-  override def decode(reader: BsonReader, ctx: DecoderContext): KeyPiiId = {
-    reader.readStartDocument()
-
+  override def decodeBody(reader: BsonReader, ctx: DecoderContext): KeyPiiId = {
     reader.readName( idN )
     val piiId = reader.readObjectId()
 
-    reader.readEndDocument()
     KeyPiiId( piiId )
   }
 
-  override def encode(writer: BsonWriter, key: KeyPiiId, ctx: EncoderContext): Unit = {
-    writer.writeStartDocument()
-
+  override def encodeBody(writer: BsonWriter, key: KeyPiiId, ctx: EncoderContext): Unit = {
     writer.writeName( idN )
     writer.writeObjectId( key.piiId )
-
-    writer.writeEndDocument()
   }
-
-  override def getEncoderClass: Class[KeyPiiId] = KEY_PII_ID
 }
