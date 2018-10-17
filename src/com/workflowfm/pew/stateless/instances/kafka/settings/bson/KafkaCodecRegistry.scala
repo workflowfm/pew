@@ -2,6 +2,7 @@ package com.workflowfm.pew.stateless.instances.kafka.settings.bson
 
 import com.workflowfm.pew._
 import com.workflowfm.pew.mongodb.bson._
+import com.workflowfm.pew.mongodb.bson.auto.{AutoCodecRegistry, SuperclassCodec}
 import com.workflowfm.pew.mongodb.bson.events._
 import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs._
@@ -18,7 +19,7 @@ class KafkaCodecRegistry(
     baseRegistry: CodecRegistry = DEFAULT_CODEC_REGISTRY
 
   ) extends PiCodecProvider( processes )
-  with CodecRegistry {
+  with AutoCodecRegistry {
 
   import PewCodecs._
 
@@ -40,16 +41,17 @@ class KafkaCodecRegistry(
   private val piState = new PiStateCodec(this, processes)
   private val piInst = new PiInstanceCodec(this, processes)
 
-  private val peCall = new PiEventCallCodec[ObjectId]( idc, obj, procc )
-  private val peEx = new PiEventExceptionCodec[ObjectId]( idc )
-  private val peProcEx = new PiEventProcessExceptionCodec[ObjectId]( idc )
-  private val peRes = new PiEventResultCodec[ObjectId]( piInst, anyc )
-  private val peRet = new PiEventReturnCodec[ObjectId]( idc, anyc )
-  private val peStart = new PiEventStartCodec[ObjectId]( piInst )
-  private val peAProc = new PiFailureAtomicProcessIsCompositeCodec[ObjectId]( piInst )
-  private val peNoRes = new PiFailureNoResultCodec[ObjectId]( piInst )
-  private val peNoInst = new PiFailureNoSuchInstanceCodec[ObjectId]( idc )
-  private val peUnk = new PiFailureUnknownProcessCodec[ObjectId]( piInst )
+  private val peEvent = new SuperclassCodec[PiEvent[ObjectId]] with AutoCodec
+  new PiEventCallCodec[ObjectId]( idc, obj, procc ) with AutoCodec
+  new PiEventExceptionCodec[ObjectId]( idc ) with AutoCodec
+  new PiEventProcessExceptionCodec[ObjectId]( idc ) with AutoCodec
+  new PiEventResultCodec[ObjectId]( piInst, anyc ) with AutoCodec
+  new PiEventReturnCodec[ObjectId]( idc, anyc ) with AutoCodec
+  new PiEventStartCodec[ObjectId]( piInst ) with AutoCodec
+  new PiFailureAtomicProcessIsCompositeCodec[ObjectId]( piInst ) with AutoCodec
+  new PiFailureNoResultCodec[ObjectId]( piInst ) with AutoCodec
+  new PiFailureNoSuchInstanceCodec[ObjectId]( idc ) with AutoCodec
+  new PiFailureUnknownProcessCodec[ObjectId]( piInst ) with AutoCodec
 
   // Needs to be initialised before any 'ResultCodec' which depend on it.
   private val throwable = new ThrowableCodec
@@ -66,7 +68,7 @@ class KafkaCodecRegistry(
   private val seqReq = new SequenceRequestCodec( callRef, obj )
   private val seqfail = new SequenceFailureCodec( piInst, callRef, obj, throwable )
   private val redReq = new ReduceRequestCodec( piInst, callRef, obj )
-  private val res = new PiiLogCodec( this )
+  private val res = new PiiLogCodec( peEvent )
   private val piiHistory = new PiiHistoryCodec( seqReq, update, seqfail)
 
   // Initialised after both Keys & Msgs as it depends on them all.
@@ -84,18 +86,6 @@ class KafkaCodecRegistry(
 
   override def get[T]( clazz: Class[T], reg: CodecRegistry )
     : Codec[T] = ( clazz match {
-
-    // case PIEVENT              => ???
-    case PISTART              => peStart
-    case PIRESULT             => peRes
-    case PICALL               => peCall
-    case PIRETURN             => peRet
-    case PINORES              => peNoRes
-    case PIUNKNOWN            => peUnk
-    case PIFAPIS              => peAProc
-    case PIFNSI               => peNoInst
-    case PIEXCEPT             => peEx
-    case PIPROCEXCEPT         => peProcEx
 
     case OBJCLASS             => obj
     case CHANCLASS            => chan

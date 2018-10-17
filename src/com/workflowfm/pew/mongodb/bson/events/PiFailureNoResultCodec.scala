@@ -1,15 +1,16 @@
 package com.workflowfm.pew.mongodb.bson.events
 
+import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import com.workflowfm.pew.{PiFailureNoResult, PiInstance}
 import org.bson.{BsonReader, BsonWriter}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 
 class PiFailureNoResultCodec[T]( piiCodec: Codec[PiInstance[T]] )
-  extends Codec[PiFailureNoResult[T]] {
+  extends ClassCodec[PiFailureNoResult[T]] {
 
   val piiN: String = "pii"
 
-  override def encode(writer: BsonWriter, value: PiFailureNoResult[T], ctx: EncoderContext): Unit = {
+  override def encodeBody(writer: BsonWriter, value: PiFailureNoResult[T], ctx: EncoderContext): Unit = {
     writer.writeStartDocument()
 
     writer.writeName( piiN )
@@ -18,16 +19,11 @@ class PiFailureNoResultCodec[T]( piiCodec: Codec[PiInstance[T]] )
     writer.writeEndDocument()
   }
 
-  override def decode(reader: BsonReader, ctx: DecoderContext): PiFailureNoResult[T] = {
-    reader.readStartDocument()
+  override def decodeBody(reader: BsonReader, ctx: DecoderContext): PiFailureNoResult[T] = {
 
     reader.readName( piiN )
     val pii: PiInstance[T] = ctx.decodeWithChildContext( piiCodec, reader )
 
-    reader.readEndDocument()
     PiFailureNoResult( pii )
   }
-
-  override def getEncoderClass: Class[ PiFailureNoResult[T] ]
-    = classOf[ PiFailureNoResult[T] ]
 }

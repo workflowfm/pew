@@ -1,11 +1,12 @@
 package com.workflowfm.pew.mongodb.bson.events
 
 import com.workflowfm.pew._
+import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import org.bson.{BsonReader, BsonWriter}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 
 class PiEventCallCodec[T]( tCodec: Codec[T], objCodec: Codec[PiObject], procCodec: Codec[PiProcess] )
-  extends Codec[PiEventCall[T]] {
+  extends ClassCodec[PiEventCall[T]] {
 
   import com.workflowfm.pew.mongodb.bson.BsonUtil._
 
@@ -14,8 +15,7 @@ class PiEventCallCodec[T]( tCodec: Codec[T], objCodec: Codec[PiObject], procCode
   val atomicProcN: String = "proc"
   val argsN: String = "args"
 
-  override def encode(writer: BsonWriter, value: PiEventCall[T], ctx: EncoderContext): Unit = {
-    writer.writeStartDocument()
+  override def encodeBody(writer: BsonWriter, value: PiEventCall[T], ctx: EncoderContext): Unit = {
 
     writer.writeName( piiIdN )
     ctx.encodeWithChildContext( tCodec, writer, value.id )
@@ -28,12 +28,9 @@ class PiEventCallCodec[T]( tCodec: Codec[T], objCodec: Codec[PiObject], procCode
     writeArray( writer, argsN, value.args ) {
       ctx.encodeWithChildContext( objCodec, writer, _ )
     }
-
-    writer.writeEndDocument()
   }
 
-  override def decode(reader: BsonReader, ctx: DecoderContext): PiEventCall[T] = {
-    reader.readStartDocument()
+  override def decodeBody(reader: BsonReader, ctx: DecoderContext): PiEventCall[T] = {
 
     reader.readName( piiIdN )
     val tId: T = ctx.decodeWithChildContext( tCodec, reader )
@@ -49,10 +46,6 @@ class PiEventCallCodec[T]( tCodec: Codec[T], objCodec: Codec[PiObject], procCode
         ctx.decodeWithChildContext( objCodec, reader )
       }
 
-    reader.readEndDocument()
     PiEventCall( tId, ref, proc, args )
   }
-
-  override def getEncoderClass: Class[PiEventCall[T]]
-    = classOf[PiEventCall[T]]
 }

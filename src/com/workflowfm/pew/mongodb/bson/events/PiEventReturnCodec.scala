@@ -1,18 +1,18 @@
 package com.workflowfm.pew.mongodb.bson.events
 
 import com.workflowfm.pew.PiEventReturn
+import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.{BsonReader, BsonWriter}
 
 class PiEventReturnCodec[T]( tCodec: Codec[T], anyCodec: Codec[Any] )
-  extends Codec[PiEventReturn[T]] {
+  extends ClassCodec[PiEventReturn[T]] {
 
   val piiN: String = "pii"
   val refN: String = "ref"
   val resN: String = "res"
 
-  override def encode(writer: BsonWriter, value: PiEventReturn[T], ctx: EncoderContext): Unit = {
-    writer.writeStartDocument()
+  override def encodeBody(writer: BsonWriter, value: PiEventReturn[T], ctx: EncoderContext): Unit = {
 
     writer.writeName( piiN )
     ctx.encodeWithChildContext( tCodec, writer, value.id )
@@ -21,12 +21,9 @@ class PiEventReturnCodec[T]( tCodec: Codec[T], anyCodec: Codec[Any] )
 
     writer.writeName( resN )
     ctx.encodeWithChildContext( anyCodec, writer, value.result )
-
-    writer.writeEndDocument()
   }
 
-  override def decode(reader: BsonReader, ctx: DecoderContext): PiEventReturn[T] = {
-    reader.readStartDocument()
+  override def decodeBody(reader: BsonReader, ctx: DecoderContext): PiEventReturn[T] = {
 
     reader.readName( piiN )
     val id: T = ctx.decodeWithChildContext( tCodec, reader )
@@ -36,10 +33,6 @@ class PiEventReturnCodec[T]( tCodec: Codec[T], anyCodec: Codec[Any] )
     reader.readName( resN )
     val result: Any = ctx.decodeWithChildContext( anyCodec, reader )
 
-    reader.readStartDocument()
     PiEventReturn( id, ref, result )
   }
-
-  override def getEncoderClass: Class[PiEventReturn[T]]
-    = classOf[ PiEventReturn[T] ]
 }
