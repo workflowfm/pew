@@ -46,6 +46,16 @@ case class PiInstance[T](final val id:T, called:Seq[Int], process:PiProcess, sta
   def piFutureOf(ref:Int):Option[PiFuture] = state.threads.get(ref)
   
   def getProc(p:String):Option[PiProcess] = state.processes.get(p)
+
+  def getAtomicProc( name: String ): AtomicProcess = {
+    getProc( name ) match {
+      case None => throw UnknownProcessException( this, name )
+      case Some( proc ) => proc match {
+        case atomic: AtomicProcess => atomic
+        case _: PiProcess => throw AtomicProcessIsCompositeException( this, name )
+      }
+    }
+  }
   
   /**
    * Should the simulator wait for the workflow?

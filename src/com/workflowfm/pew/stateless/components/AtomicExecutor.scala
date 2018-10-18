@@ -1,7 +1,6 @@
 package com.workflowfm.pew.stateless.components
 
 import com.workflowfm.pew._
-import com.workflowfm.pew.execution.ProcessExecutor.UnknownProcessException
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.components.AtomicExecutor.ErrorHandler
 
@@ -18,33 +17,37 @@ class AtomicExecutor( errHandler: ErrorHandler )( implicit exec: ExecutionContex
   override def respond: Assignment => Future[AnyMsg] = {
     case Assignment( pii, ref, name, args ) =>
 
-      val callName: String = s"ProcExe($name: ${ref.id})"
-      lazy val handling: Handling = Handling( callName, run( errHandler ), fail )
+      def fail(t: Throwable): Future[SequenceFailure]
+        = Future.successful( SequenceFailure(pii.id, ref, t) )
 
-      def run( err: ErrorHandler )(): Future[AnyMsg] = {
-        println(s"Running: '$callName'.")
+      try {
+        val proc: AtomicProcess = pii.getAtomicProc( name )
 
-        val proc: Option[AtomicProcess]
-          = pii.getProc( name ).collect({ case ap: AtomicProcess => ap })
+        val callName: String = s"ProcExe($name: ${ref.id})"
+        lazy val handling: Handling = Handling(callName, run(errHandler), fail)
 
-        try {
-          proc
-          .getOrElse( throw UnknownProcessException( name ) )
-          .run( args map (_.obj) )
-          .map( res => SequenceRequest( pii.id, (ref, res) ) )
-          .recoverWith( err( proc.orNull )( handling ) )
+        def run(err: ErrorHandler)(): Future[AnyMsg] = {
+          println(s"Running: '$callName'.")
 
-        } catch {
-          case t: Throwable =>
-            err( proc.orNull )( handling )( PreExecutionException(t) )
+          try {
+            proc
+            .run(args map (_.obj))
+            .map(res => SequenceRequest(pii.id, (ref, res)))
+            .recoverWith(err(proc)(handling))
+
+          } catch {
+            case t: Throwable => err(proc)(handling)(PreExecutionException(t))
+          }
         }
+
+        println(s"Started: '$callName'.")
+        handling.run()
+
+      } catch {
+        case ex: UnknownProcessException[_]           => fail( ex )
+        case ex: AtomicProcessIsCompositeException[_] => fail( ex )
+        case ex: Exception                            => fail( ex )
       }
-
-      def fail( t: Throwable ): Future[SequenceFailure]
-        = Future.successful( SequenceFailure( pii.id, ref, t ) )
-
-      println(s"Started: '$callName'.")
-      handling.run()
   }
 }
 

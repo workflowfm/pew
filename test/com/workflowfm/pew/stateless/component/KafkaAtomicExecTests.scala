@@ -119,7 +119,7 @@ class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
   it should "continue processing Assignments after an exception" in {
     val msgsOf =
       runAEx(
-        ( assgnException, 1),
+        ( assgnException, 1 ),
         ( eg1.assgnInProgress, 1 ),
       )
 
@@ -131,7 +131,7 @@ class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
   it should "correctly respond to a CompositeProcess" in {
     val msgsOf =
       runAEx(
-        ( assgnCompositeProc, 1),
+        ( assgnCompositeProc, 1 ),
         ( eg1.assgnInProgress, 1 ),
       )
 

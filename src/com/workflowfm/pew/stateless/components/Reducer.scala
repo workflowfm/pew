@@ -1,7 +1,6 @@
 package com.workflowfm.pew.stateless.components
 
 import com.workflowfm.pew._
-import com.workflowfm.pew.execution.ProcessExecutor.{AtomicProcessIsCompositeException, UnknownProcessException}
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, ReduceRequest}
 import org.bson.types.ObjectId
@@ -53,11 +52,11 @@ class Reducer(
 
         case None =>
           //logger.error("[" + i.id + "] Unable to find process: " + name)
-          throw UnknownProcessException( name )
+          throw UnknownProcessException( i, name )
 
         case Some(_: CompositeProcess) =>
           //logger.error("[" + i.id + "] Executor encountered composite process thread: " + name)
-          throw AtomicProcessIsCompositeException( name )
+          throw AtomicProcessIsCompositeException( i, name )
       }
     }
   }
@@ -71,8 +70,8 @@ class Reducer(
           case Some(p: AtomicProcess) => Assignment( piReduced, ref, p.name, args )
 
           // These should never happen! We already checked in the reducer!
-          case None    => SequenceFailure( piReduced.id, ref, UnknownProcessException(name) )
-          case Some(_) => SequenceFailure( piReduced.id, ref, AtomicProcessIsCompositeException(name) )
+          case None    => SequenceFailure( piReduced.id, ref, UnknownProcessException( piReduced, name ) )
+          case Some(_) => SequenceFailure( piReduced.id, ref, AtomicProcessIsCompositeException( piReduced, name ) )
         }
     }
   }

@@ -1,26 +1,16 @@
 package com.workflowfm.pew.mongodb
 
 import akka.actor.ActorSystem
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import com.workflowfm.pew._
-import com.workflowfm.pew.mongodb._
-import org.mongodb.scala.MongoClient
+import com.workflowfm.pew.execution.RexampleTypes._
 import com.workflowfm.pew.execution._
-import RexampleTypes._
 import org.bson.types.ObjectId
+import org.junit.runner.RunWith
+import org.mongodb.scala.MongoClient
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.junit.JUnitRunner
+
 import scala.concurrent.Promise
-import scala.util.Success
-import scala.util.Failure
-import scala.concurrent.duration._
-import org.scalatest.BeforeAndAfterAll
 
 @RunWith(classOf[JUnitRunner])
 class MongoExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll with ProcessExecutorTester {
@@ -128,7 +118,7 @@ class MongoExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     val f1 = promise.future
     ex.update(new ObjectId(), (x=>x), 0, promise)
       
-    a [ProcessExecutor.NoSuchInstanceException] should be thrownBy await(f1)
+    a [NoSuchInstanceException[ObjectId]] should be thrownBy await(f1)
 	}
   
   it should "handle a failing atomic process" in {

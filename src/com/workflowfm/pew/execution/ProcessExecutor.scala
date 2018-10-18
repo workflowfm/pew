@@ -86,7 +86,9 @@ object ProcessExecutor {
   // def default = SingleBlockingExecutor(Map[String,PiProcess]())
   
   final case class AlreadyExecutingException(private val cause: Throwable = None.orNull)
-                    extends Exception("Unable to execute more than one process at a time", cause) 
+                    extends Exception("Unable to execute more than one process at a time", cause)
+
+  /*
   final case class UnknownProcessException(val process:String, private val cause: Throwable = None.orNull)
                     extends Exception("Unknown process: " + process, cause) 
   final case class AtomicProcessIsCompositeException(val process:String, private val cause: Throwable = None.orNull)
@@ -94,7 +96,8 @@ object ProcessExecutor {
   final case class NoResultException(val id:String, private val cause: Throwable = None.orNull)
                     extends Exception("Failed to get result for: " + id, cause) 
   final case class NoSuchInstanceException(val id:String, private val cause: Throwable = None.orNull)
-                    extends Exception("Failed to find instance with id: " + id, cause) 
+                    extends Exception("Failed to find instance with id: " + id, cause)
+  */
 }
 
 trait SimulatorExecutor[KeyT] extends ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
@@ -120,13 +123,6 @@ trait ProcessExecutorTester {
       throw e
     }
   }
-
-  def awaitErr[A]( f: Future[A] ): Either[A, Throwable]
-    = try {
-      Left( Await.result( f, 15.seconds ) )
-    } catch {
-      case e: Throwable => Right( e )
-    }
 
 //  def awaitf[A](f:Future[Future[A]]):A = try {
 //    Await.result(Await.result(f,15.seconds),15.seconds)

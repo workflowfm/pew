@@ -2,7 +2,7 @@ package com.workflowfm.pew.stateless
 
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
-import com.workflowfm.pew.{PewTestSuite, PiInstance, PiObject, PromiseHandler}
+import com.workflowfm.pew._
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -161,7 +161,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
     val ex = makeExecutor( failureProcessSettings )
     val f1 = ex.execute( failp, Seq(1) )
 
-    awaitErr( f1 ).map( _.getMessage ) shouldBe Right( "FailP" )
+    a [RemoteProcessException[ObjectId]] should be thrownBy await(f1)
     ex.syncShutdown()
 
     val msgsOf = new MessageDrain( true )
@@ -177,7 +177,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
     val ex = makeExecutor( failureProcessSettings )
     val f1 = ex.execute( rif, Seq(21) )
 
-    awaitErr( f1 ).map( _.getMessage ) shouldBe Right( "Fail" )
+    a [RemoteProcessException[ObjectId]] should be thrownBy await(f1)
     ex.syncShutdown()
 
     val msgsOf = new MessageDrain( true )
