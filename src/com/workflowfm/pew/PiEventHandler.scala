@@ -1,5 +1,6 @@
 package com.workflowfm.pew
 
+import com.workflowfm.pew.stateless.StatelessMessages.CallResult
 import org.apache.commons.lang3.exception.ExceptionUtils
 
 import scala.collection.immutable.Queue
@@ -12,6 +13,17 @@ sealed trait PiEvent[KeyT] {
 
 sealed trait PiExceptionEvent[KeyT] extends PiEvent[KeyT] {
   def exception: PiException[KeyT]
+
+  /** Jev, Override `toString` method as printing entire the entire trace by default gets old.
+    */
+  override def toString: String = {
+    val ex: PiException[KeyT] = exception
+
+    val typeName: String = ex.getClass.getSimpleName
+    val message: String = ex.getMessage
+
+    s"$typeName:$id($message)"
+  }
 }
 
 case class PiEventStart[KeyT](i:PiInstance[KeyT]) extends PiEvent[KeyT] {
@@ -26,11 +38,16 @@ case class PiEventResult[KeyT](i:PiInstance[KeyT], res:Any) extends PiEvent[KeyT
 }
 
 case class PiEventCall[KeyT](override val id:KeyT, ref:Int, p:AtomicProcess, args:Seq[PiObject]) extends PiEvent[KeyT] {
-	override def asString = " === [" + id + "] PROCESS CALL:" +  p.name + " (" + ref + ") args: " + args.mkString(",")
+	override def asString: String = s" === [$id] PROCESS CALL: ${p.name} ($ref) args: ${args.mkString(",")}"
 }
 
 case class PiEventReturn[KeyT](override val id:KeyT, ref:Int, result:Any) extends PiEvent[KeyT] {
-	override def asString = " === [" + id + "] PROCESS RETURN: (" + ref + ") returned: " + result  
+	override def asString: String = s" === [$id] PROCESS RETURN: ($ref) returned: $result"
+}
+
+object PiEventReturn {
+  def apply[KeyT]( id: KeyT, callResult: CallResult ): PiEventReturn[KeyT]
+    = PiEventReturn[KeyT]( id, callResult._1.id, callResult._2 )
 }
 
 case class PiFailureNoResult[KeyT](i:PiInstance[KeyT]) extends PiEvent[KeyT] with PiExceptionEvent[KeyT] {

@@ -40,7 +40,7 @@ class KafkaReducerTests extends PewTestSuite with KafkaExampleTypes {
     msgsOf.consuming shouldBe 1
     msgsOf.value[PiiUpdate] should have size 1
     msgsOf.value[Assignment] should have size 1
-    msgsOf.value[PiiLog] shouldBe empty
+    msgsOf.value[PiiLog] should have size 1
 
     // msgsOf.value[PiiUpdate].head.pii.state.calls should have size 1
   }
@@ -54,7 +54,7 @@ class KafkaReducerTests extends PewTestSuite with KafkaExampleTypes {
     msgsOf.consuming shouldBe 1
     msgsOf.value[PiiUpdate] should have size 1
     msgsOf.value[Assignment] should have size 2
-    msgsOf.value[PiiLog] shouldBe empty
+    msgsOf.value[PiiLog] should have size 2
   }
 
   it should "handle a ReduceRequest completing a PiInstance" in {

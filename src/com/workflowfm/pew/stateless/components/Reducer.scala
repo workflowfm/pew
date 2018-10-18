@@ -30,10 +30,10 @@ class Reducer(
     }) else {
 
       val ( toCall, piiReady ) = handleThreads( piiReduced )
-      val futureCalls = (toCall map CallRef.apply) zip (toCall flatMap piiReady.piFutureOf)
+      val futureCalls = (toCall map CallRef.apply) zip ( toCall flatMap piiReady.piFutureOf )
 
       val updateMsg = PiiUpdate( piiReady )
-      val requests = futureCalls map ( getMessages( piiReady )(_, _) ).tupled
+      val requests = futureCalls flatMap (getMessages( piiReady )(_, _)).tupled
 
       requests :+ updateMsg
     }
@@ -50,28 +50,27 @@ class Reducer(
 
         case Some(_: AtomicProcess) => true
 
-        case None =>
-          //logger.error("[" + i.id + "] Unable to find process: " + name)
-          throw UnknownProcessException( i, name )
-
-        case Some(_: CompositeProcess) =>
-          //logger.error("[" + i.id + "] Executor encountered composite process thread: " + name)
-          throw AtomicProcessIsCompositeException( i, name )
+        case None => throw UnknownProcessException( i, name )
+        case Some(_) => throw AtomicProcessIsCompositeException( i, name )
       }
     }
   }
 
-  def getMessages( piReduced: PiInstance[ObjectId] )( ref: CallRef, fut: PiFuture ): AnyMsg = {
+  def getMessages( piReduced: PiInstance[ObjectId] )( ref: CallRef, fut: PiFuture ): Seq[AnyMsg] = {
+    val piiId: ObjectId = piReduced.id
     fut match {
       case PiFuture(name, _, args) =>
         piReduced.getProc(name) match {
 
           // Request that the process be executed.
-          case Some(p: AtomicProcess) => Assignment( piReduced, ref, p.name, args )
+          case Some(p: AtomicProcess) => Seq(
+            Assignment( piReduced, ref, p.name, args ),
+            PiiLog( PiEventCall( piiId, ref.id, p, args map (_.obj) ) )
+          )
 
           // These should never happen! We already checked in the reducer!
-          case None    => SequenceFailure( piReduced.id, ref, UnknownProcessException( piReduced, name ) )
-          case Some(_) => SequenceFailure( piReduced.id, ref, AtomicProcessIsCompositeException( piReduced, name ) )
+          case None    => Seq( SequenceFailure( piiId, ref, UnknownProcessException( piReduced, name ) ) )
+          case Some(_) => Seq( SequenceFailure( piiId, ref, AtomicProcessIsCompositeException( piReduced, name ) ) )
         }
     }
   }

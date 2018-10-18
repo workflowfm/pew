@@ -6,14 +6,14 @@ import com.workflowfm.pew.PewTestSuite
 import com.workflowfm.pew.stateless.KafkaExampleTypes
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows.flowSequencer
-import com.workflowfm.pew.stateless.instances.kafka.components.MockTracked
+import com.workflowfm.pew.stateless.instances.kafka.components.{MockTracked, Tracked}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class KafkaSequencerTests extends PewTestSuite with KafkaExampleTypes {
 
-  def runSequencer(history: (PiiHistory, Int)*): Seq[MockTracked[Seq[AnyMsg]]]
+  def runSequencer(history: (PiiHistory, Int)*): Seq[MockTracked[MessageMap]]
     = await(
         MockTracked
         .source(history)
@@ -21,6 +21,7 @@ class KafkaSequencerTests extends PewTestSuite with KafkaExampleTypes {
         .via(flowSequencer)
         .mergeSubstreams
         .runWith(Sink.seq)(ActorMaterializer())
+        .map( _.map( Tracked.fmap( new MessageMap(_) ) ) )
       )
 
   it should "sequence 1 PiiUpdate and 1 SequenceRequest" in {
@@ -30,8 +31,9 @@ class KafkaSequencerTests extends PewTestSuite with KafkaExampleTypes {
     )
 
     res should have size 1
-    res.head.value should have size 1
     res.head.consuming shouldBe 2
+    res.head.value[ReduceRequest] should have size 1
+    res.head.value[PiiLog] should have size 1
   }
 
   it should "sequence 2 PiiUpdates from different Piis and 1 SequenceRequest" in {
@@ -42,8 +44,9 @@ class KafkaSequencerTests extends PewTestSuite with KafkaExampleTypes {
     )
 
     res should (have size 1)
-    res.head.value should (have size 2)
     res.head.consuming shouldBe 3
+    res.head.value[ReduceRequest] should have size 2
+    res.head.value[PiiLog] should have size 1
   }
 
   it should "sequence 4 PiiUpdate of 2 Piis and 1 SequenceRequest" in {
@@ -56,8 +59,9 @@ class KafkaSequencerTests extends PewTestSuite with KafkaExampleTypes {
     )
 
     res should (have size 1)
-    res.head.value should (have size 2)
     res.head.consuming shouldBe 5
+    res.head.value[ReduceRequest] should have size 2
+    res.head.value[PiiLog] should have size 1
   }
 
   it should "sequence only 1 of 2 PiiUpdates on different partitions with 1 SequenceRequest" in {
@@ -68,8 +72,10 @@ class KafkaSequencerTests extends PewTestSuite with KafkaExampleTypes {
     )
 
     res should (have size 1)
-    res.head.value should (have size 1)
     res.head.consuming shouldBe 2
+
+    res.head.value[ReduceRequest] should have size 1
+    res.head.value[PiiLog] should have size 1
   }
 
   it should "not sequence a PiiUpdate and SequenceRequest for different Piis" in {
@@ -97,10 +103,10 @@ class KafkaSequencerTests extends PewTestSuite with KafkaExampleTypes {
     res should (have size 1)
     res.head.consuming shouldBe 2
 
-    val msgsOf = new MessageMap( res.head.value )
-    msgsOf[ReduceRequest] shouldBe empty
-    msgsOf[SequenceFailure] shouldBe empty
-    msgsOf[PiiLog] should have size 1
+    res.head.value[ReduceRequest] shouldBe empty
+    res.head.value[SequenceFailure] shouldBe empty
+    res.head.value[PiiLog] should have size 1
+
   }
 
   it should "correctly complete a tangled SequenceFailure" in {
@@ -115,10 +121,9 @@ class KafkaSequencerTests extends PewTestSuite with KafkaExampleTypes {
     res should (have size 1)
     res.head.consuming shouldBe 5
 
-    val msgsOf = new MessageMap( res.head.value )
-    msgsOf[ReduceRequest] should have size 1
-    msgsOf[SequenceFailure] shouldBe empty
-    msgsOf[PiiLog] should have size 1
+    res.head.value[ReduceRequest] should have size 1
+    res.head.value[SequenceFailure] shouldBe empty
+    res.head.value[PiiLog] should have size 3
   }
 
   it should "correctly send a partially complete SequenceFailure" in {
@@ -132,20 +137,18 @@ class KafkaSequencerTests extends PewTestSuite with KafkaExampleTypes {
     res should (have size 1)
     res.head.consuming shouldBe 4
 
-    val msgsOf = new MessageMap( res.head.value )
-    msgsOf[ReduceRequest] should have size 1
-    msgsOf[SequenceFailure] should have size 1
-    msgsOf[PiiLog] shouldBe empty
+    res.head.value[ReduceRequest] should have size 1
+    res.head.value[SequenceFailure] should have size 1
+    res.head.value[PiiLog] should have size 1
   }
 
   it should "not send an incomplete SequenceFailure" in {
-    val res = runSequencer(
+    runSequencer(
       seqreq(p1, result, 1),
       seqfail(eg1.pFinishing, eg1.r2._1, 1),
       update(p1, 1),
-    )
 
-    res shouldBe empty
+    ) shouldBe empty
   }
 
   it should "correctly resume and complete a partial SequenceFailure" in {
@@ -157,10 +160,9 @@ class KafkaSequencerTests extends PewTestSuite with KafkaExampleTypes {
     res should (have size 1)
     res.head.consuming shouldBe 2
 
-    val msgsOf = new MessageMap( res.head.value )
-    msgsOf[ReduceRequest] shouldBe empty
-    msgsOf[SequenceFailure] shouldBe empty
-    msgsOf[PiiLog] should have size 1
+    res.head.value[ReduceRequest] shouldBe empty
+    res.head.value[SequenceFailure] shouldBe empty
+    res.head.value[PiiLog] should have size 1
   }
 
   it should "correctly handle an outstanding irreducible PiiUpdate" in {
@@ -173,10 +175,9 @@ class KafkaSequencerTests extends PewTestSuite with KafkaExampleTypes {
     res should (have size 1)
     res.head.consuming shouldBe 3
 
-    val msgsOf = new MessageMap( res.head.value )
-    msgsOf[ReduceRequest] should have size 2
-    msgsOf[SequenceFailure] shouldBe empty
-    msgsOf[PiiLog] shouldBe empty
+    res.head.value[ReduceRequest] should have size 2
+    res.head.value[SequenceFailure] shouldBe empty
+    res.head.value[PiiLog] should have size 1
   }
 
 }

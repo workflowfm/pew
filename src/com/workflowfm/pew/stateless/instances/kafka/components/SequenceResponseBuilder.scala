@@ -2,7 +2,7 @@ package com.workflowfm.pew.stateless.instances.kafka.components
 
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages._
-import com.workflowfm.pew.{PiInstance, PiObject}
+import com.workflowfm.pew.{PiEventReturn, PiInstance, PiObject}
 import org.bson.types.ObjectId
 
 import scala.collection.immutable
@@ -28,16 +28,19 @@ case class PartialResponse(
         else                    results.nonEmpty
       )
 
+  val cantSend: Boolean = pii.isEmpty
+
   /** @return A full message which could be built with this data, or nothing.
     */
-  def message: Option[AnyMsg]
+  def message: Seq[AnyMsg]
     = pii.map( pii =>
         if (failures.nonEmpty) {
-          if (hasPayload) PiiLog( failures.head )
-          else            SequenceFailure( pii, results, failures )
+          if (hasPayload) failures.map( PiiLog( _ ) )
+          else Seq( SequenceFailure( pii, results, failures ) )
 
-        } else ReduceRequest( pii, results )
-      )
+        } else ReduceRequest( pii, results ) +: results.map( r => PiiLog( PiEventReturn( pii.id, r ) ) )
+
+      ).getOrElse( Seq() )
 
   /** Overwrite with the latest PiInstance information.
     */
@@ -90,14 +93,13 @@ class SequenceResponseBuilder[T[X] <: Tracked[X]](
     // - None if we lack information for a ReduceRequest
     // - Or a complete response. However, this isn't final,
     //   it may be updated when integrating new messages.
-    val messages: Seq[Option[AnyMsg]]
-      = responses.toSeq.map( _._2.message )
+    lazy val allMessages: Seq[AnyMsg] = responses.values.flatMap( _.message ).toSeq
 
     // All PiInstances we've received information for need to be "reduced"
     // otherwise we would lose their state information when they are consumed.
     // Additionally, for performance: do not emmit empty responses.
-    if ( messages.isEmpty || messages.exists( _.isEmpty ) ) None
-    else Some( Tracked.freplace( Tracked.flatten(consuming.reverse) )( messages.flatten ) )
+    if ( responses.values.exists( _.cantSend ) || allMessages.isEmpty ) None
+    else Some( Tracked.freplace( Tracked.flatten(consuming.reverse) )( allMessages ) )
 
   } else None // If there is no reduce request with a payload, wait for one.
 
