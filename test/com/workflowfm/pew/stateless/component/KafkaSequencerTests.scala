@@ -6,16 +6,16 @@ import com.workflowfm.pew.PewTestSuite
 import com.workflowfm.pew.stateless.KafkaExampleTypes
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows.flowSequencer
-import com.workflowfm.pew.stateless.instances.kafka.components.{MockTracked, Tracked}
+import com.workflowfm.pew.stateless.instances.kafka.components.{MockTransaction, Tracked}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class KafkaSequencerTests extends PewTestSuite with KafkaExampleTypes {
 
-  def runSequencer(history: (PiiHistory, Int)*): Seq[MockTracked[MessageMap]]
+  def runSequencer(history: (PiiHistory, Int)*): Seq[MockTransaction[MessageMap]]
     = await(
-        MockTracked
+        MockTransaction
         .source(history)
         .groupBy(Int.MaxValue, _.part)
         .via(flowSequencer)

@@ -283,13 +283,55 @@ object Untracked
 
 }
 
+case class MockTransaction[Value](
+    value: Value,
+    part: Int,
+    minOffset: Long,
+    maxOffset: Long
+
+  ) extends Tracked[Value] with HasPartition[Value] {
+
+  def this( value: Value, part: Int, offset: Long )
+    = this( value, part, offset, offset + 1 )
+
+  def consuming: Long = maxOffset - minOffset
+
+  override protected def map[NewValue](fn: Value => NewValue): Tracked[NewValue]
+    = copy( value = fn( value ) )
+
+  override protected def fold[NewValue](fn: (Value, NewValue) => Value)(other: Tracked[NewValue]): Tracked[Value] = {
+    require( other.isInstanceOf[MockTransaction[NewValue]] )
+    val that: MockTransaction[NewValue] = other.asInstanceOf[MockTransaction[NewValue]]
+
+    // Strict checks to emulate requirements merging requirements of real Transactions.
+    require( part == that.part, s"Cannot merge messages on different partitions" )
+    require( that.minOffset + 1 == that.maxOffset, s"Target message cannot already be aggregated!" )
+    require( minOffset < maxOffset, s"Messages must be consumed in chronological order!" )
+    require( that.minOffset < that.maxOffset, s"Messages must be consumed in chronological order!" )
+    require( that.minOffset == maxOffset, s"Messages cannot be skipped! ($maxOffset -> ${that.minOffset})" )
+
+    copy( value = fn( value, that.value ), maxOffset = that.maxOffset )
+  }
+}
+
+object MockTransaction {
+
+  def source[Value]( messages: Seq[(Value, Int)] ): Source[MockTransaction[Value], NotUsed]
+    = Source
+      .fromIterator( () => messages.iterator )
+      .groupBy( Int.MaxValue, _._2 )
+      .zip( Source(1 to Int.MaxValue) )
+      .map({ case ((msg, part), i) => new MockTransaction( msg, part, i ) })
+      .mergeSubstreams
+
+}
+
 case class MockTracked[Value](
     value: Value,
     part: Int,
-    consuming: Long // Number of messages to consume.
+    consuming: Long
 
-  ) extends Tracked[Value]
-  with HasPartition[Value] {
+  ) extends Tracked[Value] {
 
   override protected def map[NewValue](fn: Value => NewValue): Tracked[NewValue]
     = copy( value = fn( value ) )
@@ -304,9 +346,13 @@ case class MockTracked[Value](
 
 object MockTracked {
 
+  def apply[T]( mock: MockTransaction[T] ): MockTracked[T]
+    = MockTracked( mock.value, mock.part, mock.maxOffset - mock.minOffset )
+
   def source[Value]( messages: Seq[(Value, Int)] ): Source[MockTracked[Value], NotUsed]
-    = Source.fromIterator( () => messages.iterator )
-      .map({ case (msg, part) => MockTracked( msg, part, 1 ) })
+    = Source
+      .fromIterator( () => messages.iterator )
+      .map({ case (v, p) => MockTracked(v, p, 1) })
 
 }
 
