@@ -63,7 +63,7 @@ class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
         .source( history )
         .groupBy( Int.MaxValue, _.part )
         .via( flowRespond( AtomicExecutor() ) )
-        .via( flowWaitFuture( 1 )( completeProcessSettings ) )
+        .via( flowWaitFuture( 1 )( completeProcess.settings ) )
         .mergeSubstreams
         .runWith(Sink.seq)(ActorMaterializer())
 

@@ -16,7 +16,7 @@ import scala.reflect.ClassTag
 @RunWith(classOf[JUnitRunner])
 class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
 
-  val registry: CodecRegistry = completeProcessSettings.reg
+  val registry: CodecRegistry = completeProcess.settings.reg
 
   def testCodec[T]( tOriginal: T )( implicit ct: ClassTag[T], codec: Codec[T] ): scalatest.Assertion = {
 

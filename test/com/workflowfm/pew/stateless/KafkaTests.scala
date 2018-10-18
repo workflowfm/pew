@@ -55,22 +55,26 @@ trait KafkaTests extends ProcessExecutorTester {
   def newSettings( piStore: PiProcessStore ): BsonKafkaExecutorSettings
     = new BsonKafkaExecutorSettings( new KafkaCodecRegistry( piStore ), system, executionContext )
 
-  val completeProcessSettings
-    = newSettings( SimpleProcessStore(
+  class ProcessType( val store: PiProcessStore) extends Object {
+    val settings: BsonKafkaExecutorSettings = newSettings( store )
+  }
+
+  lazy val completeProcess: ProcessType
+    = new ProcessType( SimpleProcessStore(
       pai, pbi, pci, pci2,
       ri, // ri2, rif,
       failp
     ))
 
-  val failureProcessSettings
-    = newSettings( SimpleProcessStore(
+  lazy val failureProcess: ProcessType
+    = new ProcessType( SimpleProcessStore(
       pai, pbi, pcif, pci2,
       ri, ri2, rif,
       failp
     ))
 
-  val shutdownProcessSettings
-    = newSettings( SimpleProcessStore(
+  lazy val shutdownProcess: ProcessType
+    = new ProcessType( SimpleProcessStore(
       pai, pbi, pciw, pci2,
       ri, ri2, rif,
       failp
@@ -85,7 +89,7 @@ trait KafkaTests extends ProcessExecutorTester {
 
   // TODO: Fix consumer shutdown: https://github.com/akka/alpakka-kafka/issues/166
   def outstanding( consume: Boolean ): Seq[ AnyMsg ] = {
-    implicit val s: KafkaExecutorSettings = completeProcessSettings
+    implicit val s: KafkaExecutorSettings = completeProcess.settings
 
     if (consume) println("!!! CONSUMING OUTSTANDING MESSAGES !!!")
 

@@ -18,7 +18,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "execute atomic PbI once" in {
 
-    val ex = makeExecutor( completeProcessSettings )
+    val ex = makeExecutor( completeProcess.settings )
     val f1 = ex.execute( pbi, Seq(1) )
 
     await( f1 ) should be ("PbISleptFor1s")
@@ -34,7 +34,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "execute atomic PbI twice concurrently" in {
 
-    val ex = makeExecutor( completeProcessSettings )
+    val ex = makeExecutor( completeProcess.settings )
     val f1 = ex.execute(pbi,Seq(2))
     val f2 = ex.execute(pbi,Seq(1))
 
@@ -52,7 +52,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "execute Rexample once" in {
 
-    val ex = makeExecutor( completeProcessSettings )
+    val ex = makeExecutor( completeProcess.settings )
     val f1 = ex.execute(ri,Seq(21))
 
     await(f1) should be (("PbISleptFor2s","PcISleptFor1s"))
@@ -68,7 +68,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "execute Rexample once with same timings" in {
 
-    val ex = makeExecutor( completeProcessSettings )
+    val ex = makeExecutor( completeProcess.settings )
     val f1 = ex.execute(ri,Seq(11))
 
     await(f1) should be (("PbISleptFor1s","PcISleptFor1s"))
@@ -84,7 +84,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "execute Rexample twice concurrently" in {
 
-    val ex = makeExecutor( completeProcessSettings )
+    val ex = makeExecutor( completeProcess.settings )
     val f1 = ex.execute(ri,Seq(31))
     val f2 = ex.execute(ri,Seq(12))
 
@@ -102,7 +102,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "execute Rexample twice with same timings concurrently" in {
 
-    val ex = makeExecutor( completeProcessSettings )
+    val ex = makeExecutor( completeProcess.settings )
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri,Seq(11))
 
@@ -120,7 +120,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "execute Rexample thrice concurrently" in {
 
-    val ex = makeExecutor( completeProcessSettings )
+    val ex = makeExecutor( completeProcess.settings )
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri,Seq(11))
     val f3 = ex.execute(ri,Seq(11))
@@ -140,7 +140,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "execute Rexample twice, each with a differnt component" in {
 
-    val ex = makeExecutor( completeProcessSettings )
+    val ex = makeExecutor( completeProcess.settings )
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri2,Seq(11))
 
@@ -158,7 +158,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "handle a failing atomic process" in {
 
-    val ex = makeExecutor( failureProcessSettings )
+    val ex = makeExecutor( failureProcess.settings )
     val f1 = ex.execute( failp, Seq(1) )
 
     a [RemoteProcessException[ObjectId]] should be thrownBy await(f1)
@@ -174,7 +174,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "handle a failing composite process" in {
 
-    val ex = makeExecutor( failureProcessSettings )
+    val ex = makeExecutor( failureProcess.settings )
     val f1 = ex.execute( rif, Seq(21) )
 
     a [RemoteProcessException[ObjectId]] should be thrownBy await(f1)
@@ -190,8 +190,8 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   it should "2 separate executors should execute with same timings concurrently" in {
 
-    val ex1 = makeExecutor( completeProcessSettings )
-    val ex2 = makeExecutor( completeProcessSettings )
+    val ex1 = makeExecutor( completeProcess.settings )
+    val ex2 = makeExecutor( completeProcess.settings )
 
     val f1 = ex1.execute(ri,Seq(11))
     val f2 = ex2.execute(ri,Seq(11))
@@ -210,10 +210,10 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
     msgsOf[PiiUpdate] shouldBe empty
    }
 
-  private def fixShutdown1 = new {
+  lazy val fixShutdown1 = new {
 
     val ourPiiId: ObjectId = {
-      val ex = makeExecutor( shutdownProcessSettings )
+      val ex = makeExecutor( shutdownProcess.settings )
       val futId: Future[ObjectId] = ex.call(ri, Seq(21))
 
       Thread.sleep(10.seconds.toMillis)
@@ -229,11 +229,12 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
     val fstMsgs: MessageMap = new MessageDrain( false )
 
     {
-      val ex = makeExecutor( completeProcessSettings )
+      val ex = makeExecutor( completeProcess.settings )
       ex.subscribe(handler)
       pciw.continue()
     }
 
+    val result: Any = await( handler.future )
     val sndMsgs: MessageMap = new MessageDrain( true )
   }
 
@@ -260,7 +261,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
     val f = fixShutdown1
 
-    await( f.handler.future ) should be (("PbISleptFor2s","PcISleptFor1s"))
+    f.result should be (("PbISleptFor2s","PcISleptFor1s"))
 
     f.sndMsgs[SequenceRequest] shouldBe empty
     f.sndMsgs[SequenceFailure] shouldBe empty
@@ -273,9 +274,9 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
     // Construct and send an outstanding PiiUpdate message to test robustness.
     val oldPii: PiInstance[ObjectId] = PiInstance.forCall( ObjectId.get, ri, 2, 1 )
-    KafkaConnectors.sendMessages( PiiUpdate( oldPii ) )( completeProcessSettings )
+    KafkaConnectors.sendMessages( PiiUpdate( oldPii ) )( completeProcess.settings )
 
-    val ex = makeExecutor( completeProcessSettings )
+    val ex = makeExecutor( completeProcess.settings )
     val f1 = ex.execute(ri, Seq(21))
 
     await(f1) should be (("PbISleptFor2s","PcISleptFor1s"))
@@ -307,9 +308,9 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 //          PiInstance.forCall( ObjectId.get, ri, 2, 1 )
 //        ).collect({ case update: PiiUpdate => update }).head
 
-    KafkaConnectors.sendMessages( oldMsg )( completeProcessSettings )
+    KafkaConnectors.sendMessages( oldMsg )( completeProcess.settings )
 
-    val ex = makeExecutor( completeProcessSettings )
+    val ex = makeExecutor( completeProcess.settings )
     val f1 = ex.execute(ri, Seq(21))
 
     await(f1) should be (("PbISleptFor2s","PcISleptFor1s"))
