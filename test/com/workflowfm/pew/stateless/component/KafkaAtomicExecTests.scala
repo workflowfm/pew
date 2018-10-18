@@ -12,7 +12,8 @@ import org.bson.types.ObjectId
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
-import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 @RunWith(classOf[JUnitRunner])
 class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
@@ -67,10 +68,11 @@ class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
         .mergeSubstreams
         .runWith(Sink.seq)(ActorMaterializer())
 
-    await(
-      fut
-        .map( Tracked.flatten )
-        .map( Tracked.fmap( new MessageMap(_) ) )
+    Await.result(
+      fut.map( Tracked.flatten )
+      .map( Tracked.fmap( new MessageMap(_) ) ),
+
+      1.minute
     )
   }
 
@@ -105,6 +107,20 @@ class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
 
     msgsOf.consuming shouldBe 3
     msgsOf.value[SequenceRequest] should have size 3
+    msgsOf.value[SequenceFailure] shouldBe empty
+  }
+
+  it should "correctly handle a batch of Assignments on different partitions" in {
+    val msgsOf =
+      runAEx(
+        (eg1.assgnInProgress, 1), (eg1.assgnFinishing2, 2), (eg1.assgnFinishing3, 3),
+        (eg1.assgnInProgress, 2), (eg1.assgnFinishing2, 3), (eg1.assgnFinishing3, 1),
+        (eg1.assgnInProgress, 3), (eg1.assgnFinishing2, 1), (eg1.assgnFinishing3, 2),
+        (eg1.assgnInProgress, 1), (eg1.assgnFinishing2, 2), (eg1.assgnFinishing3, 3),
+      )
+
+    msgsOf.consuming shouldBe 12
+    msgsOf.value[SequenceRequest] should have size 12
     msgsOf.value[SequenceFailure] shouldBe empty
   }
 
