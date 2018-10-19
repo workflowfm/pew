@@ -1,10 +1,9 @@
 package com.workflowfm.pew.execution
 
 import com.workflowfm.pew._
+
 import scala.concurrent._
-import scala.concurrent.duration.Duration
-import scala.annotation.tailrec
-import scala.util.{Success,Failure}
+import scala.util.{Failure, Success}
 
 /**
  * Executes any PiProcess asynchronously.
@@ -16,7 +15,7 @@ import scala.util.{Success,Failure}
 
 class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStore)(override implicit val context: ExecutionContext = ExecutionContext.global) extends SimulatorExecutor[Int] with SimplePiObservable[Int] {
   def this(store:PiInstanceStore[Int], l:PiProcess*) = this(store,SimpleProcessStore(l :_*))
-  def this(l:PiProcess*) = this(SimpleInstanceStore(),SimpleProcessStore(l :_*))
+  def this(l:PiProcess*) = this(SimpleInstanceStore[Int](),SimpleProcessStore(l :_*))
   
   var ctr:Int = 0
   

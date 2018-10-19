@@ -4,14 +4,20 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import com.workflowfm.pew._
 import com.workflowfm.pew.execution._
-import com.workflowfm.pew.skiexample.SkiExampleTypes._
+import com.workflowfm.pew.skiexample.SkiExampleTypes.{Exception, PriceNOK, _}
 import com.workflowfm.pew.skiexample.processes._
 import com.workflowfm.pew.skiexample.instances._
 import org.mongodb.scala.MongoClient
 import com.workflowfm.pew.mongodb.MongoExecutor
 import akka.actor.ActorSystem
+import com.workflowfm.pew.stateless.instances.kafka.CompleteKafkaExecutor
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
+import com.workflowfm.pew.stateless.instances.kafka.settings.bson.{BsonKafkaExecutorSettings, KafkaCodecRegistry}
+import org.bson.codecs.configuration.CodecRegistry
 
 object GetSkiMain {
+
+	type Output = Either[PriceNOK,Exception]
 	
   def main(args: Array[String]): Unit = {
 		val selectModel = new SelectModelInstance
@@ -24,24 +30,36 @@ object GetSkiMain {
 		val getSki = new GetSki(cM2Inch , selectLength , selectModel , selectSki , uSD2NOK)
 		
 		implicit val system: ActorSystem = ActorSystem("GetSkiMain")
-    implicit val executionContext = ExecutionContext.global
+    implicit val executionContext: ExecutionContext = ExecutionContext.global
       //system.dispatchers.lookup("akka.my-dispatcher") 
 		
 		//implicit val executor:FutureExecutor = SingleBlockingExecutor()
    	//implicit val executor:FutureExecutor = new MultiStateExecutor(selectModel, selectLength, cM2Inch, uSD2NOK, selectSki, getSki)
-		implicit val executor:FutureExecutor = new AkkaExecutor(system,executionContext,10.seconds,selectModel, selectLength, cM2Inch, uSD2NOK, selectSki, getSki)
-    
+		//implicit val executor:FutureExecutor = new AkkaExecutor(system,executionContext,10.seconds,selectModel, selectLength, cM2Inch, uSD2NOK, selectSki, getSki)
+
+		implicit val executor: FutureExecutor = {
+
+			val procs: Seq[PiProcess] = Seq( selectModel, selectLength, cM2Inch, uSD2NOK, selectSki, getSki )
+			val piStore: PiProcessStore = SimpleProcessStore( procs flatMap (p => p +: p.allDependencies): _*  )
+			val fullRegistry: CodecRegistry = new KafkaCodecRegistry( piStore )
+
+			implicit val settings: KafkaExecutorSettings
+				= new BsonKafkaExecutorSettings( fullRegistry, system, executionContext )
+
+			FutureExecutorAdapter( CompleteKafkaExecutor[Output] )
+		}
+
 		//val client = MongoClient()
     //implicit val executor = new MongoDBExecutor(client, "pew", "test_exec_insts", selectModel, selectLength, cM2Inch, uSD2NOK, selectSki, getSki)
 		
-		val fs1 = 1 to 10 map { x => (x,getSki( "height" , "price" , "skill" , "weight" )) }
-    val fs2 = 1 to 10 map { x => (x,getSki( "h" , "p" , "s" , "w" )) }
+		val fs1 = 1 to 10 map { x => (x, getSki( "height" , "price" , "skill" , "weight" )) }
+    val fs2 = 1 to 10 map { x => (x, getSki( "h" , "p" , "s" , "w" )) }
 	
 		try {
 		  for ((i,f) <- fs1)
-		    println("*** Result A" + i + ": " + Await.result(f,10.seconds))
+		    println( s"*** Result A$i: '${Await.result(f,10.seconds)}'.")
 		  for ((i,f) <- fs2)
-		    println("*** Result B" + i + ": " + Await.result(f,10.seconds))
+		    println( s"*** Result B$i: '${Await.result(f,10.seconds)}'.")
 		} catch {
 		  case e:Throwable => e.printStackTrace()
 		}

@@ -3,7 +3,6 @@ package com.workflowfm.pew.execution
 import com.workflowfm.pew._
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.collection.mutable.Map
 
 /**
  * Executes an atomic process - blocking
@@ -25,69 +24,71 @@ case class AtomicProcessExecutor(process:AtomicProcess) {
 /**
  * Trait representing the ability to execute any PiProcess
  */
-trait ProcessExecutor[KeyT] { this:PiObservable[KeyT] => 
+trait ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
   /**
-   * Initializes a PiInstance for a process execution.
-   * This is always and only invoked before a {@code start}, hence why it is protected.
-   * This separation gives a chance to PiEventHandlers to subscribe before execution starts.
-   * @param process The (atomic or composite) PiProcess to be executed 
-   * @param args The PiObject arguments to be passed to the process
-   * @return A Future with the new unique ID that was generated
-   */
+    * Initializes a PiInstance for a process execution.
+    * This is always and only invoked before a {@code start}, hence why it is protected.
+    * This separation gives a chance to PiEventHandlers to subscribe before execution starts.
+    * @param process The (atomic or composite) PiProcess to be executed
+    * @param args The PiObject arguments to be passed to the process
+    * @return A Future with the new unique ID that was generated
+    */
   protected def init(process:PiProcess,args:Seq[PiObject]):Future[KeyT]
-  
+
   /**
-   * Starts the execution of an initialized PiInstance.
-   * This is always and only invoked after an {@code init}, hence why it is protected.
-   * This separation gives a chance to PiEventHandlers to subscribe before execution starts.
-   * @param id The ID of the instance to start executing
-   */
+    * Starts the execution of an initialized PiInstance.
+    * This is always and only invoked after an {@code init}, hence why it is protected.
+    * This separation gives a chance to PiEventHandlers to subscribe before execution starts.
+    * @param id The ID of the instance to start executing
+    */
   protected def start(id:KeyT):Unit
-  
+
   implicit val context: ExecutionContext
 
   /**
-   * A simple {@code init ; start} sequence when we do not need any even listeners.
-   * @param process The (atomic or composite) PiProcess to be executed 
-   * @param args The (real) arguments to be passed to the process
-   * @return A Future with the ID corresponding to this execution
-   */
-	def call(process:PiProcess,args:Seq[Any]):Future[KeyT] = {
+    * A simple {@code init ; start} sequence when we do not need any even listeners.
+    * @param process The (atomic or composite) PiProcess to be executed
+    * @param args The (real) arguments to be passed to the process
+    * @return A Future with the ID corresponding to this execution
+    */
+  def call(process:PiProcess,args:Seq[Any]):Future[KeyT] = {
     init(process,args map PiObject.apply) map { id => start(id) ; id }
   }
-	
+
   /**
-   * A {@code init ; start} sequence that gives us a chance to subscribe a listener
-   * that is specific to this execution.
-   * @param process The (atomic or composite) PiProcess to be executed 
-   * @param args The (real) arguments to be passed to the process
-   * @param factory A PiEventHandlerFactory which generates PiEventHandler's for a given ID
-   * @return A Future with the PiEventHandler that was generated
-   */
-	def call[H <: PiEventHandler[KeyT]](process:PiProcess,args:Seq[Any],factory:PiEventHandlerFactory[KeyT,H]):Future[H] = {
-	   init(process,args map PiObject.apply) map { id => 
-	     val handler = factory.build(id) 
-	     subscribe(handler) 
-	     start(id)
-	     handler
-	   }
+    * A {@code init ; start} sequence that gives us a chance to subscribe a listener
+    * that is specific to this execution.
+    * @param process The (atomic or composite) PiProcess to be executed
+    * @param args The (real) arguments to be passed to the process
+    * @param factory A PiEventHandlerFactory which generates PiEventHandler's for a given ID
+    * @return A Future with the PiEventHandler that was generated
+    */
+  def call[H <: PiEventHandler[KeyT]](process:PiProcess,args:Seq[Any],factory:PiEventHandlerFactory[KeyT,H]):Future[H] = {
+    init(process,args map PiObject.apply) map { id =>
+      val handler = factory.build(id)
+      subscribe(handler)
+      start(id)
+      handler
+    }
   }
-	
-	/**
-   * Executes a process with a PromiseHandler
-   * @param process The (atomic or composite) PiProcess to be executed 
-   * @param args The (real) arguments to be passed to the process
-   * @return A Future with the result of the executed process
-   */
-  def execute(process:PiProcess,args:Seq[Any]):Future[Any] = 
+
+  /**
+    * Executes a process with a PromiseHandler
+    * @param process The (atomic or composite) PiProcess to be executed
+    * @param args The (real) arguments to be passed to the process
+    * @return A Future with the result of the executed process
+    */
+  def execute(process:PiProcess,args:Seq[Any]):Future[Any] =
     call(process,args,new PromiseHandlerFactory[KeyT]({ id => "["+id+"]"})) flatMap (_.future)
 }
 
 object ProcessExecutor {
-  //def default = SingleBlockingExecutor(Map[String,PiProcess]())
+  // def default = SingleBlockingExecutor(Map[String,PiProcess]())
   
   final case class AlreadyExecutingException(private val cause: Throwable = None.orNull)
-                    extends Exception("Unable to execute more than one process at a time", cause) 
+                    extends Exception("Unable to execute more than one process at a time", cause)
+
+  /*
   final case class UnknownProcessException(val process:String, private val cause: Throwable = None.orNull)
                     extends Exception("Unknown process: " + process, cause) 
   final case class AtomicProcessIsCompositeException(val process:String, private val cause: Throwable = None.orNull)
@@ -95,22 +96,23 @@ object ProcessExecutor {
   final case class NoResultException(val id:String, private val cause: Throwable = None.orNull)
                     extends Exception("Failed to get result for: " + id, cause) 
   final case class NoSuchInstanceException(val id:String, private val cause: Throwable = None.orNull)
-                    extends Exception("Failed to find instance with id: " + id, cause) 
+                    extends Exception("Failed to find instance with id: " + id, cause)
+  */
 }
 
-trait SimulatorExecutor[KeyT] extends ProcessExecutor[KeyT] { this:PiObservable[KeyT] => 
-  /** 
-   *  This should check all executing PiInstances if they are simulationReady.
-   *  This means that all possible execution has been performed and they are all
-   *  waiting for simulation time to pass.
-   *  @return true if all PiInstances are simulationReady
-   */
+trait SimulatorExecutor[KeyT] extends ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
+  /**
+    *  This should check all executing PiInstances if they are simulationReady.
+    *  This means that all possible execution has been performed and they are all
+    *  waiting for simulation time to pass.
+    *  @return true if all PiInstances are simulationReady
+    */
   def simulationReady:Boolean
 }
 
 /**
- * Shortcut methods for unit testing
- */
+  * Shortcut methods for unit testing
+  */
 trait ProcessExecutorTester {
   def exe(e:ProcessExecutor[_],p:PiProcess,args:Any*) = await(e.execute(p,args:Seq[Any]))
   def await[A](f:Future[A]):A = try {
@@ -121,7 +123,7 @@ trait ProcessExecutorTester {
       throw e
     }
   }
-  
+
 //  def awaitf[A](f:Future[Future[A]]):A = try {
 //    Await.result(Await.result(f,15.seconds),15.seconds)
 //  } catch {
@@ -130,4 +132,5 @@ trait ProcessExecutorTester {
 //      throw e
 //    }
 //  }
+
 }

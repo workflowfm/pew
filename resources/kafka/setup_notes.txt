@@ -1,0 +1,14 @@
+
+Kafka Quick-Start Guide:
+http://kafka.apache.org/quickstart
+
+Kafka Download (windows and linux):
+- Versions 2.11 - 2.0.0 should work.
+https://www.apache.org/dyn/closer.cgi?path=/kafka/2.0.0/kafka_2.11-2.0.0.tgz
+
+From a terminal in this directory:
+- Run "bash ./start-servers.sh ./path/to/kafkaRoot"
+    This will start a zookeeper server then a kafka server as child processes.
+- Run "bash ./clean-topics.sh ./path/to/kafkaRoot"
+    This will delete then create the kafka topics with the correct settings.
+
