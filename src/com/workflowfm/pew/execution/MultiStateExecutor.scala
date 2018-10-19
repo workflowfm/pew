@@ -4,6 +4,7 @@ import com.workflowfm.pew._
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.annotation.tailrec
+import scala.util.{Success,Failure}
 
 /**
  * Executes any PiProcess asynchronously.
@@ -13,31 +14,40 @@ import scala.annotation.tailrec
  * promises/futures from the first workflow can trigger changes on the state!
  */
 
-class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStore)(override implicit val context: ExecutionContext = ExecutionContext.global) extends FutureExecutor {
+class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStore)(override implicit val context: ExecutionContext = ExecutionContext.global) extends SimulatorExecutor[Int] with SimplePiObservable[Int] {
   def this(store:PiInstanceStore[Int], l:PiProcess*) = this(store,SimpleProcessStore(l :_*))
   def this(l:PiProcess*) = this(SimpleInstanceStore(),SimpleProcessStore(l :_*))
   
   var ctr:Int = 0
-  val handler = new PromiseHandler[Int]
   
-  def call(p:PiProcess,args:PiObject*) = store.synchronized {
+  override protected def init(p:PiProcess,args:Seq[PiObject]) = store.synchronized {
 	  val inst = PiInstance(ctr,p,args:_*)
-	  val ret = handler.start(inst)
-	  val ni = inst.reduce
-    if (ni.completed) ni.result match {
-		  case None => {
-			  handler.failure(ni,ProcessExecutor.NoResultException(ni.id.toString()))
-		  }
-		  case Some(res) => {
-			  handler.success(ni, res)
-		  }
-	  } else {
-		  store = store.put(ni.handleThreads(handleThread(ni.id))._2)
-	  }
+	  store = store.put(inst)
 	  ctr = ctr + 1
-	  ret
+	  Future.successful(ctr-1)
   }
-  
+
+  override def start(id:Int):Unit = store.get(id) match {
+    case None => publish(PiFailureNoSuchInstance(id))
+    case Some(inst) => {
+      publish(PiEventStart(inst))
+  	  val ni = inst.reduce
+      if (ni.completed) ni.result match {
+  		  case None => {
+  			  publish(PiFailureNoResult(ni))
+  			  store = store.del(id)
+  		  }
+  		  case Some(res) => {
+  			  publish(PiEventResult(ni, res))
+  			  store = store.del(id)
+  		  }
+  	  } else {
+  		  val (_,resi) = ni.handleThreads(handleThread(ni))
+  			store = store.put(resi)
+  	  }
+    }
+  }
+   
   final def run(id:Int,f:PiInstance[Int]=>PiInstance[Int]):Unit = store.synchronized {
 	  store.get(id) match {
       case None => System.err.println("*** [" + id + "] No running instance! ***")
@@ -48,34 +58,42 @@ class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStor
           val ni = f(i).reduce
     		  if (ni.completed) ni.result match {
       		  case None => {
-      			  handler.failure(ni,ProcessExecutor.NoResultException(ni.id.toString()))
+      			  publish(PiFailureNoResult(ni))
       			  store = store.del(ni.id)
       		  }
       		  case Some(res) => {
-      			  handler.success(ni, res)
+      			  publish(PiEventResult(ni, res))
       			  store = store.del(ni.id)
       		  }
     		  } else {
-    			  store = store.put(ni.handleThreads(handleThread(ni.id))._2)
+    			  store = store.put(ni.handleThreads(handleThread(ni))._2)
     		  }
         }
 	  }
   }
  
-  def handleThread(id:Int)(ref:Int,f:PiFuture):Boolean = {
-     System.err.println("*** [" + id + "] Handling thread: " + ref + " (" + f.fun + ")")
+  def handleThread(i:PiInstance[Int])(ref:Int,f:PiFuture):Boolean = {
+     System.err.println("*** [" + i.id + "] Handling thread: " + ref + " (" + f.fun + ")")
     f match {
-    case PiFuture(name, outChan, args) => processes get name match {
+    case PiFuture(name, outChan, args) => i.getProc(name) match {
       case None => {
-        System.err.println("*** [" + id + "] ERROR *** Unable to find process: " + name)
+        System.err.println("*** [" + i.id + "] ERROR *** Unable to find process: " + name)
         false
       }
       case Some(p:AtomicProcess) => {
-        p.run(args map (_.obj)).onSuccess{ case res => postResult(id,ref,res) }
-        System.err.println("*** [" + id + "] Called process: " + p.name + " ref:" + ref)
+        val objs = args map (_.obj)
+        publish(PiEventCall(i.id,ref,p,objs))
+        p.run(args map (_.obj)).onComplete{ 
+          case Success(res) => {
+            publish(PiEventReturn(i.id,ref,res))
+            postResult(i.id,ref,res)
+          }
+          case Failure (ex) => publish(PiEventProcessException(i.id,ref,ex))
+        }
+        System.err.println("*** [" + i.id + "] Called process: " + p.name + " ref:" + ref)
         true
       }
-      case Some(p:CompositeProcess) => { System.err.println("*** [" + id + "] Executor encountered composite process thread: " + name); false } // TODO this should never happen!
+      case Some(p:CompositeProcess) => { System.err.println("*** [" + i.id + "] Executor encountered composite process thread: " + name); false } // TODO this should never happen!
     }
   } }
     
@@ -85,7 +103,4 @@ class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStor
   }
  
   override def simulationReady:Boolean = store.simulationReady
-  
-  override def execute(process:PiProcess,args:Seq[Any]):Future[Future[Any]] =
-    Future.successful(call(process,args map PiObject.apply :_*))
 }

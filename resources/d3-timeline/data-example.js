@@ -63,7 +63,7 @@ var resourceData = [
 ]},
 ];
 
-var simulationData = [
+var workflowData = [
 {label: "D2", times: [
 	{"label":"CheckOutcome(D2)", task: "CheckOutcome", "starting_time": 43200000, "ending_time": 50400000},
 	{"label":"AwardContract(D2)", task: "AwardContract", "starting_time": 3600000, "ending_time": 7200000},

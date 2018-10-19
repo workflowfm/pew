@@ -3,7 +3,7 @@ name := "PEW"
 sbtVersion := "1.2.3"
 
 lazy val commonSettings = Seq (
-	version := "0.1-SNAPSHOT",
+	version := "0.2-SNAPSHOT",
 	organization := "com.workflowfm",
 	scalaVersion := "2.12.3"
 )
@@ -20,6 +20,8 @@ libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.4.12"
 libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.5.16" % "test"
+
+libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.3.2"
     
 libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.2.1"
 
