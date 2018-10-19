@@ -43,7 +43,7 @@ object PiException {
     case ex: UnknownProcessException[KeyT]            => PiFailureUnknownProcess( ex.pii, ex.process )
     case ex: AtomicProcessIsCompositeException[KeyT]  => PiFailureAtomicProcessIsComposite( ex.pii, ex.process )
     case ex: NoSuchInstanceException[KeyT]            => PiFailureNoSuchInstance( ex.id )
-    case ex: RemoteException[KeyT]                    => PiEventException( ex.id, ex.message, ex.stackTrace )
-    case ex: RemoteProcessException[KeyT]             => PiEventProcessException( ex.id, ex.ref, ex.message, ex.stackTrace )
+    case ex: RemoteException[KeyT]                    => PiEventException( ex.id, ex.message, ex.stackTrace, System.nanoTime() )
+    case ex: RemoteProcessException[KeyT]             => PiEventProcessException( ex.id, ex.ref, ex.message, ex.stackTrace, System.nanoTime() )
   }
 }

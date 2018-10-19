@@ -9,10 +9,13 @@ class PiFailureNoResultCodec[T]( piiCodec: Codec[PiInstance[T]] )
   extends ClassCodec[PiFailureNoResult[T]] {
 
   val piiN: String = "pii"
+  val timeN: String = "timestamp"
 
   override def encodeBody(writer: BsonWriter, value: PiFailureNoResult[T], ctx: EncoderContext): Unit = {
     writer.writeName( piiN )
     ctx.encodeWithChildContext( piiCodec, writer, value.i )
+    
+    writer.writeInt64( timeN, value.time )
   }
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): PiFailureNoResult[T] = {
@@ -20,6 +23,8 @@ class PiFailureNoResultCodec[T]( piiCodec: Codec[PiInstance[T]] )
     reader.readName( piiN )
     val pii: PiInstance[T] = ctx.decodeWithChildContext( piiCodec, reader )
 
-    PiFailureNoResult( pii )
+    val time: Long = reader.readInt64( timeN )
+    
+    PiFailureNoResult( pii, time )
   }
 }

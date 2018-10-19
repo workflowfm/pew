@@ -11,6 +11,7 @@ class PiEventReturnCodec[T]( tCodec: Codec[T], anyCodec: Codec[Any] )
   val piiN: String = "pii"
   val refN: String = "ref"
   val resN: String = "res"
+  val timeN: String = "timestamp"
 
   override def encodeBody(writer: BsonWriter, value: PiEventReturn[T], ctx: EncoderContext): Unit = {
 
@@ -21,6 +22,8 @@ class PiEventReturnCodec[T]( tCodec: Codec[T], anyCodec: Codec[Any] )
 
     writer.writeName( resN )
     ctx.encodeWithChildContext( anyCodec, writer, value.result )
+    
+    writer.writeInt64( timeN, value.time )
   }
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): PiEventReturn[T] = {
@@ -33,6 +36,8 @@ class PiEventReturnCodec[T]( tCodec: Codec[T], anyCodec: Codec[Any] )
     reader.readName( resN )
     val result: Any = ctx.decodeWithChildContext( anyCodec, reader )
 
-    PiEventReturn( id, ref, result )
+    val time: Long = reader.readInt64( timeN )
+    
+    PiEventReturn( id, ref, result, time )
   }
 }

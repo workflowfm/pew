@@ -10,6 +10,7 @@ class PiEventResultCodec[T]( piiCodec: Codec[PiInstance[T]], anyCodec: Codec[Any
 
   val piiN: String = "pii"
   val resultN: String = "result"
+  val timeN: String = "timestamp"
 
   override def encodeBody(writer: BsonWriter, value: PiEventResult[T], ctx: EncoderContext): Unit = {
 
@@ -18,6 +19,8 @@ class PiEventResultCodec[T]( piiCodec: Codec[PiInstance[T]], anyCodec: Codec[Any
 
     writer.writeName( resultN )
     ctx.encodeWithChildContext( anyCodec, writer, value.res )
+    
+    writer.writeInt64( timeN, value.time )
   }
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): PiEventResult[T] = {
@@ -28,6 +31,8 @@ class PiEventResultCodec[T]( piiCodec: Codec[PiInstance[T]], anyCodec: Codec[Any
     reader.readName( resultN )
     val result: Any = ctx.decodeWithChildContext( anyCodec, reader )
 
-    PiEventResult( pii, result )
+    val time: Long = reader.readInt64( timeN )
+    
+    PiEventResult( pii, result, time )
   }
 }

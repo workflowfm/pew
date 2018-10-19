@@ -12,6 +12,7 @@ class PiEventProcessExceptionCodec[T]( tCodec: Codec[T] )
   val callRefN: String = "ref"
   val messageN: String = "msg"
   val stackTraceN: String = "trace"
+  val timeN: String = "timestamp"
 
   override def encodeBody(writer: BsonWriter, value: PiEventProcessException[T], ctx: EncoderContext): Unit = {
 
@@ -21,6 +22,8 @@ class PiEventProcessExceptionCodec[T]( tCodec: Codec[T] )
     writer.writeInt32( callRefN, value.ref )
     writer.writeString( messageN, value.message )
     writer.writeString( stackTraceN, value.stackTrace )
+    
+    writer.writeInt64( timeN, value.time )
   }
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): PiEventProcessException[T] = {
@@ -32,6 +35,8 @@ class PiEventProcessExceptionCodec[T]( tCodec: Codec[T] )
     val msg: String = reader.readString( messageN )
     val trace: String = reader.readString( stackTraceN )
 
-    PiEventProcessException( tId, ref, msg, trace )
+    val time: Long = reader.readInt64( timeN )
+    
+    PiEventProcessException( tId, ref, msg, trace, time )
   }
 }

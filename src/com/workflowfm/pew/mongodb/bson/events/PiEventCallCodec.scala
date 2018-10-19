@@ -14,6 +14,7 @@ class PiEventCallCodec[T]( tCodec: Codec[T], objCodec: Codec[PiObject], procCode
   val callRefN: String = "ref"
   val atomicProcN: String = "proc"
   val argsN: String = "args"
+  val timeN: String = "timestamp"
 
   override def encodeBody(writer: BsonWriter, value: PiEventCall[T], ctx: EncoderContext): Unit = {
 
@@ -28,6 +29,8 @@ class PiEventCallCodec[T]( tCodec: Codec[T], objCodec: Codec[PiObject], procCode
     writeArray( writer, argsN, value.args ) {
       ctx.encodeWithChildContext( objCodec, writer, _ )
     }
+    
+    writer.writeInt64( timeN, value.time )
   }
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): PiEventCall[T] = {

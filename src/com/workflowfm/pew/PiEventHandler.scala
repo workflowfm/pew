@@ -2,6 +2,9 @@ package com.workflowfm.pew
 
 import com.workflowfm.pew.stateless.StatelessMessages.CallResult
 import org.apache.commons.lang3.exception.ExceptionUtils
+import java.time.Instant
+import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
 
 import scala.collection.immutable.Queue
 import scala.concurrent.Promise
@@ -9,6 +12,7 @@ import scala.concurrent.Promise
 sealed trait PiEvent[KeyT] {
   def id:KeyT
   def asString:String
+  val time:Long
 }
 
 sealed trait PiExceptionEvent[KeyT] extends PiEvent[KeyT] {
@@ -26,22 +30,22 @@ sealed trait PiExceptionEvent[KeyT] extends PiEvent[KeyT] {
   }
 }
 
-case class PiEventStart[KeyT](i:PiInstance[KeyT]) extends PiEvent[KeyT] {
+case class PiEventStart[KeyT](i:PiInstance[KeyT], override val time:Long=System.nanoTime()) extends PiEvent[KeyT] {
   override def id = i.id
   override def asString = " === [" + i.id + "] INITIAL STATE === \n" + i.state + "\n === === === === === === === ==="
 }
 
-case class PiEventResult[KeyT](i:PiInstance[KeyT], res:Any) extends PiEvent[KeyT] {
+case class PiEventResult[KeyT](i:PiInstance[KeyT], res:Any, override val time:Long=System.nanoTime()) extends PiEvent[KeyT] {
   override def id = i.id
   override def asString = " === [" + i.id + "] FINAL STATE === \n" + i.state + "\n === === === === === === === ===\n" +
       " === [" + i.id + "] RESULT: " + res
 }
 
-case class PiEventCall[KeyT](override val id:KeyT, ref:Int, p:AtomicProcess, args:Seq[PiObject]) extends PiEvent[KeyT] {
+case class PiEventCall[KeyT](override val id:KeyT, ref:Int, p:AtomicProcess, args:Seq[PiObject], override val time:Long=System.nanoTime()) extends PiEvent[KeyT] {
 	override def asString: String = s" === [$id] PROCESS CALL: ${p.name} ($ref) args: ${args.mkString(",")}"
 }
 
-case class PiEventReturn[KeyT](override val id:KeyT, ref:Int, result:Any) extends PiEvent[KeyT] {
+case class PiEventReturn[KeyT](override val id:KeyT, ref:Int, result:Any, override val time:Long=System.nanoTime()) extends PiEvent[KeyT] {
 	override def asString: String = s" === [$id] PROCESS RETURN: ($ref) returned: $result"
 }
 
@@ -50,14 +54,14 @@ object PiEventReturn {
     = PiEventReturn[KeyT]( id, callResult._1.id, callResult._2 )
 }
 
-case class PiFailureNoResult[KeyT](i:PiInstance[KeyT]) extends PiEvent[KeyT] with PiExceptionEvent[KeyT] {
+case class PiFailureNoResult[KeyT](i:PiInstance[KeyT], override val time:Long=System.nanoTime()) extends PiEvent[KeyT] with PiExceptionEvent[KeyT] {
   override def id: KeyT = i.id
   override def asString: String = s" === [$id] FINAL STATE ===\n${i.state}\n === === === === === === === ===\n === [$id] NO RESULT! ==="
 
   override def exception: PiException[KeyT] = NoResultException[KeyT]( i )
 }
 
-case class PiFailureUnknownProcess[KeyT](i:PiInstance[KeyT], process:String) extends PiExceptionEvent[KeyT] {
+case class PiFailureUnknownProcess[KeyT](i:PiInstance[KeyT], process:String, override val time:Long=System.nanoTime()) extends PiExceptionEvent[KeyT] {
   override def id: KeyT = i.id
 	override def asString: String = s" === [$id] FINAL STATE === \n${i.state}\n === === === === === === === ===\n" +
 			s" === [$id] FAILED - Unknown process: $process"
@@ -65,7 +69,7 @@ case class PiFailureUnknownProcess[KeyT](i:PiInstance[KeyT], process:String) ext
   override def exception: PiException[KeyT] = UnknownProcessException[KeyT]( i, process )
 }
 
-case class PiFailureAtomicProcessIsComposite[KeyT]( i: PiInstance[KeyT], process: String ) extends PiExceptionEvent[KeyT] {
+case class PiFailureAtomicProcessIsComposite[KeyT]( i: PiInstance[KeyT], process: String , override val time:Long=System.nanoTime()) extends PiExceptionEvent[KeyT] {
   override def id: KeyT = i.id
 	override def asString: String = s" === [$id] FINAL STATE === \n${i.state}\n === === === === === === === ===\n" +
 			s" === [$id] FAILED - Executor encountered composite process thread: $process"
@@ -73,19 +77,19 @@ case class PiFailureAtomicProcessIsComposite[KeyT]( i: PiInstance[KeyT], process
   override def exception: PiException[KeyT] = AtomicProcessIsCompositeException[KeyT]( i, process )
 }
 
-case class PiFailureNoSuchInstance[KeyT](override val id:KeyT) extends PiExceptionEvent[KeyT] {
+case class PiFailureNoSuchInstance[KeyT](override val id:KeyT, override val time:Long=System.nanoTime()) extends PiExceptionEvent[KeyT] {
 	override def asString: String = s" === [$id] FAILED - Failed to find instance!"
 
   override def exception: PiException[KeyT] = NoSuchInstanceException[KeyT]( id )
 }
 
-case class PiEventException[KeyT](override val id:KeyT, message:String, stackTrace:String) extends PiExceptionEvent[KeyT] {
+case class PiEventException[KeyT](override val id:KeyT, message:String, stackTrace:String, override val time:Long) extends PiExceptionEvent[KeyT] {
 	override def asString: String = s" === [$id] FAILED - Exception: $message\n === [$id] Trace: $stackTrace"
 
   override def exception: PiException[KeyT] = RemoteException[KeyT]( id, message, stackTrace )
 }
 
-case class PiEventProcessException[KeyT](override val id:KeyT, ref:Int, message:String, stackTrace:String)
+case class PiEventProcessException[KeyT](override val id:KeyT, ref:Int, message:String, stackTrace:String, override val time:Long)
   extends PiEvent[KeyT] with PiExceptionEvent[KeyT] {
 
 	override def asString: String = s" === [$id] PROCESS [$ref] FAILED - Exception: $message\n === [$id] Trace: $stackTrace"
@@ -94,13 +98,13 @@ case class PiEventProcessException[KeyT](override val id:KeyT, ref:Int, message:
 }
 
 object PiEventException {
-  def apply[KeyT](id:KeyT, ex:Throwable): PiEventException[KeyT]
-    = PiEventException( id, ex.getLocalizedMessage, ExceptionUtils.getStackTrace(ex) )
+  def apply[KeyT](id:KeyT, ex:Throwable, time:Long=System.nanoTime()): PiEventException[KeyT]
+    = PiEventException( id, ex.getLocalizedMessage, ExceptionUtils.getStackTrace(ex), time )
 }
 
 object PiEventProcessException {
-  def apply[KeyT](id:KeyT, ref:Int, ex:Throwable): PiEventProcessException[KeyT]
-    = PiEventProcessException( id, ref, ex.getLocalizedMessage, ExceptionUtils.getStackTrace(ex) )
+  def apply[KeyT](id:KeyT, ref:Int, ex:Throwable, time:Long=System.nanoTime()): PiEventProcessException[KeyT]
+    = PiEventProcessException( id, ref, ex.getLocalizedMessage, ExceptionUtils.getStackTrace(ex), time )
 }
 
 
@@ -129,7 +133,7 @@ class PromiseHandler[T](override val name:String, val id:T) extends PiEventHandl
   // class PromiseException(message:String) extends Exception(message)
   
   override def apply(e:PiEvent[T]) = if (e.id == this.id) e match {  
-    case PiEventResult(i,res) => promise.success(res); true
+    case PiEventResult(i,res,_) => promise.success(res); true
     case ex: PiExceptionEvent[T] => promise.failure( ex.exception ); true
     case _ => false
   } else false 

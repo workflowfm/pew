@@ -10,6 +10,7 @@ class PiFailureAtomicProcessIsCompositeCodec[T]( piiCodec: Codec[PiInstance[T]] 
 
   val piiIdN: String = "piiId"
   val procN: String = "proc"
+  val timeN: String = "timestamp"
 
   override def encodeBody(writer: BsonWriter, value: PiFailureAtomicProcessIsComposite[T], ctx: EncoderContext): Unit = {
 
@@ -17,6 +18,8 @@ class PiFailureAtomicProcessIsCompositeCodec[T]( piiCodec: Codec[PiInstance[T]] 
     ctx.encodeWithChildContext( piiCodec, writer, value.i )
 
     writer.writeString( procN, value.process )
+    
+    writer.writeInt64( timeN, value.time )
   }
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): PiFailureAtomicProcessIsComposite[T] = {
@@ -26,6 +29,8 @@ class PiFailureAtomicProcessIsCompositeCodec[T]( piiCodec: Codec[PiInstance[T]] 
 
     val proc: String = reader.readString( procN )
 
-    PiFailureAtomicProcessIsComposite( pii, proc )
+    val time: Long = reader.readInt64( timeN )
+    
+    PiFailureAtomicProcessIsComposite( pii, proc, time )
   }
 }
