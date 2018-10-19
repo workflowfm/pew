@@ -35,6 +35,7 @@ case class PiEventStart[KeyT](i:PiInstance[KeyT], override val time:Long=System.
   override def asString = " === [" + i.id + "] INITIAL STATE === \n" + i.state + "\n === === === === === === === ==="
 }
 
+
 case class PiEventResult[KeyT](i:PiInstance[KeyT], res:Any, override val time:Long=System.nanoTime()) extends PiEvent[KeyT] {
   override def id = i.id
   override def asString = " === [" + i.id + "] FINAL STATE === \n" + i.state + "\n === === === === === === === ===\n" +
@@ -120,8 +121,10 @@ trait PiEventHandlerFactory[T,H <: PiEventHandler[T]] {
 }
 
 class PrintEventHandler[T](override val name:String) extends PiEventHandler[T] {   
+  val formatter = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss.SSS")
   override def apply(e:PiEvent[T]) = {
-    System.err.println(e.asString)
+    val time = formatter.format(e.time/1000L)
+    System.err.println("["+time+"]" + e.asString)
     false
   }
 }
