@@ -46,7 +46,7 @@ class KafkaCodecRegistry(
 
   new PiEventCallCodec[ObjectId]( idc, obj, procc ) with AutoCodec
   new PiEventExceptionCodec[ObjectId]( idc ) with AutoCodec
-  private val peProcEx = new PiEventProcessExceptionCodec[ObjectId]( idc ) with AutoCodec
+  new PiEventProcessExceptionCodec[ObjectId]( idc ) with AutoCodec
   new PiEventResultCodec[ObjectId]( piInst, anyc ) with AutoCodec
   new PiEventReturnCodec[ObjectId]( idc, anyc ) with AutoCodec
   new PiEventStartCodec[ObjectId]( piInst ) with AutoCodec
@@ -54,6 +54,7 @@ class KafkaCodecRegistry(
   new PiFailureNoResultCodec[ObjectId]( piInst ) with AutoCodec
   new PiFailureNoSuchInstanceCodec[ObjectId]( idc ) with AutoCodec
   new PiFailureUnknownProcessCodec[ObjectId]( piInst ) with AutoCodec
+  private val peExEvent = new SuperclassCodec[PiExceptionEvent[ObjectId]] with AutoCodec
   private val peEvent = new SuperclassCodec[PiEvent[ObjectId]] with AutoCodec
 
   // These use the PEW-REST Key codecs, need to be initialised after PEW
@@ -65,7 +66,7 @@ class KafkaCodecRegistry(
   private val update = new PiiUpdateCodec( piInst ) with AutoCodec
   private val assgn = new AssignmentCodec( piInst, callRef, piRes ) with AutoCodec
   private val seqReq = new SequenceRequestCodec( callRef, obj ) with AutoCodec
-  private val seqfail = new SequenceFailureCodec( piInst, callRef, obj, peProcEx ) with AutoCodec
+  private val seqfail = new SequenceFailureCodec( piInst, callRef, obj, peExEvent ) with AutoCodec
   private val redReq = new ReduceRequestCodec( piInst, callRef, obj ) with AutoCodec
   private val res = new PiiLogCodec( peEvent ) with AutoCodec
 

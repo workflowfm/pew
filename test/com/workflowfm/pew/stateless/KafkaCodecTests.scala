@@ -71,6 +71,20 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
     testCodec( eg1.srFinishing3 )
   }
 
+  it should "correctly (de)serialise PiExceptionEvents" in {
+    type ExEvent = PiExceptionEvent[ObjectId]
+    implicit val codec: Codec[ExEvent] = registry.get( classOf[ExEvent] )
+    codec shouldNot be (null)
+
+    testCodec( NoResultException( eg1.pInProgress ).event )
+    testCodec( UnknownProcessException( eg1.pInProgress, "ProcessName" ).event )
+    testCodec( AtomicProcessIsCompositeException( eg1.pInProgress, "ProcessName" ).event )
+    testCodec( NoSuchInstanceException( eg1.piiId ).event )
+
+    testCodec( RemoteException( eg1.piiId, new TestException ).event )
+    testCodec( RemoteProcessException( eg1.piiId, 0, new TestException ).event )
+  }
+
   it should "correctly (de)serialise SequenceFailures" in {
     implicit val codec: Codec[SequenceFailure] = registry.get( classOf[SequenceFailure] )
     codec shouldNot be (null)

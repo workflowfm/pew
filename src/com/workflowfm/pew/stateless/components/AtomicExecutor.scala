@@ -3,6 +3,7 @@ package com.workflowfm.pew.stateless.components
 import com.workflowfm.pew._
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.components.AtomicExecutor.ErrorHandler
+import org.bson.types.ObjectId
 
 import scala.concurrent._
 
@@ -17,14 +18,17 @@ class AtomicExecutor( errHandler: ErrorHandler )( implicit exec: ExecutionContex
   override def respond: Assignment => Future[AnyMsg] = {
     case Assignment( pii, ref, name, args ) =>
 
-      def fail(t: Throwable): Future[SequenceFailure]
-        = Future.successful( SequenceFailure(pii.id, ref, t) )
+      def fail( piEx: PiException[ObjectId]): Future[SequenceFailure]
+        = Future.successful( SequenceFailure(pii.id, ref, piEx) )
+
+      def failOther( t: Throwable ): Future[SequenceFailure]
+        = fail( RemoteProcessException[ObjectId]( pii.id, ref.id, t ) )
 
       try {
         val proc: AtomicProcess = pii.getAtomicProc( name )
 
         val callName: String = s"ProcExe($name: ${ref.id})"
-        lazy val handling: Handling = Handling(callName, run(errHandler), fail)
+        lazy val handling: Handling = Handling( callName, run(errHandler), failOther )
 
         def run(err: ErrorHandler)(): Future[AnyMsg] = {
           println(s"Running: '$callName'.")
@@ -44,9 +48,9 @@ class AtomicExecutor( errHandler: ErrorHandler )( implicit exec: ExecutionContex
         handling.run()
 
       } catch {
-        case ex: UnknownProcessException[_]           => fail( ex )
-        case ex: AtomicProcessIsCompositeException[_] => fail( ex )
-        case ex: Exception                            => fail( ex )
+        case ex: UnknownProcessException[ObjectId] => fail( ex )
+        case ex: AtomicProcessIsCompositeException[ObjectId] => fail( ex )
+        case ex: Exception => failOther( ex )
       }
   }
 }

@@ -1,10 +1,8 @@
 package com.workflowfm.pew
 
-import com.workflowfm.pew.stateless.StatelessMessages.CallResult
-import org.apache.commons.lang3.exception.ExceptionUtils
-import java.time.Instant
-import java.time.format.DateTimeFormatter
 import java.text.SimpleDateFormat
+
+import com.workflowfm.pew.stateless.StatelessMessages.CallResult
 
 import scala.collection.immutable.Queue
 import scala.concurrent.Promise
@@ -26,7 +24,7 @@ sealed trait PiExceptionEvent[KeyT] extends PiEvent[KeyT] {
     val typeName: String = ex.getClass.getSimpleName
     val message: String = ex.getMessage
 
-    s"$typeName:$id($message)"
+    s"PiEe($typeName):$id($message)"
   }
 }
 
@@ -84,30 +82,39 @@ case class PiFailureNoSuchInstance[KeyT](override val id:KeyT, override val time
   override def exception: PiException[KeyT] = NoSuchInstanceException[KeyT]( id )
 }
 
-case class PiEventException[KeyT](override val id:KeyT, message:String, stackTrace:String, override val time:Long) extends PiExceptionEvent[KeyT] {
-	override def asString: String = s" === [$id] FAILED - Exception: $message\n === [$id] Trace: $stackTrace"
+case class PiEventException[KeyT](override val id:KeyT, message:String, trace: Array[StackTraceElement], override val time:Long) extends PiExceptionEvent[KeyT] {
+	override def asString: String = s" === [$id] FAILED - Exception: $message\n === [$id] Trace: $trace"
 
-  override def exception: PiException[KeyT] = RemoteException[KeyT]( id, message, stackTrace )
+  override def exception: PiException[KeyT] = RemoteException[KeyT]( id, message, trace, time )
+
+  override def equals( other: Any ): Boolean = other match {
+    case that: PiEventException[KeyT] =>
+      id == that.id && message == that.message
+  }
 }
 
-case class PiEventProcessException[KeyT](override val id:KeyT, ref:Int, message:String, stackTrace:String, override val time:Long)
+case class PiEventProcessException[KeyT](override val id:KeyT, ref:Int, message:String, trace: Array[StackTraceElement], override val time:Long)
   extends PiEvent[KeyT] with PiExceptionEvent[KeyT] {
 
-	override def asString: String = s" === [$id] PROCESS [$ref] FAILED - Exception: $message\n === [$id] Trace: $stackTrace"
+	override def asString: String = s" === [$id] PROCESS [$ref] FAILED - Exception: $message\n === [$id] Trace: $trace"
 
-  override def exception: PiException[KeyT] = RemoteProcessException[KeyT]( id, ref, message, stackTrace )
+  override def exception: PiException[KeyT] = RemoteProcessException[KeyT]( id, ref, message, trace, time )
+
+  override def equals( other: Any ): Boolean = other match {
+    case that: PiEventProcessException[KeyT] =>
+      id == that.id && ref == that.ref && message == that.message
+  }
 }
 
 object PiEventException {
-  def apply[KeyT](id:KeyT, ex:Throwable, time:Long=System.nanoTime()): PiEventException[KeyT]
-    = PiEventException( id, ex.getLocalizedMessage, ExceptionUtils.getStackTrace(ex), time )
+  def apply[KeyT]( id: KeyT, ex: Throwable, time: Long=System.nanoTime() ): PiEventException[KeyT]
+    = PiEventException( id, ex.getLocalizedMessage, ex.getStackTrace, time )
 }
 
 object PiEventProcessException {
-  def apply[KeyT](id:KeyT, ref:Int, ex:Throwable, time:Long=System.nanoTime()): PiEventProcessException[KeyT]
-    = PiEventProcessException( id, ref, ex.getLocalizedMessage, ExceptionUtils.getStackTrace(ex), time )
+  def apply[KeyT]( id: KeyT, ref: Int, ex: Throwable, time: Long=System.nanoTime() ): PiEventProcessException[KeyT]
+    = PiEventProcessException( id, ref, ex.getLocalizedMessage, ex.getStackTrace, time )
 }
-
 
 // Return true if the handler is done and needs to be unsubscribed.
 
