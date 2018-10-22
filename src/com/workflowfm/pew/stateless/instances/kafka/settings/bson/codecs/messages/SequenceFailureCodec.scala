@@ -3,7 +3,7 @@ package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messag
 import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.SequenceFailure
-import com.workflowfm.pew.{PiEventProcessException, PiInstance, PiObject}
+import com.workflowfm.pew.{PiExceptionEvent, PiInstance, PiObject}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.types.ObjectId
 import org.bson.{BsonReader, BsonWriter}
@@ -12,7 +12,7 @@ class SequenceFailureCodec(
     piiCodec: Codec[PiInstance[ObjectId]],
     refCodec: Codec[CallRef],
     objCodec: Codec[PiObject],
-    errCodec: Codec[PiEventProcessException[ObjectId]]
+    errCodec: Codec[PiExceptionEvent[ObjectId]]
 
   ) extends ClassCodec[SequenceFailure] {
 
@@ -23,6 +23,7 @@ class SequenceFailureCodec(
   val resultsN = "results"
   val failuresN = "failures"
   val refN = "ref"
+  val hasObjN = "hasObj"
   val objN = "obj"
   val failN = "err"
 
@@ -43,8 +44,13 @@ class SequenceFailureCodec(
       reader.readName( refN )
       val ref: CallRef = ctx.decodeWithChildContext( refCodec, reader )
 
-      reader.readName( objN )
-      val obj: PiObject = ctx.decodeWithChildContext( objCodec, reader )
+      val hasObj: Boolean = reader.readBoolean( hasObjN )
+
+      val obj: PiObject =
+        if (hasObj) {
+          reader.readName(objN)
+          ctx.decodeWithChildContext(objCodec, reader)
+        } else null
 
       reader.readEndDocument()
       (ref, obj)
@@ -71,20 +77,24 @@ class SequenceFailureCodec(
       case Left( _piiId ) => writer.writeObjectId( _piiId )
     }
 
-    writeArray( writer, resultsN, value.results ) {
+    writeArray( writer, resultsN, value.returns ) {
       case ( ref, obj ) =>
         writer.writeStartDocument()
 
         writer.writeName( refN )
         ctx.encodeWithChildContext( refCodec, writer, ref )
 
-        writer.writeName( objN )
-        ctx.encodeWithChildContext( objCodec, writer, obj )
+        writer.writeBoolean( hasObjN, obj != null )
+
+        if (obj != null) {
+          writer.writeName(objN)
+          ctx.encodeWithChildContext(objCodec, writer, obj)
+        }
 
         writer.writeEndDocument()
     }
 
-    writeArray( writer, failuresN, value.failures ) {
+    writeArray( writer, failuresN, value.errors ) {
       ctx.encodeWithChildContext( errCodec, writer, _ )
     }
   }

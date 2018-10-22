@@ -186,7 +186,7 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(im
     case AkkaExecutor.Start(id) => start(id)
     case AkkaExecutor.Result(id,ref,res) => postResult(id,ref,res) 
     case AkkaExecutor.Error(id,ref,ex) => {
-      publish(PiEventProcessException(id,ref,ex))
+      publish( PiEventProcessException(id,ref,ex) )
       store = store.del(id)
     }
     case AkkaExecutor.Ping => sender() ! AkkaExecutor.Ping

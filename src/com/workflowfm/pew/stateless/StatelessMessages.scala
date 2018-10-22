@@ -26,19 +26,14 @@ object StatelessMessages {
 
   ) extends PiiHistory
 
-  type CallResult = (CallRef, PiObject)
-  type CallFailure = PiEventProcessException[ObjectId]
+  type CallResult = ( CallRef, PiObject )
 
   /** A PiiHistory message which helps collect outstanding SequenceRequests after a failure.
-    *
-    * @param pii
-    * @param results Any collected call results that have yet to be sequenced.
-    * @param failures The failed AtomicProcess calls and their errors.
     */
   case class SequenceFailure(
     pii:  Either[ObjectId, PiInstance[ObjectId]],
-    results: Seq[CallResult],
-    failures: Seq[CallFailure]
+    returns: Seq[CallResult],
+    errors: Seq[PiExceptionEvent[ObjectId]]
 
   ) extends PiiHistory {
 
@@ -50,21 +45,12 @@ object StatelessMessages {
   }
 
   object SequenceFailure {
-    def apply( id: ObjectId, ref: CallRef, err: Throwable ): SequenceFailure
-      = SequenceFailure(
-        Left(id), Seq(),
-        Seq( PiEventProcessException( id, ref.id, err ) )
-      )
+    def apply( id: ObjectId, ref: CallRef, piEx: PiException[ObjectId] ): SequenceFailure
+      = SequenceFailure( Left(id), Seq((ref, null)), Seq( piEx.event ) )
 
-    def apply( pii: PiInstance[ObjectId], results: Seq[CallResult], failures: Seq[CallFailure] ): SequenceFailure
-      = SequenceFailure( Right( pii ), results, failures )
+//    def apply( pii: PiInstance[ObjectId], results: Seq[CallResult], failures: Seq[PiExceptionEvent[ObjectId]] ): SequenceFailure
+//      = SequenceFailure( Right( pii ), results, failures )
   }
-
-  /** Wrapper for thrown exceptions which need to be serialised and deserialised.
-    *
-    * @param message Debug message.
-    */
-  case class RemoteExecutorException( message: String ) extends Exception( message )
 
   case class PiiUpdate(
     pii:      PiInstance[ObjectId]

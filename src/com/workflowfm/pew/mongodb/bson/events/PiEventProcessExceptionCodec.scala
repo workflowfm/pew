@@ -1,9 +1,10 @@
 package com.workflowfm.pew.mongodb.bson.events
 
 import com.workflowfm.pew.PiEventProcessException
+import com.workflowfm.pew.mongodb.bson.BsonUtil.{readObjectSeq, writeObjectSeq}
 import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
-import org.bson.{BsonReader, BsonWriter}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
+import org.bson.{BsonReader, BsonWriter}
 
 class PiEventProcessExceptionCodec[T]( tCodec: Codec[T] )
   extends ClassCodec[PiEventProcessException[T]] {
@@ -21,7 +22,7 @@ class PiEventProcessExceptionCodec[T]( tCodec: Codec[T] )
 
     writer.writeInt32( callRefN, value.ref )
     writer.writeString( messageN, value.message )
-    writer.writeString( stackTraceN, value.stackTrace )
+    writeObjectSeq( writer, stackTraceN, value.trace.toSeq )
     
     writer.writeInt64( timeN, value.time )
   }
@@ -33,7 +34,7 @@ class PiEventProcessExceptionCodec[T]( tCodec: Codec[T] )
 
     val ref: Int = reader.readInt32( callRefN )
     val msg: String = reader.readString( messageN )
-    val trace: String = reader.readString( stackTraceN )
+    val trace: Array[StackTraceElement] = readObjectSeq( reader, stackTraceN )
 
     val time: Long = reader.readInt64( timeN )
     
