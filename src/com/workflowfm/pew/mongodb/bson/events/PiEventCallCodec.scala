@@ -49,6 +49,8 @@ class PiEventCallCodec[T]( tCodec: Codec[T], objCodec: Codec[PiObject], procCode
         ctx.decodeWithChildContext( objCodec, reader )
       }
 
-    PiEventCall( tId, ref, proc, args )
+    val time: Long = reader.readInt64( timeN )
+
+    PiEventCall( tId, ref, proc, args, time )
   }
 }
