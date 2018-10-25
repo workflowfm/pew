@@ -1,7 +1,7 @@
 package com.workflowfm.pew.simulation
 
 import scala.collection.mutable.Queue
-import com.workflowfm.pew.metrics._
+import com.workflowfm.pew.simulation.metrics._
 
 object TaskResource {
   sealed trait State
