@@ -69,7 +69,7 @@ class MetricsCSVFileOutput[KeyT](path:String,name:String) extends MetricsStringO
   
   val separator = ","
   
-  def apply(aggregator:MetricsAggregator[KeyT]) = {
+  override def apply(aggregator:MetricsAggregator[KeyT]) = {
     val taskFile = s"$path$name-tasks.csv"
     val workflowFile = s"$path$name-workflows.csv"
     writeToFile(taskFile, processes(aggregator,separator) + "\n")
@@ -86,71 +86,55 @@ class MetricsCSVFileOutput[KeyT](path:String,name:String) extends MetricsStringO
   }
 }
 
-//class MetricsD3Timeline(path:String,name:String,tick:Int=1) extends MetricsOutput {  
-//  import java.io._
-//  import sys.process._
-//  
-//  def apply(totalTicks:Int,aggregator:MetricAggregator) = {
-//    val result = build(totalTicks,aggregator)
-//    println(result)
-//    val dataFile = s"$path$name-data.js"
-//    writeToFile(dataFile, result)
-//  }
-//  
-//  def writeToFile(filePath:String,output:String) = try {
-//    val file = new File(filePath)
-//    val bw = new BufferedWriter(new FileWriter(file))
-//    bw.write(output)
-//    bw.close()
-//  } catch {
-//    case e:Exception => e.printStackTrace()
-//  }
-//  
-//  def build(totalTicks:Int,aggregator:MetricAggregator) = {
-//    var buf:StringBuilder = StringBuilder.newBuilder
-//    buf.append(s"var totalTicks = $totalTicks\n")
-//    buf.append("\nvar tasks = [\n")
-//    for (t <- aggregator.taskMetrics.map(_._2.task).toSet[String]) buf.append(s"""\t"$t",\n""")
-//    buf.append("];\n\nvar resourceData = [\n")
-//    for (r <- aggregator.resourceMetrics.sortWith(sortRes)) buf.append(resourceEntry(r._1,aggregator))
-//    buf.append("];\n\nvar workflowData = [\n")
-//    for (s <- aggregator.workflowMetrics.sortWith(sortWf)) buf.append(workflowEntry(s._1,aggregator))
-//    buf.append("];\n")
-//    buf.toString
-//  }
-//  
-//  def sortWf(l:(String,WorkflowMetrics),r:(String,WorkflowMetrics)) = 
-//    (l._2.start.compareTo(r._2.start)) match {
-//    case 0 => l._1.compareTo(r._1) < 0
-//    case c => c < 0
-//  }
-//
-//  
-//  def workflowEntry(wf:String,agg:MetricAggregator) = {
-//    val tasks = agg.taskMetrics.filter(_._2.workflow==wf)
-//    val times = ("" /: tasks)(_ + "\t" + taskEntry(_))
-//    s"""{label: \"$wf\", times: [""" + "\n" + times + "]},\n"
-//  }
-//  
-//  def sortRes(l:(String,ResourceMetrics),r:(String,ResourceMetrics)) =
-//		(l._2.start.compareTo(r._2.start)) match {
-//    case 0 => l._1.compareTo(r._1) < 0
-//    case c => c < 0
-//  }
-//  
-//  def resourceEntry(res:String,agg:MetricAggregator) = {
-//    val tasks = agg.taskMetrics.filter(_._2.resources.contains(res))
-//    val times = ("" /: tasks)(_ + "\t" + taskEntry(_))
-//    s"""{label: \"$res\", times: [""" + "\n" + times + "]},\n"
-//  }
-//  
-//  def taskEntry(entry:(String,TaskMetrics)) = entry match { case (name,metrics) =>
-//    val start = (metrics.start - 1) * tick
-//    val finish = (metrics.start + metrics.duration - 1) * tick
-//    val task = metrics.task
-//    val delay = metrics.delay * tick
-//    val cost = metrics.cost
-//    s"""{"label":"$name", task: "$task", "starting_time": $start, "ending_time": $finish, delay: $delay, cost: $cost},\n"""
-//    
-//  }
-//}
+class MetricsD3Timeline[KeyT](path:String,name:String,tick:Int=1) extends MetricsOutput[KeyT] {  
+  import java.io._
+  import sys.process._
+  
+  override def apply(aggregator:MetricsAggregator[KeyT]) = {
+    val result = build(aggregator,System.nanoTime())
+    println(result)
+    val dataFile = s"$path$name-data.js"
+    writeToFile(dataFile, result)
+  }
+  
+  def writeToFile(filePath:String,output:String) = try {
+    val file = new File(filePath)
+    val bw = new BufferedWriter(new FileWriter(file))
+    bw.write(output)
+    bw.close()
+  } catch {
+    case e:Exception => e.printStackTrace()
+  }
+  
+  def build(aggregator:MetricsAggregator[KeyT], now:Long) = {
+    var buf:StringBuilder = StringBuilder.newBuilder
+    buf.append("var processes = [\n")
+    for (p <- aggregator.processSet) buf.append(s"""\t"$p",\n""")
+    buf.append("];\n\n")
+    buf.append("var data = [\n")
+    for (m <- aggregator.workflowMetrics) buf.append(s"""\t${workflowEntry(m, aggregator, now, "\t")},\n""")
+    buf.append("];\n")
+    buf.toString
+  }
+  
+  def workflowEntry(m:WorkflowMetrics[KeyT], agg:MetricsAggregator[KeyT], now:Long, prefix:String) = {
+    val processes = (Map[String,Queue[ProcessMetrics[KeyT]]]() /: agg.processMetricsOf(m.piID)){ case (m,p) => {
+        val procs = m.getOrElse(p.process, Queue()) :+ p
+        m + (p.process->procs) 
+      } }
+    val data = processes.foreach { case (proc,i) => processEntry(proc, i, now, prefix + "\t") }
+    s"""$prefix{id: \"${m.piID}\", data: $data},\n"""
+  }
+  
+  def processEntry(proc:String, i:Seq[ProcessMetrics[KeyT]], now:Long, prefix:String) = { 
+    if (i.isEmpty) "" else {   
+      val times = ("" /: i){ case (s,m) => s"$s${callEntry(now,m,prefix + "\t")}" }
+      s"""$prefix{label: \"$proc\", times: [\n$times]},\n"""
+    }
+  }
+  
+  def callEntry(now:Long, m:ProcessMetrics[KeyT], prefix:String) = {
+    s"""$prefix{"label":"${m.ref}", "process": "${m.process}", "starting_time": ${m.start/1000L}, "ending_time": ${m.finish.getOrElse(now)/1000L}, "result":"${MetricsOutput.formatOption(m.result,"NONE")}"},\n"""
+    
+  }
+}
