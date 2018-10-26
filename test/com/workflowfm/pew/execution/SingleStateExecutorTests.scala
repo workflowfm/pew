@@ -229,7 +229,7 @@ class PbI extends Pb {
   override def iname = "PbI"
 	override def apply( arg0 :A ) :Y = {
 		System.out.println(iname + " sleeping for: " + arg0 + "s")
-		Thread.sleep(arg0 * 1000)
+		Thread.sleep(arg0 * 100)
 		iname + "SleptFor" + arg0 +"s"
 	}
 }
@@ -237,7 +237,7 @@ class PcI(s:String="PcI") extends Pc {
   override def iname = s 
 	override def apply( arg0 :B ) :Z = {
 		System.out.println(iname + " sleeping for: " + arg0 + "s")
-		Thread.sleep(arg0 * 1000)
+		Thread.sleep(arg0 * 100)
 		iname + "SleptFor" + arg0 +"s"
 	}
 }

@@ -1,13 +1,10 @@
 package com.workflowfm.pew.execution
 
 import akka.actor.ActorSystem
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.{ FlatSpec, Matchers, BeforeAndAfterAll }
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import scala.concurrent._
-import scala.concurrent.Await
 import scala.concurrent.duration._
 import com.workflowfm.pew._
 import com.workflowfm.pew.execution._
@@ -124,7 +121,10 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     try {
       await(f1)
     } catch {
-      case (e:Exception) => e.getMessage.contains("Exception: FailP") should be (true)
+      case (e:Exception) =>  {
+        e shouldBe a [RemoteProcessException[_]]
+        e.getMessage should be ("FailP")
+      }
     }
 	}
   
@@ -135,7 +135,12 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     try {
       await(f1)
     } catch {
-      case (e:Exception) => e.getMessage.contains("Exception: Fail") should be (true)
+      case (e:Exception) => {
+        // e shouldBe a [RemoteException[_]] -- TODO that is not the case... but why?
+        e shouldBe a [RemoteProcessException[_]]
+        e.getMessage shouldBe ("Fail")
+        
+      }
     }
 	}
 }
