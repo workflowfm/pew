@@ -3,11 +3,11 @@ package com.workflowfm.pew.metrics
 import scala.collection.immutable.Queue
 import com.workflowfm.pew._
 
-case class ProcessMetrics[KeyT] (piID:KeyT, ref:Int, process:String, start:Long=System.nanoTime(), finish:Option[Long]=None, result:Option[String]=None) {
+case class ProcessMetrics[KeyT] (piID:KeyT, ref:Int, process:String, start:Long=System.currentTimeMillis(), finish:Option[Long]=None, result:Option[String]=None) {
   def complete(time:Long,result:Any) = copy(finish=Some(time),result=Some(result.toString))
 }
 
-case class WorkflowMetrics[KeyT] (piID:KeyT, start:Long=System.nanoTime(), calls:Int=0, finish:Option[Long]=None, result:Option[String]=None) {
+case class WorkflowMetrics[KeyT] (piID:KeyT, start:Long=System.currentTimeMillis(), calls:Int=0, finish:Option[Long]=None, result:Option[String]=None) {
   def complete(time:Long,result:Any) = copy(finish=Some(time),result=Some(result.toString))
   def call = copy(calls=calls+1)
 }
@@ -38,21 +38,21 @@ class MetricsAggregator[KeyT] {
   
   // Handle events
   
-  def workflowStart(piID:KeyT, time:Long=System.nanoTime()):Unit =
+  def workflowStart(piID:KeyT, time:Long=System.currentTimeMillis()):Unit =
     this += WorkflowMetrics(piID,time)
-  def workflowResult(piID:KeyT, result:Any, time:Long=System.nanoTime()):Unit =
+  def workflowResult(piID:KeyT, result:Any, time:Long=System.currentTimeMillis()):Unit =
     this ^ (piID,_.complete(time,result))
-  def workflowException(piID:KeyT, ex:Throwable, time:Long=System.nanoTime()):Unit =
+  def workflowException(piID:KeyT, ex:Throwable, time:Long=System.currentTimeMillis()):Unit =
     this ^ (piID,_.complete(time,"Exception: " + ex.getLocalizedMessage))
   
-  def procCall(piID:KeyT, ref:Int, process:String, time:Long=System.nanoTime()):Unit = {
+  def procCall(piID:KeyT, ref:Int, process:String, time:Long=System.currentTimeMillis()):Unit = {
     this += ProcessMetrics(piID,ref,process,time)
     this ^ (piID,_.call)
   }
-  def procReturn(piID:KeyT, ref:Int, result:Any, time:Long=System.nanoTime()):Unit =
+  def procReturn(piID:KeyT, ref:Int, result:Any, time:Long=System.currentTimeMillis()):Unit =
     this ^ (piID,ref,_.complete(time, result))
-  def processException(piID:KeyT, ref:Int, ex:Throwable, time:Long=System.nanoTime()):Unit = processFailure(piID,ref,ex.getLocalizedMessage,time)
-  def processFailure(piID:KeyT, ref:Int, ex:String, time:Long=System.nanoTime()):Unit = {
+  def processException(piID:KeyT, ref:Int, ex:Throwable, time:Long=System.currentTimeMillis()):Unit = processFailure(piID,ref,ex.getLocalizedMessage,time)
+  def processFailure(piID:KeyT, ref:Int, ex:String, time:Long=System.currentTimeMillis()):Unit = {
     this ^ (piID,_.complete(time,"Exception: " + ex))
     this ^ (piID,ref,_.complete(time,"Exception: " + ex))
   }

@@ -8,7 +8,7 @@ trait MetricsOutput[KeyT] extends (MetricsAggregator[KeyT] => Unit) {
 }
 object MetricsOutput {
   def formatOption[T](v:Option[T], nullValue: String, format:T=>String={ x:T => x.toString }) = v.map(format).getOrElse(nullValue)
-  def formatTime(format:String)(time:Long) = new SimpleDateFormat(format).format(time/1000L)
+  def formatTime(format:String)(time:Long) = new SimpleDateFormat(format).format(time)
   def formatTimeOption(time:Option[Long], format:String, nullValue:String) = formatOption(time, nullValue, formatTime(format))  
 }
 
@@ -86,12 +86,12 @@ class MetricsCSVFileOutput[KeyT](path:String,name:String) extends MetricsStringO
   }
 }
 
-class MetricsD3Timeline[KeyT](path:String,name:String,tick:Int=1) extends MetricsOutput[KeyT] {  
+class MetricsD3Timeline[KeyT](path:String,name:String) extends MetricsOutput[KeyT] {  
   import java.io._
   import sys.process._
   
   override def apply(aggregator:MetricsAggregator[KeyT]) = {
-    val result = build(aggregator,System.nanoTime())
+    val result = build(aggregator,System.currentTimeMillis())
     println(result)
     val dataFile = s"$path$name-data.js"
     writeToFile(dataFile, result)
@@ -111,8 +111,8 @@ class MetricsD3Timeline[KeyT](path:String,name:String,tick:Int=1) extends Metric
     buf.append("var processes = [\n")
     for (p <- aggregator.processSet) buf.append(s"""\t"$p",\n""")
     buf.append("];\n\n")
-    buf.append("var data = [\n")
-    for (m <- aggregator.workflowMetrics) buf.append(s"""\t${workflowEntry(m, aggregator, now, "\t")},\n""")
+    buf.append("var workflowData = [\n")
+    for (m <- aggregator.workflowMetrics) buf.append(s"""${workflowEntry(m, aggregator, now, "\t")}\n""")
     buf.append("];\n")
     buf.toString
   }
@@ -122,19 +122,19 @@ class MetricsD3Timeline[KeyT](path:String,name:String,tick:Int=1) extends Metric
         val procs = m.getOrElse(p.process, Queue()) :+ p
         m + (p.process->procs) 
       } }
-    val data = processes.foreach { case (proc,i) => processEntry(proc, i, now, prefix + "\t") }
-    s"""$prefix{id: \"${m.piID}\", data: $data},\n"""
+    val data = processes.map { case (proc,i) => processEntry(proc, i, now, prefix + "\t") }
+    s"""$prefix{id: \"${m.piID}\", data: [\n${data.mkString("")}$prefix]},\n"""
   }
   
   def processEntry(proc:String, i:Seq[ProcessMetrics[KeyT]], now:Long, prefix:String) = { 
     if (i.isEmpty) "" else {   
       val times = ("" /: i){ case (s,m) => s"$s${callEntry(now,m,prefix + "\t")}" }
-      s"""$prefix{label: \"$proc\", times: [\n$times]},\n"""
+      s"""$prefix{label: \"$proc\", times: [\n$times$prefix]},\n"""
     }
   }
   
   def callEntry(now:Long, m:ProcessMetrics[KeyT], prefix:String) = {
-    s"""$prefix{"label":"${m.ref}", "process": "${m.process}", "starting_time": ${m.start/1000L}, "ending_time": ${m.finish.getOrElse(now)/1000L}, "result":"${MetricsOutput.formatOption(m.result,"NONE")}"},\n"""
+    s"""$prefix{"label":"${m.ref}", "process": "${m.process}", "starting_time": ${m.start}, "ending_time": ${m.finish.getOrElse(now)}, "result":"${MetricsOutput.formatOption(m.result,"NONE")}"},\n"""
     
   }
 }

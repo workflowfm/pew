@@ -1,29 +1,32 @@
 function displayResults(selection,data) {
-	var widthPerTick = 60
+	var widthPerTick = 10
 	
 	var colorScale = d3.scale.category20().domain(processes); 
 	
 	var tickTime = d3.time.seconds
-	var endTime = lastTimestamp(data)
-	var totalTicks = tickTime(0,endTime).length	
+	
+	var tRange = timeRange(data)
+	var startTime = tRange[0]
+	var endTime = tRange[1]
+	var totalTicks = endTime-startTime
+	//var totalTicks = tickTime(startTime,endTime).length	
 	console.log("Total Ticks: " + totalTicks)
 	
 	var chart = d3.timeline()
 		.tickFormat( //
 				{format: d3.time.format("%H:%M:%S.%L"),
-				tickTime: tickTime,
-				tickInterval: 10000,
-				tickSize: 10,
+				numTicks: totalTicks/100,
+				tickInterval: 100,
+				tickSize: 1,
 				})
 		.stack()
 		.margin({left:100, right:30, top:0, bottom:0})
 		.colors( colorScale )
 		.colorProperty('process')
 		.width(totalTicks*widthPerTick);
-	chart.showTimeAxisTick();
 	
-	//chart.relativeTime();
-	//chart.rowSeparators("#555555");
+	chart.showTimeAxisTick();
+	chart.relativeTime();
 
 	var backgroundColor = "#eeeeee";
 	var altBackgroundColor = "white";
@@ -64,20 +67,23 @@ function displayResults(selection,data) {
 		.datum(data).call(chart);
 }
 
-function lastTimestamp(data) {
-	var result = 0
+function timeRange(data) {
+	var start = new Date().getTime();
+	var finish = 0;
 	for (var i = 0; i < data.length; i++) {
 		for (var j = 0; j < data[i].times.length; j++) {
-		    if (data[i].times[j].ending_time > result)
-		    		result = data[i].times[j].ending_time;
+		    if (data[i].times[j].starting_time < start)
+		    	start = data[i].times[j].starting_time;
+		    if (data[i].times[j].ending_time > finish)
+	    		finish = data[i].times[j].ending_time;
 		}
 	}
-	return result + 1
+	return [start,finish]
 }
 
 function workflow(datum) {
 	var selection = d3.select(this);
-	selection.append("h3").text(datum.id);
+	selection.append("text").text(datum.id);
 	displayResults(selection,datum.data);
 }
 
@@ -87,7 +93,7 @@ function displayAll(tag,workflowData) {
 		.data(workflowData, function(d) { return d ? d.id : this.id; })
 		.enter()
 		.append("div")
-		.attr("id",datum.id)
+		.attr("id",function(d) {d.id})
 		.each(workflow);
 }
 
