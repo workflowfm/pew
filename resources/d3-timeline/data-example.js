@@ -1,4 +1,4 @@
-var totalTicks = 49
+//var totalTicks = 49
 
 var tasks = [
 	"AwardContract",

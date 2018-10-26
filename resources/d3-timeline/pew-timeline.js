@@ -3,6 +3,7 @@ function displayResults(tag,data) {
 	
 	var colorScale = d3.scale.category20().domain(tasks); 
 	//var ticks = Array(totalTicks).fill().map((v,i)=>i);
+	var totalTicks = lastTimestamp(data)
 	
 	var chart = d3.timeline()
 		.tickFormat( //
@@ -21,8 +22,10 @@ function displayResults(tag,data) {
 		.stack()
 		.margin({left:100, right:30, top:0, bottom:0})
 		.colors( colorScale )
-		.colorProperty('task');
+		.colorProperty('task')
+		.width(totalTicks*widthPerTick);
 	chart.showTimeAxisTick();
+	
 	//chart.relativeTime();
 	//chart.rowSeparators("#555555");
 
@@ -59,8 +62,21 @@ function displayResults(tag,data) {
         	.style("opacity", 0);	
 	});
 	
-	var svg = d3.select(tag).append("svg").attr("width", totalTicks*widthPerTick)
+	var svg = d3.select(tag).append("svg")
+		.attr("width", '100%')
 		.datum(data).call(chart);
 }
+
+function lastTimestamp(data) {
+	var result = 0
+	for (var i = 0; i < data.length; i++) {
+		for (var j = 0; j < data[i].times.length; j++) {
+		    if (data[i].times[j].ending_time > result)
+		    		result = data[i].times[j].ending_time;
+		}
+	}
+	return result + 1
+}
+
 displayResults("#resources",resourceData);
 displayResults("#workflows",workflowData);
