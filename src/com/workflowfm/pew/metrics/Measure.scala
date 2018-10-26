@@ -13,17 +13,24 @@ case class WorkflowMetrics[KeyT] (piID:KeyT, start:Long=System.nanoTime(), calls
 }
 
 class MetricsAggregator[KeyT] {
-  import scala.collection.mutable.Map
-  val processMetrics = Map[(KeyT,Int),ProcessMetrics[KeyT]]()
-  val workflowMetrics = Map[KeyT,WorkflowMetrics[KeyT]]()
+  import scala.collection.immutable.Map
   
-  def +=(m:ProcessMetrics[KeyT]) = processMetrics += ((m.piID,m.ref)->m)
-  def +=(m:WorkflowMetrics[KeyT]) = workflowMetrics += (m.piID->m)
+  val processMap = scala.collection.mutable.Map[KeyT,Map[Int,ProcessMetrics[KeyT]]]()
+  val workflowMap = scala.collection.mutable.Map[KeyT,WorkflowMetrics[KeyT]]()
+  
+  def +=(m:ProcessMetrics[KeyT]) = {
+    val old = processMap.get(m.piID) match {
+      case None => Map[Int,ProcessMetrics[KeyT]]()
+      case Some(map) => map
+    }
+    processMap += (m.piID -> (old + (m.ref -> m)))
+  }
+  def +=(m:WorkflowMetrics[KeyT]) = workflowMap += (m.piID->m)
   
   def ^(piID:KeyT,ref:Int,u:ProcessMetrics[KeyT]=>ProcessMetrics[KeyT]) = 
-    processMetrics.get((piID,ref)).map { m => this += u(m) }
+    processMap.get(piID).flatMap(_.get(ref)).map { m => this += u(m) }
   def ^(piID:KeyT,u:WorkflowMetrics[KeyT]=>WorkflowMetrics[KeyT]) = 
-    workflowMetrics.get(piID).map { m => this += u(m) }
+    workflowMap.get(piID).map { m => this += u(m) }
   
   def workflowStart(piID:KeyT, time:Long=System.nanoTime()):Unit =
     this += WorkflowMetrics(piID,time)
@@ -43,6 +50,10 @@ class MetricsAggregator[KeyT] {
     this ^ (piID,_.complete(time,"Exception: " + ex))
     this ^ (piID,ref,_.complete(time,"Exception: " + ex))
   }
+  
+  def workflowMetrics = workflowMap.values.toSeq.sortBy(_.start)
+  def processMetrics = processMap.values.flatMap(_.values).toSeq.sortBy(_.start)
+  def processMetricsOf(id:KeyT) = processMap.getOrElse(id,Map[Int,ProcessMetrics[KeyT]]()).values.toSeq.sortBy(_.start)
 }
 
 class MetricsHandler[KeyT](override val name:String) extends MetricsAggregator[KeyT] with PiEventHandler[KeyT] {

@@ -9,7 +9,7 @@ trait MetricsOutput[KeyT] extends (MetricsAggregator[KeyT] => Unit) {
 object MetricsOutput {
   def formatOption[T](v:Option[T], nullValue: String, format:T=>String={ x:T => x.toString }) = v.map(format).getOrElse(nullValue)
   def formatTime(format:String)(time:Long) = new SimpleDateFormat(format).format(time/1000L)
-  def formatTimeOption(time:Option[Long], format:String, nullValue:String) = formatOption(time, nullValue, formatTime(format))
+  def formatTimeOption(time:Option[Long], format:String, nullValue:String) = formatOption(time, nullValue, formatTime(format))  
 }
 
 case class MetricsOutputs[KeyT](handlers:Queue[MetricsOutput[KeyT]]) extends MetricsOutput[KeyT] {
@@ -41,10 +41,12 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] {
   }
   
   def processes(aggregator:MetricsAggregator[KeyT],separator:String,timeFormat:Option[String]=None) = 
-    aggregator.processMetrics.values.map(procCSV(separator,timeFormat)).mkString("\n")
+    aggregator.processMetrics.map(procCSV(separator,timeFormat)).mkString("\n")
   def workflows(aggregator:MetricsAggregator[KeyT],separator:String,timeFormat:Option[String]=None) = 
-    aggregator.workflowMetrics.values.map(workflowCSV(separator,timeFormat)).mkString("\n")
+    aggregator.workflowMetrics.map(workflowCSV(separator,timeFormat)).mkString("\n")
 }
+
+
 
 class MetricsPrinter[KeyT] extends MetricsStringOutput[KeyT] {  
   val separator = "\t| "
