@@ -3,7 +3,12 @@ function displayResults(tag,data) {
 	
 	var colorScale = d3.scale.category20().domain(tasks); 
 	//var ticks = Array(totalTicks).fill().map((v,i)=>i);
-	var totalTicks = lastTimestamp(data)
+	
+	var tickTime = d3.time.minutes
+	var endTime = lastTimestamp(data)
+	var totalTicks = endTime
+	//var totalTicks = tickTime(0,endTime).length	
+	console.log("Total Ticks: " + totalTicks)
 	
 	var chart = d3.timeline()
 		.tickFormat( //
@@ -15,7 +20,7 @@ function displayResults(tag,data) {
 				})
 		/*.tickFormat( //
 				{format: d3.time.format("%H"),
-				tickTime: d3.time.hours,
+				tickTime: tickTime,
 				tickInterval: 1,
 				tickSize: 10,
 				})*/
