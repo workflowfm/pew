@@ -109,7 +109,7 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(im
   }
   
   final def postResult(id:Int,ref:Int, res:PiObject):Unit = {
-    publish(PiEventReturn(id,ref,res))
+    publish(PiEventReturn(id,ref,PiObject.get(res)))
     store.get(id) match {
       case None => publish(PiFailureNoSuchInstance(id))
       case Some(i) => 

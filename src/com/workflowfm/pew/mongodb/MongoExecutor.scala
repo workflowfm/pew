@@ -93,7 +93,7 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
   }
   
   final def postResult(id:ObjectId, ref:Int, res:PiObject):Unit = {
-    publish(PiEventReturn(id,ref,res))
+    publish(PiEventReturn(id,ref,PiObject.get(res)))
     val promise=Promise[PiInstance[ObjectId]]()
 		update(id,postResultUpdate(ref,res),0,promise)
 		promise.future.recover({

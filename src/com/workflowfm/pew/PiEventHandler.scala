@@ -50,11 +50,6 @@ case class PiEventReturn[KeyT](override val id:KeyT, ref:Int, result:Any, overri
 	override def asString: String = s" === [$id] PROCESS RETURN: ($ref) returned: $result"
 }
 
-object PiEventReturn {
-  def apply[KeyT]( id: KeyT, callResult: CallResult ): PiEventReturn[KeyT]
-    = PiEventReturn[KeyT]( id, callResult._1.id, callResult._2 )
-}
-
 case class PiFailureNoResult[KeyT](i:PiInstance[KeyT], override val time:Long=System.currentTimeMillis()) extends PiEvent[KeyT] with PiExceptionEvent[KeyT] {
   override def id: KeyT = i.id
   override def asString: String = s" === [$id] FINAL STATE ===\n${i.state}\n === === === === === === === ===\n === [$id] NO RESULT! ==="

@@ -38,10 +38,13 @@ case class PartialResponse(
           if (hasPayload) failures.map( PiiLog( _ ) )
           else Seq( SequenceFailure( pii, results, failures ) )
 
-        } else ReduceRequest( pii, results ) +: results.map( r => PiiLog( PiEventReturn( pii.id, r ) ) )
+        } else ReduceRequest( pii, results ) +: results.map( r => PiiLog( returnEvent( pii.id, r ) ) )
 
       ).getOrElse( Seq() )
 
+  protected def returnEvent( id: ObjectId, callResult: CallResult ): PiEventReturn[ObjectId]
+    = PiEventReturn[ObjectId]( id, callResult._1.id, PiObject.get(callResult._2) )
+      
   /** Overwrite with the latest PiInstance information.
     */
   def update( newPii: PiInstance[ObjectId] ): PartialResponse
