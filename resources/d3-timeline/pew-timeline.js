@@ -27,6 +27,7 @@ function displayResults(selection,data) {
 	
 	chart.showTimeAxisTick();
 	chart.relativeTime();
+	//chart.showBorderLine();
 
 	var backgroundColor = "#eeeeee";
 	var altBackgroundColor = "white";
@@ -60,6 +61,7 @@ function displayResults(selection,data) {
         	.style("opacity", 0);	
 	});
 	
+	selection.select("svg").remove();
 	var svg = selection.append("svg")
 		//.attr("width", '100%')
 		.attr("width", totalTicks*widthPerTick)
@@ -82,18 +84,26 @@ function timeRange(data) {
 
 function workflow(datum) {
 	var selection = d3.select(this);
+	displayResults(selection,datum.data);
+}
+
+function newWorkflow(datum) {
+	var selection = d3.select(this);
 	selection.append("text").text(datum.id);
 	displayResults(selection,datum.data);
 }
 
 function displayAll(tag,workflowData) {
-	d3.select(tag)
-		.selectAll("div")
+	var div = d3.select(tag).selectAll("div")
 		.data(workflowData, function(d) { return d ? d.id : this.id; })
-		.enter()
-		.append("div")
-		.attr("id",function(d) {d.id})
 		.each(workflow);
+		
+	div.enter()
+		.append("div")
+			.attr("id",function(d) {d.id})
+			.each(newWorkflow);
 }
 
 displayAll("#workflows",workflowData);
+setTimeout(function () { displayAll("#workflows",workflowData2); } ,1000);
+setTimeout(function () { displayAll("#workflows",workflowData3); } ,2000);
