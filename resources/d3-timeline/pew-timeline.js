@@ -36,30 +36,29 @@ function displayResults(selection,data) {
 	});
 	chart.fullLengthBackgrounds();
 
-//	var div = d3.select("body").append("div")	
-//		.attr("class", "tooltip")				
-//		.style("opacity", 0);
-//	
-//	chart.mouseover(function (d, i, datum) {
-//		// d is the current rendering object
-//		// i is the index during d3 rendering
-//		// datum is the data object
-//		div.style("left", (d3.event.pageX) + "px")		
-//           .style("top", (d3.event.pageY - 28) + "px");
-//		div.text(d.task + "\n" +
-//				 chart.tickFormat().format(new Date(d.starting_time)) + "-" + chart.tickFormat().format(new Date(d.ending_time)) + "\n" +
-//				 "Delay: " + chart.tickFormat().format(new Date(d.delay)) + "\n" +
-//				 "Cost: " + d.cost
-//		);
-//		div.transition()		
-//        	.duration(200)		
-//        	.style("opacity", .9);		
-//	});
-//	chart.mouseout(function (d, i, datum) {
-//		div.transition()		
-//        	.duration(500)		
-//        	.style("opacity", 0);	
-//	});
+	var div = selection.append("div")	
+		.attr("class", "tooltip")				
+		.style("opacity", 0);
+	
+	chart.mouseover(function (d, i, datum) {
+		// d is the current rendering object
+		// i is the index during d3 rendering
+		// datum is the data object
+		div.style("left", (d3.event.pageX) + "px")		
+           .style("top", (d3.event.pageY - 28) + "px");
+		div.text(d.process + " (" + d.label + ")\n" +
+				 chart.tickFormat().format(new Date(d.starting_time)) + "-" + chart.tickFormat().format(new Date(d.ending_time)) + "\n" +
+				 "Result: " + d.result
+		);
+		div.transition()		
+        	.duration(200)		
+        	.style("opacity", .9);		
+	});
+	chart.mouseout(function (d, i, datum) {
+		div.transition()		
+        	.duration(500)		
+        	.style("opacity", 0);	
+	});
 	
 	var svg = selection.append("svg")
 		//.attr("width", '100%')

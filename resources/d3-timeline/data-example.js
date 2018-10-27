@@ -5,39 +5,39 @@ var processes = [
 ];
 
 var workflowData = [
-	{id: "1", data: [
+	{id: "0", data: [
 		{label: "PaI", times: [
-			{"label":"0", "process": "PaI", "starting_time": 1540595694411, "ending_time": 1540595694415, "result":"PiPair(PiItem(1),PiItem(1))"},
+			{"label":"0", "process": "PaI", "starting_time": 1540599613323, "ending_time": 1540599613325, "result":"(1,1)"},
 		]},
 		{label: "PcI", times: [
-			{"label":"1", "process": "PcI", "starting_time": 1540595694417, "ending_time": 1540595694518, "result":"PiItem(PcISleptFor1s)"},
+			{"label":"1", "process": "PcI", "starting_time": 1540599613326, "ending_time": 1540599613428, "result":"PcISleptFor1s"},
 		]},
 		{label: "PbI", times: [
-			{"label":"2", "process": "PbI", "starting_time": 1540595694417, "ending_time": 1540595694519, "result":"PiItem(PbISleptFor1s)"},
+			{"label":"2", "process": "PbI", "starting_time": 1540599613326, "ending_time": 1540599613427, "result":"PbISleptFor1s"},
 		]},
 	]},
 
-	{id: "0", data: [
+	{id: "1", data: [
 		{label: "PaI", times: [
-			{"label":"0", "process": "PaI", "starting_time": 1540595694410, "ending_time": 1540595694412, "result":"PiPair(PiItem(1),PiItem(1))"},
+			{"label":"0", "process": "PaI", "starting_time": 1540599613324, "ending_time": 1540599613327, "result":"(1,1)"},
 		]},
 		{label: "PcI", times: [
-			{"label":"1", "process": "PcI", "starting_time": 1540595694414, "ending_time": 1540595694515, "result":"PiItem(PcISleptFor1s)"},
+			{"label":"1", "process": "PcI", "starting_time": 1540599613328, "ending_time": 1540599613430, "result":"PcISleptFor1s"},
 		]},
 		{label: "PbI", times: [
-			{"label":"2", "process": "PbI", "starting_time": 1540595694415, "ending_time": 1540595694516, "result":"PiItem(PbISleptFor1s)"},
+			{"label":"2", "process": "PbI", "starting_time": 1540599613328, "ending_time": 1540599613430, "result":"PbISleptFor1s"},
 		]},
 	]},
 
 	{id: "2", data: [
 		{label: "PaI", times: [
-			{"label":"0", "process": "PaI", "starting_time": 1540595694412, "ending_time": 1540595694418, "result":"PiPair(PiItem(1),PiItem(1))"},
+			{"label":"0", "process": "PaI", "starting_time": 1540599613325, "ending_time": 1540599613329, "result":"(1,1)"},
 		]},
 		{label: "PcI", times: [
-			{"label":"1", "process": "PcI", "starting_time": 1540595694420, "ending_time": 1540595694520, "result":"PiItem(PcISleptFor1s)"},
+			{"label":"1", "process": "PcI", "starting_time": 1540599613330, "ending_time": 1540599613432, "result":"PcISleptFor1s"},
 		]},
 		{label: "PbI", times: [
-			{"label":"2", "process": "PbI", "starting_time": 1540595694420, "ending_time": 1540595694521, "result":"PiItem(PbISleptFor1s)"},
+			{"label":"2", "process": "PbI", "starting_time": 1540599613330, "ending_time": 1540599613433, "result":"PbISleptFor1s"},
 		]},
 	]},
 
