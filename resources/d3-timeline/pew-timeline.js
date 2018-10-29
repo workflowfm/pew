@@ -1,20 +1,25 @@
 function displayResults(selection,data) {
 	var widthPerTick = 10
+	var leftMargin = 100
+	var rightMargin = 30
 	
 	var colorScale = d3.scale.category20().domain(processes); 
-	
-	var tickTime = d3.time.seconds
 	
 	var tRange = timeRange(data)
 	var startTime = tRange[0]
 	var endTime = tRange[1]
+	
 	var totalTicks = endTime-startTime
+	
+	//var tickTime = d3.time.seconds
 	//var totalTicks = tickTime(startTime,endTime).length	
+	
 	console.log("Total Ticks: " + totalTicks)
 	
 	var chart = d3.timeline()
 		.tickFormat( //
 				{format: d3.time.format("%H:%M:%S.%L"),
+				//tickTime: tickTime,
 				numTicks: totalTicks/100,
 				tickInterval: 100,
 				tickSize: 1,
@@ -23,7 +28,7 @@ function displayResults(selection,data) {
 		.margin({left:100, right:30, top:0, bottom:0})
 		.colors( colorScale )
 		.colorProperty('process')
-		.width(totalTicks*widthPerTick);
+		.width(totalTicks*widthPerTick+leftMargin+rightMargin);
 	
 	chart.showTimeAxisTick();
 	chart.relativeTime();
@@ -61,11 +66,13 @@ function displayResults(selection,data) {
         	.style("opacity", 0);	
 	});
 	
-	selection.select("svg").remove();
-	var svg = selection.append("svg")
+	selection.select("svg").selectAll("g").remove();
+	var svg = selection.select("svg")
+		.datum(data)
+		//.data(data) // this only passes 1 row!
 		//.attr("width", '100%')
-		.attr("width", totalTicks*widthPerTick)
-		.datum(data).call(chart);
+		.attr("width", totalTicks*widthPerTick+leftMargin+rightMargin)
+		.call(chart);
 }
 
 function timeRange(data) {
@@ -89,7 +96,10 @@ function workflow(datum) {
 
 function newWorkflow(datum) {
 	var selection = d3.select(this);
-	selection.append("text").text(datum.id);
+	selection.append("p").text(datum.id);
+	selection.append("svg")
+		//.attr("width", '100%')
+		//.attr("width", totalTicks*widthPerTick);
 	displayResults(selection,datum.data);
 }
 
