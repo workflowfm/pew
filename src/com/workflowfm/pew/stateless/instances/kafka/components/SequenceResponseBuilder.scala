@@ -126,7 +126,7 @@ class SequenceResponseBuilder[T[X] <: Tracked[X]](
 
         // Update partial results:
         update(
-          piiId( msgIn.value ),
+          msgIn.value.piiId,
           msgIn.value match {
             case msg: SequenceRequest => _ update msg.request
             case msg: PiiUpdate       => _ update msg.pii

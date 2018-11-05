@@ -13,7 +13,16 @@ object StatelessMessages {
 
   /** Superclass of all messages sent for a StatelessExecutor.
     */
-  trait AnyMsg
+  trait AnyMsg {
+    def piiId: ObjectId
+  }
+
+  /** `AnyMsg` which has a full PiInstance rather than just a pii id.
+    */
+  trait HasPii extends AnyMsg {
+    val pii: PiInstance[ObjectId]
+    override def piiId: ObjectId = pii.id
+  }
 
   /** Superclass of all messages sent to the PiiHistory topic.
     */
@@ -32,7 +41,7 @@ object StatelessMessages {
     pii:  PiInstance[ObjectId],
     args: Seq[CallResult]
 
-  ) extends AnyMsg
+  ) extends AnyMsg with HasPii
 
   /** Emitted by a AtomicProcess executors to sequence their results into a common timeline.
     * Consumed by Sequencers to produce ReduceRequests.
@@ -65,7 +74,7 @@ object StatelessMessages {
 
   ) extends PiiHistory {
 
-    def piiId: ObjectId
+    override def piiId: ObjectId
       = pii match {
         case Left( _piiId ) => _piiId
         case Right( _pii ) => _pii.id
@@ -93,7 +102,7 @@ object StatelessMessages {
   case class PiiUpdate(
     pii:      PiInstance[ObjectId]
 
-  ) extends PiiHistory
+  ) extends PiiHistory with HasPii
 
   /** Emitted by the Reducer to the AtomicProcess executors, assigns responsibility for
     * executing an AtomicProcess to an AtomicProcessExecutor. Uniquely identified by the
@@ -110,7 +119,7 @@ object StatelessMessages {
     process:  String,
     args:     Seq[PiResource]
 
-  ) extends AnyMsg
+  ) extends AnyMsg with HasPii
 
   /** An output message sent to the Results topic. Has no impact on PiInstance execution,
     * but it used by `ResultListeners` to implement the `PiObservable` interface.
@@ -118,16 +127,6 @@ object StatelessMessages {
     * @param event The `PiEvent` being logged.
     */
   case class PiiLog( event: PiEvent[ObjectId] ) extends AnyMsg {
-    def piiId: ObjectId = event.id
+    override def piiId: ObjectId = event.id
   }
-
-  def piiId( msg: AnyMsg ): ObjectId
-    = msg match {
-      case m: ReduceRequest     => m.pii.id
-      case m: SequenceRequest   => m.piiId
-      case m: SequenceFailure   => m.piiId
-      case m: PiiUpdate         => m.pii.id
-      case m: Assignment        => m.pii.id
-      case m: PiiLog            => m.piiId
-    }
 }
