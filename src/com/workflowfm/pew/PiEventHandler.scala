@@ -13,6 +13,12 @@ sealed trait PiEvent[KeyT] {
   val time:Long
 }
 
+/** PiEvents which are associated with a specific AtomicProcess call.
+  */
+sealed trait PiAtomicProcessEvent[KeyT] extends PiEvent[KeyT] {
+  def ref: Int
+}
+
 sealed trait PiExceptionEvent[KeyT] extends PiEvent[KeyT] {
   def exception: PiException[KeyT]
 
@@ -40,11 +46,15 @@ case class PiEventResult[KeyT](i:PiInstance[KeyT], res:Any, override val time:Lo
       " === [" + i.id + "] RESULT: " + res
 }
 
-case class PiEventCall[KeyT](override val id:KeyT, ref:Int, p:AtomicProcess, args:Seq[PiObject], override val time:Long=System.nanoTime()) extends PiEvent[KeyT] {
+case class PiEventCall[KeyT](override val id:KeyT, ref:Int, p:AtomicProcess, args:Seq[PiObject], override val time:Long=System.nanoTime())
+  extends PiAtomicProcessEvent[KeyT] {
+
 	override def asString: String = s" === [$id] PROCESS CALL: ${p.name} ($ref) args: ${args.mkString(",")}"
 }
 
-case class PiEventReturn[KeyT](override val id:KeyT, ref:Int, result:Any, override val time:Long=System.nanoTime()) extends PiEvent[KeyT] {
+case class PiEventReturn[KeyT](override val id:KeyT, ref:Int, result:Any, override val time:Long=System.nanoTime())
+  extends PiAtomicProcessEvent[KeyT] {
+
 	override def asString: String = s" === [$id] PROCESS RETURN: ($ref) returned: $result"
 }
 
@@ -94,7 +104,7 @@ case class PiEventException[KeyT](override val id:KeyT, message:String, trace: A
 }
 
 case class PiEventProcessException[KeyT](override val id:KeyT, ref:Int, message:String, trace: Array[StackTraceElement], override val time:Long)
-  extends PiEvent[KeyT] with PiExceptionEvent[KeyT] {
+  extends PiEvent[KeyT] with PiAtomicProcessEvent[KeyT] with PiExceptionEvent[KeyT] {
 
 	override def asString: String = s" === [$id] PROCESS [$ref] FAILED - Exception: $message\n === [$id] Trace: $trace"
 
