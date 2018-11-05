@@ -283,7 +283,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
     ex.syncShutdown()
 
     // We don't care what state we leave the outstanding message in, provided we clean our own state.
-    val ourMsg: AnyMsg => Boolean = piiId(_) != oldPii.id
+    val ourMsg: AnyMsg => Boolean = _.piiId != oldPii.id
 
     val msgsOf = new MessageDrain( true )
     msgsOf[SequenceRequest].filter( ourMsg ) shouldBe empty
