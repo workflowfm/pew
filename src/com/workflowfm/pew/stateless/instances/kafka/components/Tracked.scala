@@ -12,35 +12,64 @@ import org.bson.types.ObjectId
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/** Superclass wrapper around objects processed from objects in Kafka topics. The wrapper
+  * contains the information necessary to update to consume the input messages when the
+  * Tracked wrapper is eventually "Produced" to an "output" Kafka topic.
+  *
+  * @tparam Value The type of the object contained by the tracking wrapper.
+  */
 abstract class Tracked[Value] {
   def value: Value
 
+  /** Modify the wrapped `Value` by the function `fn` and preserve the tracking information.
+    *
+    * @param fn A function to apply to the wrapped `Value`.
+    * @tparam NewValue The result type of the function.
+    * @return A new Tracked type with the same tracking, containing the new value.
+    */
   protected def map[NewValue]( fn: Value => NewValue ): Tracked[NewValue]
 
-  /** Combine 2 partition offsets of adjacent messages so they can be committed together.
+  /** Apply a fold to 2 messages so that their tracking information can be combined.
     *
-    * @param batchOffset Offset potentially representing multiple messages to be consumed.
-    * @param singleOffset Offset representing a single message to be consumed.
-    * @return A new partition offset that would consume all messsages represented by the inputs.
+    * @param fn 2 argument fold function to apply to the wrapped types.
+    * @param other The other tracked type to merge.
+    * @tparam NewValue The type of the wrapped object of the other tracked object.
+    * @return A new Tracked object with the result of `fn` on each wrapped object
+    *         which contains the merged tracking information.
     */
   protected def fold[NewValue]( fn: (Value, NewValue) => Value )( other: Tracked[NewValue] ): Tracked[Value]
 }
 
+/** Superclass of objects capable of creating new Kafka Sources of Tracked types.
+  *
+  * @tparam T The tracked wrapper type of the objects emitted by the Source.
+  */
 trait TrackedSource[ T[X] <: Tracked[X] ] {
   implicit val trackedSource: TrackedSource[T] = this
   def source[V]( cs: ConsumerSettings[_, V], sub: AutoSubscription ): Source[T[V], Control]
 }
 
+/** Superclass of factory objects capable of creating new Kafka Sinks for Tracked types.
+  *
+  * @tparam T The tracked wrapper type of the objects consumed by the Sink.
+  */
 trait TrackedSink[ T[X] <: Tracked[X] ] {
   implicit val trackedSink: TrackedSink[T] = this
   def sink[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[T[V], Future[Done]]
 }
 
+/** Superclass of factory objects capable of creating new Kafka Sinks for Tracked collection types.
+  *
+  * @tparam T The tracked wrapper type of the objects consumed by the Sink.
+  */
 trait TrackedMultiSink[ T[X] <: Tracked[X] ] {
   implicit val trackedMultiSink: TrackedMultiSink[T] = this
   def sinkMulti[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[T[Seq[V]], Future[Done]]
 }
 
+/** Tracked type helper functions, using implicits to redirect to the correct
+  * `TrackedSource`s, `TrackedSink`s, and `TrackedMultiSink`s.
+  */
 object Tracked {
 
   def source[T[X] <: Tracked[X], V]
@@ -54,15 +83,49 @@ object Tracked {
   def sinkMulti[T[X] <: Tracked[X], V <: AnyMsg]( implicit s: KafkaExecutorSettings, ts: TrackedMultiSink[T] ): Sink[T[Seq[V]], Future[Done]]
     = ts.sinkMulti( s )
 
+  /** Map a function over the value within a tracked type.
+    *
+    * @param fn Function apply to input wrapped value.
+    * @param trackedIn Tracked type containing input value.
+    * @tparam T Tracked type of both input and output wrappers.
+    * @tparam In Wrapped input type.
+    * @tparam Out Wrapped output type.
+    * @return A new Tracked type (of type `T`) with value of the output of `fn`.
+    */
   def fmap[T[X] <: Tracked[X], In, Out]( fn: In => Out )( trackedIn: T[In] ): T[Out]
     = trackedIn.map( fn ).asInstanceOf[T[Out]]
 
+  /** Replace the value within a Tracked wrapper without updating the tracking information.
+    *
+    * @param tracked The Tracked wrapper to modify.
+    * @param newValue The new value for the Tracked wrapper.
+    * @tparam T Tracked type of both input and output wrappers.
+    * @tparam In Wrapped input type.
+    * @tparam Out Wrapped output type.
+    * @return A new Tracked object of type `T`, containing `newValue` and the tracking from `tracked`.
+    */
   def freplace[T[X] <: Tracked[X], In, Out]( tracked: T[In] )( newValue: Out ): T[Out]
     = fmap( (_: In) => newValue )( tracked )
 
+  /** Expose a future contained within a Tracked wrapper,
+    *
+    * @param fut Tracked wrapper containing a future.
+    * @param exec Execution context of the future.
+    * @tparam V Type of the future.
+    * @tparam T Tracked type of both input and output wrappers.
+    * @return A future returning a Tracked type of the result of the original future.
+    */
   def exposeFuture[V, T[X] <: Tracked[X]]( fut: T[Future[V]] )( implicit exec: ExecutionContext ): Future[T[V]]
     = fut.value.map( freplace( fut ) )( exec )
 
+  /** Merge the tracking information of a sequence of Tracked wrappers.
+    * NOTE: CONDITIONS APPLY! CHECK THE TRACKED CLASSES FOLD FUNCTION.
+    *
+    * @param consuming A sequence of messages to combine.
+    * @tparam Msg The type of the elements in the sequence.
+    * @tparam T Tracked type of both input and output wrappers.
+    * @return Tracked wrapper of type `T` containing a list of `Msg` objects.
+    */
   def flatten[Msg, T[X] <: Tracked[X]]( consuming: Seq[T[Msg]] ): T[Seq[Msg]] = {
     require( consuming.nonEmpty )
 
@@ -75,10 +138,18 @@ object Tracked {
   }
 }
 
+/** A Tracked type which uses a `Committable` as tracking information.
+  *
+  * @tparam Value The type of the object contained by the tracking wrapper.
+  */
 trait HasCommittable[Value] extends Tracked[Value] {
   def commit: Committable
 }
 
+/** A factory object creating Sinks for `HasCommittable` types.
+  *
+  * @tparam T The tracked wrapper type of the objects consumed by the Sink.
+  */
 trait HasCommittableSinks[T[X] <: HasCommittable[X]]
   extends TrackedSink[T]
   with TrackedMultiSink[T] {
@@ -102,6 +173,12 @@ trait HasCommittableSinks[T[X] <: HasCommittable[X]]
       )
 }
 
+/** A Tracked wrapper using a `Committable` with an unknown source partition.
+  *
+  * @param value The wrapped object.
+  * @param commit Commit information of the source message.
+  * @tparam Value The type of the object contained by the tracking wrapper.
+  */
 case class CommitTracked[Value](
     value: Value,
     commit: Committable
@@ -141,12 +218,28 @@ object CommitTracked
 
 }
 
+/** A Tracked wrapper superclass for Tracked types which know the partition of their inputs.
+  * NOTE: THESE OBJECTS CANNOT BE FLATTENED FROM SEPARATE PARTITIONS!
+  *
+  * @tparam Value The type of the object contained by the tracking wrapper.
+  */
 trait HasPartition[Value]
   extends Tracked[Value] {
 
+  /** Partition of the source message of this object.
+    *
+    * @return The partition ID of the source message.
+    */
   def part: Int
 }
 
+/** A Tracked wrapper using a `Committable` with an known source partition.
+  *
+  * @param value The wrapped object.
+  * @param commit Commit information of the source message.
+  * @param part The partition of the source message.
+  * @tparam Value The type of the object contained by the tracking wrapper.
+  */
 case class PartTracked[Value](
    value: Value,
    commit: Committable,
@@ -186,6 +279,15 @@ object PartTracked
 
 }
 
+/** A Tracked wrapper type using the `Transactional` Kafka interface. `Transactional` commits
+  * ensure the topic offset updates and message production happen atomicly.
+  *
+  * This is necessary for exactly-once message semantics.
+  *
+  * @param value The wrapped object.
+  * @param partOffset Transaction information.
+  * @tparam Value The type of the object contained by the tracking wrapper.
+  */
 case class Transaction[Value](
     value: Value,
     partOffset: PartitionOffset
@@ -200,7 +302,7 @@ case class Transaction[Value](
     = copy( value = fn( value ) )
 
   override protected def fold[NewValue](fn: (Value, NewValue) => Value)(other: Tracked[NewValue]): Tracked[Value] = {
-    assert( false, "This function should work, but causes hangs when used with Transactional.sink" )
+    assert( assertion = false, "This function should work, but causes hangs when used with Transactional.sink" )
 
     require( other.isInstanceOf[Transaction[NewValue]] )
     val that = other.asInstanceOf[Transaction[NewValue]]
@@ -250,6 +352,11 @@ object Transaction
   }
 }
 
+/** Untracked objects which satisfy this interface, messages are consumed immediately at their Source.
+  *
+  * @param value The wrapped object.
+  * @tparam Value The type of the object contained by the tracking wrapper.
+  */
 case class Untracked[Value](
    value: Value
  ) extends Tracked[Value] {
@@ -283,6 +390,8 @@ object Untracked
 
 }
 
+/** Mock Tracked wrapper for testing, matches the requirements of the Transactional trackers.
+  */
 case class MockTransaction[Value](
     value: Value,
     part: Int,
@@ -326,6 +435,8 @@ object MockTransaction {
 
 }
 
+/** Mock Tracked wrapper for testing, matches the requirements of the Commitable trackers.
+  */
 case class MockTracked[Value](
     value: Value,
     part: Int,
