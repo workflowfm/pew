@@ -43,27 +43,27 @@ abstract class KafkaExecutorSettings(
   type TopicN = String
 
   // Kafka - Topic Names
-  val tnReduceRequest: TopicN
-  val tnPiiHistory: TopicN
-  val tnAssignment: TopicN
-  val tnResult: TopicN
+  def tnReduceRequest: TopicN
+  def tnPiiHistory: TopicN
+  def tnAssignment: TopicN
+  def tnResult: TopicN
 
-  val mat: Materializer
+  def mat: Materializer
 
-  val serverAndPort: String
-  val defaultGroupId: String
+  def serverAndPort: String
+  def defaultGroupId: String
 
   // Kafka - PiiId keyed consumer topic settings
-  val csPiiHistory:       ConsumerSettings[KeyPiiId, PiiHistory]
-  val csSequenceRequest:  ConsumerSettings[KeyPiiId, SequenceRequest]
-  val csReduceRequest:    ConsumerSettings[KeyPiiId, ReduceRequest]
-  val csResult:           ConsumerSettings[KeyPiiId, PiiLog]
+  def csPiiHistory:       ConsumerSettings[KeyPiiId, PiiHistory]
+  def csSequenceRequest:  ConsumerSettings[KeyPiiId, SequenceRequest]
+  def csReduceRequest:    ConsumerSettings[KeyPiiId, ReduceRequest]
+  def csResult:           ConsumerSettings[KeyPiiId, PiiLog]
 
   // Kafka - (PiiId, CallRef) keyed consumer topic settings
-  val csAssignment:       ConsumerSettings[KeyPiiIdCall, Assignment]
+  def csAssignment:       ConsumerSettings[KeyPiiIdCall, Assignment]
 
   // Kafka - All producer settings
-  val psAllMessages:      ProducerSettings[AnyKey, AnyMsg]
+  def psAllMessages:      ProducerSettings[AnyKey, AnyMsg]
 
   def record: AnyMsg => ProducerRecord[AnyKey, AnyMsg]
 }
