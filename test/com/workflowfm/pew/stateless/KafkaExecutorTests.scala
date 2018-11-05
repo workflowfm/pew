@@ -327,4 +327,32 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
     // msgsOf[PiiUpdate].head shouldBe oldMsg
     msgsOf[PiiUpdate].head.pii.id shouldBe oldMsg.pii.id
   }
+
+  it should "execute correctly under load" in {
+
+    val ex = makeExecutor( completeProcess.settings )
+
+    try {
+      for (_ <- 0 to 120) {
+        val f1 = ex.execute(ri, Seq(10))
+        val f2 = ex.execute(ri, Seq(1))
+
+        await(f1) should be(("PbISleptFor1s", "PcISleptFor0s"))
+        await(f2) should be(("PbISleptFor0s", "PcISleptFor1s"))
+      }
+
+      ex.syncShutdown()
+
+    } catch {
+      case _: TimeoutException =>
+        println("Test timed out.")
+    }
+
+    val msgsOf = new MessageDrain( true )
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty
+  }
 }
