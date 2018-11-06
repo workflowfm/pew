@@ -23,15 +23,15 @@ class BsonKafkaExecutorSettings(
   import com.workflowfm.pew.stateless.StatelessMessages._
 
   // Kafka - Topic Names
-  val tnReduceRequest: TopicN = "ReduceRequest"
-  val tnPiiHistory: TopicN = "PiiHistory"
-  val tnAssignment: TopicN = "Assignment"
-  val tnResult: TopicN = "Result"
+  override val tnReduceRequest: TopicN = "ReduceRequest"
+  override val tnPiiHistory: TopicN = "PiiHistory"
+  override val tnAssignment: TopicN = "Assignment"
+  override val tnResult: TopicN = "Result"
 
   override implicit val mat: Materializer = ActorMaterializer.create( actorSys )
 
-  val serverAndPort: String = "localhost:9092"
-  val defaultGroupId: String = "Default-Group"
+  override val serverAndPort: String = "localhost:9092"
+  override val defaultGroupId: String = "Default-Group"
 
   def consSettings[K, V]( implicit ctK: ClassTag[K], ctV: ClassTag[V] )
     : ConsumerSettings[K, V] = {
@@ -55,16 +55,16 @@ class BsonKafkaExecutorSettings(
   }
 
   // Kafka - PiiId keyed consumer topic settings
-  val csPiiHistory:       ConsumerSettings[KeyPiiId, PiiHistory]        = consSettings
-  val csSequenceRequest:  ConsumerSettings[KeyPiiId, SequenceRequest]   = consSettings
-  val csReduceRequest:    ConsumerSettings[KeyPiiId, ReduceRequest]     = consSettings
-  val csResult:           ConsumerSettings[KeyPiiId, PiiLog]            = consSettings
+  override val csPiiHistory:       ConsumerSettings[KeyPiiId, PiiHistory]        = consSettings
+  override val csSequenceRequest:  ConsumerSettings[KeyPiiId, SequenceRequest]   = consSettings
+  override val csReduceRequest:    ConsumerSettings[KeyPiiId, ReduceRequest]     = consSettings
+  override val csResult:           ConsumerSettings[KeyPiiId, PiiLog]            = consSettings
 
   // Kafka - (PiiId, CallRef) keyed consumer topic settings
-  val csAssignment:       ConsumerSettings[KeyPiiIdCall, Assignment]    = consSettings
+  override val csAssignment:       ConsumerSettings[KeyPiiIdCall, Assignment]    = consSettings
 
   // Kafka - All producer settings
-  val psAllMessages:      ProducerSettings[AnyKey, AnyMsg]              = prodSettings
+  override val psAllMessages:      ProducerSettings[AnyKey, AnyMsg]              = prodSettings
 
   override def record: AnyMsg => ProducerRecord[AnyKey, AnyMsg] = {
     case m: PiiUpdate           => new ProducerRecord( tnPiiHistory, KeyPiiId(m.pii.id), m )

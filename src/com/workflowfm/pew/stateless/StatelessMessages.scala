@@ -13,7 +13,7 @@ object StatelessMessages {
 
   /** Superclass of all messages sent for a StatelessExecutor.
     */
-  trait AnyMsg {
+  sealed trait AnyMsg {
     def piiId: ObjectId
   }
 
@@ -26,7 +26,7 @@ object StatelessMessages {
 
   /** Superclass of all messages sent to the PiiHistory topic.
     */
-  trait PiiHistory extends AnyMsg
+  sealed trait PiiHistory extends AnyMsg
 
   /** A tuple identifying a result for a specific AtomicProcess execution.
     */
