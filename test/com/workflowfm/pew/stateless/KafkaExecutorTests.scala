@@ -10,6 +10,7 @@ import org.scalatest.junit.JUnitRunner
 import scala.concurrent._
 import scala.concurrent.duration._
 
+//noinspection ZeroIndexToHead
 @RunWith(classOf[JUnitRunner])
 class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
@@ -331,21 +332,31 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
   it should "execute correctly under load" in {
 
     val ex = makeExecutor( completeProcess.settings )
+    var errors: List[Exception] = List()
 
     try {
-      for (_ <- 0 to 120) {
-        val f1 = ex.execute(ri, Seq(10))
-        val f2 = ex.execute(ri, Seq(1))
+      for (i <- 0 to 240) {
 
-        await(f1) should be(("PbISleptFor1s", "PcISleptFor0s"))
-        await(f2) should be(("PbISleptFor0s", "PcISleptFor1s"))
+        // Jev, intersperse some timeconsuming tasks.
+        val b: Seq[Int]
+          = Seq( 41, 43, 47, 53, 59, 61 )
+            .map( j => if ((i % j) == 0) 1 else 0 )
+
+        val f0 = ex.execute(ri, Seq( b(0) * 10 + b(1) ) )
+        val f1 = ex.execute(ri, Seq( b(2) * 10 + b(3) ) )
+        val f2 = ex.execute(ri, Seq( b(4) * 10 + b(5) ) )
+
+        await(f0) shouldBe (s"PbISleptFor${b(0)}s", s"PcISleptFor${b(1)}s")
+        await(f1) shouldBe (s"PbISleptFor${b(2)}s", s"PcISleptFor${b(3)}s")
+        await(f2) shouldBe (s"PbISleptFor${b(4)}s", s"PcISleptFor${b(5)}s")
       }
 
       ex.syncShutdown()
 
     } catch {
-      case _: TimeoutException =>
-        println("Test timed out.")
+      case e: Exception =>
+        e.printStackTrace()
+        errors = e :: errors
     }
 
     val msgsOf = new MessageDrain( true )
@@ -354,5 +365,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
     msgsOf[ReduceRequest] shouldBe empty
     msgsOf[Assignment] shouldBe empty
     msgsOf[PiiUpdate] shouldBe empty
+
+    errors shouldBe empty
   }
 }
