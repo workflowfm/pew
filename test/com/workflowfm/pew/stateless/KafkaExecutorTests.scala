@@ -334,9 +334,8 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
     val ex = makeExecutor( completeProcess.settings )
     var errors: List[Exception] = List()
 
-    try {
-      for (i <- 0 to 240) {
-
+    for (i <- 0 to 240) {
+      try {
         // Jev, intersperse some timeconsuming tasks.
         val b: Seq[Int]
           = Seq( 41, 43, 47, 53, 59, 61 )
@@ -349,15 +348,15 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
         await(f0) shouldBe (s"PbISleptFor${b(0)}s", s"PcISleptFor${b(1)}s")
         await(f1) shouldBe (s"PbISleptFor${b(2)}s", s"PcISleptFor${b(3)}s")
         await(f2) shouldBe (s"PbISleptFor${b(4)}s", s"PcISleptFor${b(5)}s")
+
+      } catch {
+        case e: Exception =>
+          e.printStackTrace()
+          errors = e :: errors
       }
-
-      ex.syncShutdown()
-
-    } catch {
-      case e: Exception =>
-        e.printStackTrace()
-        errors = e :: errors
     }
+
+    ex.syncShutdown()
 
     val msgsOf = new MessageDrain( true )
     msgsOf[SequenceRequest] shouldBe empty
