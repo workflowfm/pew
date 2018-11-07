@@ -4,7 +4,7 @@ import akka.actor._
 import akka.util.Timeout
 import akka.pattern.ask
 import scala.concurrent.duration._
-import com.workflowfm.pew.metrics._
+import com.workflowfm.pew.simulation.metrics._
 import com.workflowfm.pew.execution._
 import scala.collection.mutable.PriorityQueue
 

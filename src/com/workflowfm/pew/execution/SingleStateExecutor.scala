@@ -80,7 +80,7 @@ class SingleStateExecutor(processes:PiProcessStore)(override implicit val contex
         publish(PiEventCall(i.id,ref,p,objs))
         p.run(objs).onComplete{ 
           case Success(res) => {
-            publish(PiEventReturn(i.id,ref,res))
+            publish(PiEventReturn(i.id,ref,PiObject.get(res)))
             postResult(i.id,ref,res)
           }
           case Failure(ex) => {

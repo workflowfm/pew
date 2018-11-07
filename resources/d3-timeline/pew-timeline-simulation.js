@@ -1,38 +1,45 @@
 function displayResults(selection,data) {
-	var widthPerTick = 10
+	var widthPerTick = 60
 	var leftMargin = 100
 	var rightMargin = 30
 	
-	var colorScale = d3.scale.category20().domain(processes); 
+	var colorScale = d3.scale.category20().domain(tasks); 
+	//var ticks = Array(totalTicks).fill().map((v,i)=>i);
 	
 	var tRange = timeRange(data)
 	var startTime = tRange[0]
 	var endTime = tRange[1]
 	
-	var totalTicks = endTime-startTime
+	var totalTicks = endTime - startTime
 	
-	//var tickTime = d3.time.seconds
+	//var tickTime = d3.time.minutes
 	//var totalTicks = tickTime(startTime,endTime).length	
 	
 	console.log("Total Ticks: " + totalTicks)
 	
 	var chart = d3.timeline()
 		.tickFormat( //
-				{format: d3.time.format("%H:%M:%S.%L"),
-				//tickTime: tickTime,
-				numTicks: totalTicks/100,
-				tickInterval: 100,
-				tickSize: 1,
+				{format: d3.format("03d"),
+				tickInterval: 1, // This forces us to start from 001 
+				numTicks: totalTicks,
+				//tickValues: ticks, // Use this to start from 000
+				tickSize: 10,
 				})
+		/*.tickFormat( //
+				{format: d3.time.format("%H"),
+				tickTime: tickTime,
+				tickInterval: 1,
+				tickSize: 10,
+				})*/
 		.stack()
 		.margin({left:100, right:30, top:0, bottom:0})
 		.colors( colorScale )
-		.colorProperty('process')
+		.colorProperty('task')
 		.width(totalTicks*widthPerTick+leftMargin+rightMargin);
 	
 	chart.showTimeAxisTick();
-	chart.relativeTime();
-	//chart.showBorderLine();
+	//chart.relativeTime();
+	//chart.rowSeparators("#555555");
 
 	var backgroundColor = "#eeeeee";
 	var altBackgroundColor = "white";
@@ -52,9 +59,10 @@ function displayResults(selection,data) {
 		// datum is the data object
 		div.style("left", (d3.event.pageX) + "px")		
            .style("top", (d3.event.pageY - 28) + "px");
-		div.text(d.process + " (" + d.label + ")\n" +
+		div.text(d.task + "\n" +
 				 chart.tickFormat().format(new Date(d.starting_time)) + "-" + chart.tickFormat().format(new Date(d.ending_time)) + "\n" +
-				 "Result: " + d.result
+				 "Delay: " + chart.tickFormat().format(new Date(d.delay)) + "\n" +
+				 "Cost: " + d.cost
 		);
 		div.transition()		
         	.duration(200)		
@@ -69,7 +77,6 @@ function displayResults(selection,data) {
 	selection.select("svg").selectAll("g").remove();
 	var svg = selection.select("svg")
 		.datum(data)
-		//.data(data) // this only passes 1 row!
 		//.attr("width", '100%')
 		.attr("width", totalTicks*widthPerTick+leftMargin+rightMargin)
 		.call(chart);
@@ -103,17 +110,6 @@ function newWorkflow(datum) {
 	displayResults(selection,datum.data);
 }
 
-function displayAll(tag,workflowData) {
-	var div = d3.select(tag).selectAll("div")
-		.data(workflowData, function(d) { return d ? d.id : this.id; })
-		.each(workflow);
-		
-	div.enter()
-		.append("div")
-			.attr("id",function(d) {d.id})
-			.each(newWorkflow);
-}
-
 function displayOne(tag,workflowData) {
 	var div = d3.select(tag)//.data(workflowData)
 	div.selectAll("svg").remove()
@@ -121,4 +117,5 @@ function displayOne(tag,workflowData) {
 	displayResults(div,workflowData)
 }
 
-displayAll("#workflows",workflowData);
+displayOne("#resources",resourceData);
+displayOne("#workflows",workflowData);
