@@ -1,13 +1,18 @@
-function displayResults(tag,data) {
+function displayResults(selection,data) {
 	var widthPerTick = 60
+	var leftMargin = 100
+	var rightMargin = 30
 	
 	var colorScale = d3.scale.category20().domain(tasks); 
 	//var ticks = Array(totalTicks).fill().map((v,i)=>i);
 	
+	var tRange = timeRange(data)
+	var startTime = tRange[0]
+	var endTime = tRange[1]
+	
 	var tickTime = d3.time.minutes
-	var endTime = lastTimestamp(data)
 	var totalTicks = endTime
-	//var totalTicks = tickTime(0,endTime).length	
+	
 	console.log("Total Ticks: " + totalTicks)
 	
 	var chart = d3.timeline()
@@ -28,9 +33,9 @@ function displayResults(tag,data) {
 		.margin({left:100, right:30, top:0, bottom:0})
 		.colors( colorScale )
 		.colorProperty('task')
-		.width(totalTicks*widthPerTick);
-	chart.showTimeAxisTick();
+		.width(totalTicks*widthPerTick+leftMargin+rightMargin);
 	
+	chart.showTimeAxisTick();
 	//chart.relativeTime();
 	//chart.rowSeparators("#555555");
 
@@ -42,7 +47,7 @@ function displayResults(tag,data) {
 	});
 	chart.fullLengthBackgrounds();
 
-	var div = d3.select("body").append("div")	
+	var div = selection.append("div")	
 		.attr("class", "tooltip")				
 		.style("opacity", 0);
 	
@@ -67,21 +72,48 @@ function displayResults(tag,data) {
         	.style("opacity", 0);	
 	});
 	
-	var svg = d3.select(tag).append("svg")
-		.attr("width", '100%')
-		.datum(data).call(chart);
+	selection.select("svg").selectAll("g").remove();
+	var svg = selection.select("svg")
+		.datum(data)
+		//.attr("width", '100%')
+		.attr("width", totalTicks*widthPerTick+leftMargin+rightMargin)
+		.call(chart);
 }
 
-function lastTimestamp(data) {
-	var result = 0
+function timeRange(data) {
+	var start = new Date().getTime();
+	var finish = 0;
 	for (var i = 0; i < data.length; i++) {
 		for (var j = 0; j < data[i].times.length; j++) {
-		    if (data[i].times[j].ending_time > result)
-		    		result = data[i].times[j].ending_time;
+		    if (data[i].times[j].starting_time < start)
+		    	start = data[i].times[j].starting_time;
+		    if (data[i].times[j].ending_time > finish)
+	    		finish = data[i].times[j].ending_time;
 		}
 	}
-	return result + 1
+	return [start,finish]
 }
 
-displayResults("#resources",resourceData);
-displayResults("#workflows",workflowData);
+function workflow(datum) {
+	var selection = d3.select(this);
+	displayResults(selection,datum.data);
+}
+
+function newWorkflow(datum) {
+	var selection = d3.select(this);
+	selection.append("p").text(datum.id);
+	selection.append("svg")
+		//.attr("width", '100%')
+		//.attr("width", totalTicks*widthPerTick);
+	displayResults(selection,datum.data);
+}
+
+function displayOne(tag,workflowData) {
+	var div = d3.select(tag)//.data(workflowData)
+	div.selectAll("svg").remove()
+	div.append("svg")
+	displayResults(div,workflowData)
+}
+
+displayOne("#resources",resourceData);
+displayOne("#workflows",workflowData);

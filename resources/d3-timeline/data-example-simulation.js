@@ -1,5 +1,3 @@
-//var totalTicks = 49
-
 var tasks = [
 	"AwardContract",
 	"ProvideService",

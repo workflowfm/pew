@@ -114,6 +114,11 @@ function displayAll(tag,workflowData) {
 			.each(newWorkflow);
 }
 
+function displayOne(tag,workflowData) {
+	var div = d3.select(tag)//.data(workflowData)
+	div.selectAll("svg").remove()
+	div.append("svg")
+	displayResults(div,workflowData)
+}
+
 displayAll("#workflows",workflowData);
-setTimeout(function () { displayAll("#workflows",workflowData2); } ,1000);
-setTimeout(function () { displayAll("#workflows",workflowData3); } ,2000);
