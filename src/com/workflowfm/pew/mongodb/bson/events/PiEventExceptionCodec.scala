@@ -8,6 +8,8 @@ import org.bson.{BsonReader, BsonWriter}
 class PiEventExceptionCodec[T]( tCodec: Codec[T] )
   extends ClassCodec[PiEventException[T]] {
 
+  import com.workflowfm.pew.mongodb.bson.BsonUtil._
+
   val tIdN: String = "tId"
   val messageN: String = "msg"
   val stackTraceN: String = "trace"
@@ -19,7 +21,7 @@ class PiEventExceptionCodec[T]( tCodec: Codec[T] )
     ctx.encodeWithChildContext( tCodec, writer, value.id )
 
     writer.writeString( messageN, value.message )
-    writer.writeString( stackTraceN, value.stackTrace )
+    writeObjectSeq( writer, stackTraceN, value.trace.toSeq )
     
     writer.writeInt64( timeN, value.time )
   }
@@ -30,7 +32,7 @@ class PiEventExceptionCodec[T]( tCodec: Codec[T] )
     val tId: T = ctx.decodeWithChildContext( tCodec, reader )
 
     val msg: String = reader.readString( messageN )
-    val trace: String = reader.readString( stackTraceN )
+    val trace: Array[StackTraceElement] = readObjectSeq( reader, stackTraceN )
 
     val time: Long = reader.readInt64( timeN )
     

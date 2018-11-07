@@ -11,38 +11,70 @@ import org.bson.types.ObjectId
   */
 object StatelessMessages {
 
-  trait AnyMsg
-  trait PiiHistory extends AnyMsg
+  /** Superclass of all messages sent for a StatelessExecutor.
+    */
+  sealed trait AnyMsg {
+    def piiId: ObjectId
+  }
 
+  /** `AnyMsg` which has a full PiInstance rather than just a pii id.
+    */
+  trait HasPii extends AnyMsg {
+    val pii: PiInstance[ObjectId]
+    override def piiId: ObjectId = pii.id
+  }
+
+  /** Superclass of all messages sent to the PiiHistory topic.
+    */
+  sealed trait PiiHistory extends AnyMsg
+
+  /** A tuple identifying a result for a specific AtomicProcess execution.
+    */
+  type CallResult = (CallRef, PiObject)
+
+  /** Contains the necessary information for reducing a PiInstance.
+    *
+    * @param pii The latest PiInstance to reduce and post-results into.
+    * @param args A collection of result objects for open threads that need to be posted.
+    */
   case class ReduceRequest(
     pii:  PiInstance[ObjectId],
-    args: Seq[(CallRef, PiObject)]
+    args: Seq[CallResult]
 
-  ) extends AnyMsg
+  ) extends AnyMsg with HasPii
 
+  /** Emitted by a AtomicProcess executors to sequence their results into a common timeline.
+    * Consumed by Sequencers to produce ReduceRequests.
+    *
+    * @param piiId ID of the PiInstance being executed, PiInstance state needs to be fetched
+    *              from the PiiHistory topic.
+    * @param request The result of the AtomicProcess call, containing the unique id and a
+    *                PiObject representing the result.
+    */
   case class SequenceRequest(
     piiId: ObjectId,
-    request: (CallRef, PiObject)
+    request: CallResult
 
   ) extends PiiHistory
 
-  type CallResult = (CallRef, PiObject)
-  type CallFailure = PiEventProcessException[ObjectId]
-
   /** A PiiHistory message which helps collect outstanding SequenceRequests after a failure.
     *
-    * @param pii
-    * @param results Any collected call results that have yet to be sequenced.
-    * @param failures The failed AtomicProcess calls and their errors.
+    * @param pii Identifying information for the PiInstance. Just an ObjectId if the state
+    *            hasn't been seen, or the latest PiInstance.
+    *
+    * @param returns All the known results for the returned calls, the PiObjects may be null
+    *                in the event of a failure.
+    *
+    * @param errors All the known exceptions encountered during the execution of this PiInstance.
     */
   case class SequenceFailure(
     pii:  Either[ObjectId, PiInstance[ObjectId]],
-    results: Seq[CallResult],
-    failures: Seq[CallFailure]
+    returns: Seq[CallResult],
+    errors: Seq[PiExceptionEvent[ObjectId]]
 
   ) extends PiiHistory {
 
-    def piiId: ObjectId
+    override def piiId: ObjectId
       = pii match {
         case Left( _piiId ) => _piiId
         case Right( _pii ) => _pii.id
@@ -50,46 +82,51 @@ object StatelessMessages {
   }
 
   object SequenceFailure {
-    def apply( id: ObjectId, ref: CallRef, err: Throwable ): SequenceFailure
-      = SequenceFailure(
-        Left(id), Seq(),
-        Seq( PiEventProcessException( id, ref.id, err ) )
-      )
 
-    def apply( pii: PiInstance[ObjectId], results: Seq[CallResult], failures: Seq[CallFailure] ): SequenceFailure
-      = SequenceFailure( Right( pii ), results, failures )
+    /** Constructs a SequenceFailure from a single failed AtomicProcess call.
+      *
+      * @param id The ID of the PiInstance being run.
+      * @param ref The AtomicProcess call reference id which failed.
+      * @param piEx The exception which was encountered.
+      * @return A Sequence failure object containing a single CallRef and ExceptionEvent.
+      */
+    def apply( id: ObjectId, ref: CallRef, piEx: PiException[ObjectId] ): SequenceFailure
+      = SequenceFailure( Left(id), Seq((ref, null)), Seq( piEx.event ) )
   }
 
-  /** Wrapper for thrown exceptions which need to be serialised and deserialised.
+  /** Emitted by the Reducer component to log the latest PiInstance state to the PiHistory.
+    * Consumed by the Sequencer component to construct up-to-date ReduceRequests.
     *
-    * @param message Debug message.
+    * @param pii The latest state of the PiInstance.
     */
-  case class RemoteExecutorException( message: String ) extends Exception( message )
-
   case class PiiUpdate(
     pii:      PiInstance[ObjectId]
 
-  ) extends PiiHistory
+  ) extends PiiHistory with HasPii
 
+  /** Emitted by the Reducer to the AtomicProcess executors, assigns responsibility for
+    * executing an AtomicProcess to an AtomicProcessExecutor. Uniquely identified by the
+    * (PiiId, CallRef) pair.
+    *
+    * @param pii The PiInstance state when the Assignment was created.
+    * @param callRef The ID of this call in the PiInstance.
+    * @param process The name of the AtomicProcess to call.
+    * @param args The value of each of the arguments to the AtomicProcess.
+    */
   case class Assignment(
     pii:      PiInstance[ObjectId],
     callRef:  CallRef,
-    process:  String, // AtomicProcess,
+    process:  String,
     args:     Seq[PiResource]
 
-  ) extends AnyMsg
+  ) extends AnyMsg with HasPii
 
+  /** An output message sent to the Results topic. Has no impact on PiInstance execution,
+    * but it used by `ResultListeners` to implement the `PiObservable` interface.
+    *
+    * @param event The `PiEvent` being logged.
+    */
   case class PiiLog( event: PiEvent[ObjectId] ) extends AnyMsg {
-    def piiId: ObjectId = event.id
+    override def piiId: ObjectId = event.id
   }
-
-  def piiId( msg: AnyMsg ): ObjectId
-    = msg match {
-      case m: ReduceRequest     => m.pii.id
-      case m: SequenceRequest   => m.piiId
-      case m: SequenceFailure   => m.piiId
-      case m: PiiUpdate         => m.pii.id
-      case m: Assignment        => m.pii.id
-      case m: PiiLog            => m.piiId
-    }
 }

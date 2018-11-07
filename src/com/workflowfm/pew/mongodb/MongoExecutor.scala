@@ -87,7 +87,7 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
 //	 Future.successful(oid)
 
   
-  def startUpdate(i:PiInstance[ObjectId]):PiInstance[ObjectId] = {
+  protected def startUpdate(i:PiInstance[ObjectId]):PiInstance[ObjectId] = {
     publish(PiEventStart(i))
     i.reduce
   }
@@ -102,13 +102,13 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
     })
   }
   
-  def postResultUpdate(ref:Int, res:PiObject)(i:PiInstance[ObjectId]):PiInstance[ObjectId] = {
+  protected def postResultUpdate(ref:Int, res:PiObject)(i:PiInstance[ObjectId]):PiInstance[ObjectId] = {
     System.err.println("*** [" + i.id + "] Handling result for thread " + ref + " : " + res)
 	  i.postResult(ref, res).reduce	  
   }
   
   // We give a promise as an argument instead of returning a Future in order to avoid chaining promises at each recursive call.
-  final def update(id:ObjectId, f:PiInstance[ObjectId]=>PiInstance[ObjectId], attempt:Int, promise:Promise[PiInstance[ObjectId]] ):Unit = try {
+  final protected def update(id:ObjectId, f:PiInstance[ObjectId]=>PiInstance[ObjectId], attempt:Int, promise:Promise[PiInstance[ObjectId]] ):Unit = try {
     implicit val iid:ObjectId = id  
      
     val obs = client.startSession(ClientSessionOptions.builder.causallyConsistent(true).build()) safeThen { 
@@ -169,7 +169,7 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
   }
 
  
-  def put(i:PiInstance[ObjectId], ni:PiInstance[ObjectId], col:MongoCollection[PiInstance[ObjectId]], session:ClientSession):(Seq[(Int,PiFuture)],Observable[_]) = {
+  protected def put(i:PiInstance[ObjectId], ni:PiInstance[ObjectId], col:MongoCollection[PiInstance[ObjectId]], session:ClientSession):(Seq[(Int,PiFuture)],Observable[_]) = {
      val unique = i.called
      if (ni.completed) ni.result match {
 		  case None => {   
@@ -191,7 +191,7 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
 		}
   }
   
-  def handleThread(i:PiInstance[ObjectId])(ref:Int,f:PiFuture):Boolean = {
+  protected def handleThread(i:PiInstance[ObjectId])(ref:Int,f:PiFuture):Boolean = {
      System.err.println("*** [" + i.id + "] Handling thread: " + ref + " (" + f.fun + ")")
     f match {
     case PiFuture(name, outChan, args) => i.getProc(name) match {
@@ -210,7 +210,7 @@ class MongoExecutor(client:MongoClient, db:String, collection:String, processes:
   } }
   
   
-  def runThread(i:PiInstance[ObjectId])(t:(Int,PiFuture)):Unit = {
+  protected def runThread(i:PiInstance[ObjectId])(t:(Int,PiFuture)):Unit = {
     System.err.println("*** [" + i.id + "] Handling thread: " + t._1 + " (" + t._2.fun + ")")
     t match {
     case (ref,PiFuture(name, outChan, args)) => i.getProc(name) match {

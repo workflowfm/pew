@@ -10,6 +10,7 @@ import org.scalatest.junit.JUnitRunner
 import scala.concurrent._
 import scala.concurrent.duration._
 
+//noinspection ZeroIndexToHead
 @RunWith(classOf[JUnitRunner])
 class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
@@ -283,7 +284,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
     ex.syncShutdown()
 
     // We don't care what state we leave the outstanding message in, provided we clean our own state.
-    val ourMsg: AnyMsg => Boolean = piiId(_) != oldPii.id
+    val ourMsg: AnyMsg => Boolean = _.piiId != oldPii.id
 
     val msgsOf = new MessageDrain( true )
     msgsOf[SequenceRequest].filter( ourMsg ) shouldBe empty
@@ -326,5 +327,45 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
     // TODO: PiInstances don't equal one another as they have different container types after serialization.
     // msgsOf[PiiUpdate].head shouldBe oldMsg
     msgsOf[PiiUpdate].head.pii.id shouldBe oldMsg.pii.id
+  }
+
+  it should "execute correctly under load" in {
+
+    val ex = makeExecutor( completeProcess.settings )
+    var errors: List[Exception] = List()
+
+    try {
+      for (i <- 0 to 240) {
+
+        // Jev, intersperse some timeconsuming tasks.
+        val b: Seq[Int]
+          = Seq( 41, 43, 47, 53, 59, 61 )
+            .map( j => if ((i % j) == 0) 1 else 0 )
+
+        val f0 = ex.execute(ri, Seq( b(0) * 10 + b(1) ) )
+        val f1 = ex.execute(ri, Seq( b(2) * 10 + b(3) ) )
+        val f2 = ex.execute(ri, Seq( b(4) * 10 + b(5) ) )
+
+        await(f0) shouldBe (s"PbISleptFor${b(0)}s", s"PcISleptFor${b(1)}s")
+        await(f1) shouldBe (s"PbISleptFor${b(2)}s", s"PcISleptFor${b(3)}s")
+        await(f2) shouldBe (s"PbISleptFor${b(4)}s", s"PcISleptFor${b(5)}s")
+      }
+
+      ex.syncShutdown()
+
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+        errors = e :: errors
+    }
+
+    val msgsOf = new MessageDrain( true )
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty
+
+    errors shouldBe empty
   }
 }

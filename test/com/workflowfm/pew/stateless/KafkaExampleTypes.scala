@@ -10,11 +10,13 @@ trait KafkaExampleTypes extends KafkaTests {
   val p1 = PiInstance( ObjectId.get, pbi, PiObject(1) )
   val p2 = PiInstance( ObjectId.get, pbi, PiObject(1) )
 
-  val testException = RemoteExecutorException("test")
+  class TestException extends Exception( "test argh!" )
+
+  val testException = new TestException
 
   val callRes0 = ( CallRef(1), PiObject(0) )
   val callResHi = ( CallRef(0), PiObject("Hello, World!") )
-  val callResErr = ( CallRef(53141), RemoteExecutorException("Argh!") )
+  val callResErr = ( CallRef(53141), new TestException )
 
   val eg1 = new {
 
@@ -48,7 +50,8 @@ trait KafkaExampleTypes extends KafkaTests {
         Seq( PiResource( arg1, pai.inputs.head._1 ) )
       )
 
-    val sfInProgress = SequenceFailure( piiId, r1._1, testException )
+    val rpeInProgress = RemoteProcessException( piiId, r1._1.id, testException )
+    val sfInProgress = SequenceFailure( piiId, r1._1, rpeInProgress )
 
     val srInProgress = SequenceRequest( piiId, r1 )
     val rrInProgress = ReduceRequest( pInProgress, Seq( r1 ) )
@@ -72,10 +75,11 @@ trait KafkaExampleTypes extends KafkaTests {
       )
 
     val pepeFinishing2 = PiEventProcessException( piiId, r2._1.id, testException )
+    val rpeFinishing = RemoteProcessException( piiId, r2._1.id, testException )
 
-    val sfFinishing21 = SequenceFailure( piiId, r2._1, testException )
-    val sfFinishing22 = SequenceFailure( pFinishing, Seq(), Seq( pepeFinishing2 ) )
-    val sfFinishing3 = SequenceFailure( pFinishing, Seq( r3 ), Seq( pepeFinishing2 ) )
+    val sfFinishing21 = SequenceFailure( piiId, r2._1, rpeFinishing )
+    val sfFinishing22 = SequenceFailure( Right(pFinishing), Seq((r2._1, null)), Seq( rpeFinishing.event ) )
+    val sfFinishing3 = SequenceFailure( Right(pFinishing), Seq((r2._1, null), r3), Seq( rpeFinishing.event ) )
 
     val srFinishing2 = SequenceRequest( piiId, r2 )
     val srFinishing3 = SequenceRequest( piiId, r3 )
@@ -101,5 +105,5 @@ trait KafkaExampleTypes extends KafkaTests {
     = ( SequenceRequest( pii.id, res ), part )
 
   def seqfail( pii: PiInstance[ObjectId], ref: CallRef, part: Int ): (PiiHistory, Int)
-    = ( SequenceFailure( pii.id, ref, RemoteExecutorException("test") ), part )
+    = ( SequenceFailure( pii.id, ref, RemoteProcessException(pii.id, ref.id, new TestException) ), part )
 }

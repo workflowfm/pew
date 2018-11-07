@@ -2,21 +2,20 @@ package com.workflowfm.pew.stateless.instances.kafka.components
 
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages._
-import com.workflowfm.pew.{PiEventReturn, PiInstance, PiObject}
+import com.workflowfm.pew.{PiEventReturn, PiExceptionEvent, PiInstance, PiObject}
 import org.bson.types.ObjectId
 
 import scala.collection.immutable
 
 case class PartialResponse(
     pii:      Option[PiInstance[ObjectId]],
-    results:  immutable.Seq[CallResult],
-    failures: immutable.Seq[CallFailure]
+    returns:  immutable.Seq[CallResult],
+    errors:   immutable.Seq[PiExceptionEvent[ObjectId]]
   ) {
 
   def this() = this( None, immutable.Seq(), immutable.Seq() )
 
-  lazy val returnedCalls: Set[Int]
-    = ( ( results map (_._1.id) ) ++ ( failures map (_.ref) ) ).toSet
+  lazy val returnedCalls: Set[Int] = returns.map(_._1.id).toSet
 
   /** We only *want* to send a response when we have actionable data to send:
     * - ReduceRequest <- The latest PiInstance *and* at least one call ref to sequence.
@@ -24,8 +23,8 @@ case class PartialResponse(
     */
   val hasPayload: Boolean
     = pii.exists( pii =>
-        if (failures.nonEmpty)  pii.called.forall( returnedCalls.contains )
-        else                    results.nonEmpty
+        if (returns.nonEmpty) pii.called.forall( returnedCalls.contains )
+        else                  returns.nonEmpty
       )
 
   val cantSend: Boolean = pii.isEmpty
@@ -34,9 +33,9 @@ case class PartialResponse(
     */
   def message: Seq[AnyMsg]
     = pii.map( pii =>
-        if (failures.nonEmpty) {
-          if (hasPayload) failures.map( PiiLog( _ ) )
-          else Seq( SequenceFailure( pii, results, failures ) )
+        if (errors.nonEmpty) {
+          if (hasPayload) errors.map( PiiLog( _ ) )
+          else Seq( SequenceFailure( Right( pii ), returns, errors ) )
 
         } else ReduceRequest( pii, results ) +: results.map( r => PiiLog( returnEvent( pii.id, r ) ) )
 
@@ -48,18 +47,18 @@ case class PartialResponse(
   /** Overwrite with the latest PiInstance information.
     */
   def update( newPii: PiInstance[ObjectId] ): PartialResponse
-    = PartialResponse( Some( newPii ), results, failures )
+    = PartialResponse( Some( newPii ), returns, errors )
 
   /** Update the full list of results to sequence into the next reduce.
     */
   def update( arg: (CallRef, PiObject) ): PartialResponse
-    = PartialResponse( pii, arg +: results, failures )
+    = PartialResponse( pii, arg +: returns, errors )
 
   def merge( failure: SequenceFailure ): PartialResponse
     = PartialResponse(
       failure.pii.toOption.orElse( pii ),
-      failure.results.to[immutable.Seq] ++ results,
-      failure.failures.to[immutable.Seq] ++ failures
+      failure.returns.to[immutable.Seq] ++ returns,
+      failure.errors.to[immutable.Seq] ++ errors
     )
 }
 
@@ -130,7 +129,7 @@ class SequenceResponseBuilder[T[X] <: Tracked[X]](
 
         // Update partial results:
         update(
-          piiId( msgIn.value ),
+          msgIn.value.piiId,
           msgIn.value match {
             case msg: SequenceRequest => _ update msg.request
             case msg: PiiUpdate       => _ update msg.pii
