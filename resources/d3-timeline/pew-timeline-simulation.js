@@ -10,8 +10,10 @@ function displayResults(selection,data) {
 	var startTime = tRange[0]
 	var endTime = tRange[1]
 	
-	var tickTime = d3.time.minutes
-	var totalTicks = endTime
+	var totalTicks = endTime - startTime
+	
+	//var tickTime = d3.time.minutes
+	//var totalTicks = tickTime(startTime,endTime).length	
 	
 	console.log("Total Ticks: " + totalTicks)
 	
