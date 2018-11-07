@@ -37,7 +37,7 @@ case class PartialResponse(
           if (hasPayload) errors.map( PiiLog( _ ) )
           else Seq( SequenceFailure( Right( pii ), returns, errors ) )
 
-        } else ReduceRequest( pii, results ) +: results.map( r => PiiLog( returnEvent( pii.id, r ) ) )
+        } else ReduceRequest( pii, returns ) +: returns.map( r => PiiLog( returnEvent( pii.id, r ) ) )
 
       ).getOrElse( Seq() )
 
