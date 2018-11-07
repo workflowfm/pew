@@ -1,26 +1,16 @@
 package com.workflowfm.pew.mongodb
 
 import akka.actor.ActorSystem
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import com.workflowfm.pew._
-import com.workflowfm.pew.mongodb._
-import org.mongodb.scala.MongoClient
+import com.workflowfm.pew.execution.RexampleTypes._
 import com.workflowfm.pew.execution._
-import RexampleTypes._
 import org.bson.types.ObjectId
+import org.junit.runner.RunWith
+import org.mongodb.scala.MongoClient
+import org.scalatest.{BeforeAndAfterAll, FlatSpec, Matchers}
+import org.scalatest.junit.JUnitRunner
+
 import scala.concurrent.Promise
-import scala.util.Success
-import scala.util.Failure
-import scala.concurrent.duration._
-import org.scalatest.BeforeAndAfterAll
 
 @RunWith(classOf[JUnitRunner])
 class MongoExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll with ProcessExecutorTester {
@@ -124,11 +114,12 @@ class MongoExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
   
   it should "fail properly when a workflow doesn't exist" in {
     val ex = new MongoExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,pci2,ri,ri2)
-    val promise = Promise[PiInstance[ObjectId]]()
-    val f1 = promise.future
-    ex.update(new ObjectId(), (x=>x), 0, promise)
+    val id = new ObjectId()
+    val handler = new PromiseHandler("unitHandler",id)
+    ex.subscribe(handler)
+    ex.postResult(id, 0, PiItem(0))
       
-    a [ProcessExecutor.NoSuchInstanceException] should be thrownBy await(f1)
+    a [NoSuchInstanceException[ObjectId]] should be thrownBy await(handler.future)
 	}
   
   it should "handle a failing atomic process" in {

@@ -1,25 +1,25 @@
-package com.workflowfm.pew.mongodb.bson
+package com.workflowfm.pew.mongodb.bson.pitypes
 
 import com.workflowfm.pew._
-import org.bson.types._
+import com.workflowfm.pew.mongodb.bson.BsonUtil
 import org.bson._
 import org.bson.codecs._
-import org.bson.codecs.configuration.CodecRegistry
-import scala.collection.mutable.Queue
-import org.bson.codecs.configuration.CodecConfigurationException
+import org.bson.codecs.configuration.{CodecConfigurationException, CodecRegistry}
+import org.bson.types._
 
 class PiInstanceCodec(registry:CodecRegistry,processes:PiProcessStore) extends Codec[PiInstance[ObjectId]] { 
   val stateCodec:Codec[PiState] = registry.get(classOf[PiState])
-  
+
+  import BsonUtil._
+
   override def encode(writer: BsonWriter, value: PiInstance[ObjectId], encoderContext: EncoderContext): Unit = { 
 	  writer.writeStartDocument()
     writer.writeName("_id")
     writer.writeObjectId(value.id)
-    
-	  writer.writeName("calls")
-    writer.writeStartArray()
-    for (i <- value.called) writer.writeInt32(i) 
-    writer.writeEndArray()
+
+    writeArray( writer, "calls", value.called ) {
+      writer.writeInt32
+    }
 
 	  writer.writeName("process")
 	  writer.writeString(value.process.iname)
@@ -36,14 +36,11 @@ class PiInstanceCodec(registry:CodecRegistry,processes:PiProcessStore) extends C
 	  reader.readStartDocument()
 	  reader.readName("_id")
 	  val id = reader.readObjectId()
-	  
-	  reader.readName("calls")
-	  reader.readStartArray()
-    var calls:Queue[Int] = Queue()
-    while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
-      calls += reader.readInt32()
-    }
-    reader.readEndArray()
+
+    val calls: List[Int]
+      = readArray( reader, "calls" ) {
+        () => reader.readInt32()
+      }
 
     reader.readName("process")
     val iname = reader.readString()
@@ -53,6 +50,6 @@ class PiInstanceCodec(registry:CodecRegistry,processes:PiProcessStore) extends C
     val state = decoderContext.decodeWithChildContext(stateCodec,reader)
     
 	  reader.readEndDocument()
-	  PiInstance(id,calls.toSeq,p,state)
+	  PiInstance( id, calls, p, state )
   }
 }

@@ -3,7 +3,7 @@ name := "PEW"
 sbtVersion := "1.2.3"
 
 lazy val commonSettings = Seq (
-	version := "0.2-SNAPSHOT",
+	version := "1.0.0-SNAPSHOT",
 	organization := "com.workflowfm",
 	scalaVersion := "2.12.3"
 )
@@ -16,13 +16,21 @@ lazy val commonSettings = Seq (
 // For instance, this will actually download scalatest_2.9.2
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.0-SNAP10" % "test"
+libraryDependencies += "org.scalamock" %% "scalamock" % "4.1.0" % Test
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
 
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.4.12"
 libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.5.16" % "test"
 
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.3.2"
-    
+
+libraryDependencies += "com.typesafe.akka" %% "akka-stream-kafka" % "0.21.1"
+libraryDependencies += "com.typesafe.akka" %% "akka-stream"       % "2.5.13"
+libraryDependencies += "com.typesafe.akka" %% "akka-http"         % "10.1.3"
+libraryDependencies += "de.heikoseeberger" %% "akka-http-jackson" % "1.21.0"
+libraryDependencies += "org.apache.kafka"  %% "kafka"             % "1.1.0"
+libraryDependencies += "org.apache.kafka"  %  "kafka-streams"     % "1.1.0"
+
 libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.2.1"
 
 libraryDependencies += "junit" % "junit" % "4.8.2"
