@@ -7,13 +7,14 @@ import scala.concurrent.duration._
 import com.workflowfm.pew.simulation.metrics._
 import com.workflowfm.pew.execution._
 import scala.collection.mutable.PriorityQueue
+import scala.concurrent.Promise
 
 
 
 object Coordinator {
   case object Start
   //TODO case object Stop
-  case class Done(time:Int,metrics:MetricAggregator)
+  case class Done(time:Int,metrics:SimMetricsAggregator)
   
   case class AddSim(t:Int,sim:Simulation,exe:SimulatorExecutor[_])
   case class AddSims(l:Seq[(Int,Simulation)],exe:SimulatorExecutor[_])
@@ -23,7 +24,7 @@ object Coordinator {
   case class AddRes(r:TaskResource)
   case class SimDone(name:String,result:String)
 
-  case class AddTask(t:Task)
+  case class AddTask(t:TaskGenerator, promise:Promise[Unit], resources:String*)
   case object AckTask
 
   case object Tick
@@ -52,8 +53,9 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
     
   var starter:Option[ActorRef] = None
   var time = 1
+  var taskID = 0L
   
-  val metrics = new MetricAggregator()
+  val metrics = new SimMetricsAggregator()
   
   implicit val timeout = Timeout(timeoutMillis.millis)
   
@@ -185,11 +187,14 @@ protected def tack :Unit = {
       println("["+time+"] Simulation " + name + " reported done.")
     }
     
-    case Coordinator.AddTask(t) => {
+    case Coordinator.AddTask(gen,promise,resources) => {
+      val t = gen.create(taskID,resources)
+      taskID = taskID + 1L
       println("["+time+"] Adding task " + t.name + " ("+t.simulation+").")
       t.created(time)
       tasks += t
-      //sender() ! Coordinator.AckTask //uncomment this to acknowledge AddTask
+      //sender() ! Coordinator.AckTask(t) //uncomment this to acknowledge AddTask
+      promise.completeWith(t.promise.future)
     }
 
     case Coordinator.Start => start(sender)

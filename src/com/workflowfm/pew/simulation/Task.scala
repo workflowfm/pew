@@ -19,27 +19,20 @@ object Task {
   case object VeryLow extends Priority { val value = 1 }
 }
 
-class Task (val name:String, val simulation:String, val resources:Seq[String], result:Any, val duration:ValueGenerator[Int], costGenerator:ValueGenerator[Int], val interrupt:Int=Int.MaxValue, val priority:Task.Priority=Task.Medium) extends TaskMetricTracker(name) with Ordered[Task] {
+class Task (val id:Long, val name:String, val simulation:String, val resources:Seq[String], val duration:ValueGenerator[Int], costGenerator:ValueGenerator[Int], val interrupt:Int=Int.MaxValue, val priority:Task.Priority=Task.Medium) extends Ordered[Task] {
   
   val cost = costGenerator.get
-  val promise:Promise[Any] = Promise()
+  val promise:Promise[Unit] = Promise()
   
   protected var creationTime :Int = -1
   var executed: Boolean = false
 
   // execute will be called once by each associated TaskResource 
-  def execute(time:Int) = if (!promise.isCompleted) promise.success(result)
+  def execute(time:Int) = if (!promise.isCompleted) promise.success(Unit)
   
   def created(time :Int) = if (creationTime < 0) creationTime = time
   def createdTime :Int = creationTime
-  
-  def addTo(coordinator:ActorRef)(implicit system: ActorSystem) = {
-    //implicit val timeout = Timeout(1.second)
-    // use ? to require an acknowledgement
-    coordinator ! Coordinator.AddTask(this)
-    promise.future
-  }
-  
+    
   def nextPossibleStart(currentTime:Int, resourceMap:Map[String,TaskResource]) = {
     (currentTime /: resources){ case (i,rN) => resourceMap.get(rN) match {
       case None => throw new RuntimeException(s"Resource $rN not found!")
@@ -75,10 +68,20 @@ class Task (val name:String, val simulation:String, val resources:Seq[String], r
   }
 }
 
-case class TaskGenerator (name :String, duration:ValueGenerator[Int]=new ConstantGenerator(1), val cost:ValueGenerator[Int]=new ConstantGenerator(1), interrupt:Int=(-1), priority:Task.Priority=Task.Medium) {
-  def create[T](simulation:String, result:T, resources:String*) = new Task(name,simulation,resources,result,duration,cost,interrupt,priority)
+case class TaskGenerator (name :String, simulation:String, duration:ValueGenerator[Int]=new ConstantGenerator(1), val cost:ValueGenerator[Int]=new ConstantGenerator(1), interrupt:Int=(-1), priority:Task.Priority=Task.Medium) {
+  def create(id:Long, resources:String*) = new Task(id,name,simulation,resources,duration,cost,interrupt,priority)
   def withPriority(p:Task.Priority) = copy(priority = p)
   def withInterrupt(int:Int) = copy(interrupt = int)
   def withDuration(dur:ValueGenerator[Int]) = copy(duration = dur)
   def withName(n:String) = copy(name = n)
+  def withSimulation(s:String) = copy(simulation=s)
+  
+  def addTo(coordinator:ActorRef, resources:String*)(implicit system: ActorSystem) = {
+    //implicit val timeout = Timeout(1.second)
+    // change this to ? to require an acknowledgement
+    val promise = Promise[Unit]()
+    coordinator ! Coordinator.AddTask(this,promise,resources:_*)
+    promise.future
+  }
+
 }

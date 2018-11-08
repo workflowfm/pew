@@ -10,7 +10,7 @@ object TaskResource {
   case object Idle extends State
 }
 
-class TaskResource(val name:String,val costPerTick:Int) extends ResourceMetricTracker { 
+class TaskResource(val name:String,val costPerTick:Int) { 
   var currentTask :Option[(Int,Int,Task)] = None
   var lastUpdate :Int = 1
   
@@ -39,9 +39,9 @@ class TaskResource(val name:String,val costPerTick:Int) extends ResourceMetricTr
       case None => {
         println("["+currentTime+"] \"" + name + "\" is NOW attached to task \"" + task.name + " (" + task.simulation +")\" - " + duration + " ticks remaining.")
         currentTask = Some(currentTime,duration,task)
-        idle(currentTime-lastUpdate)
+        //TODO idle(currentTime-lastUpdate)
         lastUpdate = currentTime
-        resStart(currentTime)
+        //TODO resStart(currentTime)
         true
       }
       case Some((_,_,currentTask)) => {
