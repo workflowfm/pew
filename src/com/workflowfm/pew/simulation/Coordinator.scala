@@ -14,10 +14,10 @@ import scala.concurrent.Promise
 object Coordinator {
   case object Start
   //TODO case object Stop
-  case class Done(time:Int,metrics:SimMetricsAggregator)
+  case class Done(time:Long,metrics:SimMetricsAggregator)
   
-  case class AddSim(t:Int,sim:Simulation,exe:SimulatorExecutor[_])
-  case class AddSims(l:Seq[(Int,Simulation)],exe:SimulatorExecutor[_])
+  case class AddSim(t:Long,sim:Simulation,exe:SimulatorExecutor[_])
+  case class AddSims(l:Seq[(Long,Simulation)],exe:SimulatorExecutor[_])
   case class AddSimNow(sim:Simulation,exe:SimulatorExecutor[_])
   case class AddSimsNow(l:Seq[Simulation],exe:SimulatorExecutor[_])
   
@@ -37,16 +37,16 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
   import scala.collection.mutable.Queue
   
   sealed trait Event extends Ordered[Event] { 
-    def time:Int
+    def time:Long
     def compare(that:Event) = {
       that.time.compare(time)
     }
   }
-  case class FinishingTask(override val time:Int,task:Task) extends Event
-  case class StartingSim(override val time:Int,simulation:Simulation,executor:SimulatorExecutor[_]) extends Event
+  case class FinishingTask(override val time:Long,task:Task) extends Event
+  case class StartingSim(override val time:Long,simulation:Simulation,executor:SimulatorExecutor[_]) extends Event
   
   var resourceMap :Map[String,TaskResource] = (Map[String,TaskResource]() /: resources){ case (m,r) => m + (r.name -> r)}
-  var simulations :Queue[(String,WorkflowMetricTracker,SimulatorExecutor[_])] = Queue()
+  var simulations :Queue[(String,SimulatorExecutor[_])] = Queue() //WorkflowMetricTracker,
   val tasks :Queue[Task] = Queue()
   
   val events = new PriorityQueue[Event]()
@@ -64,21 +64,21 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
     resourceMap += r.name -> r
   }
   
-  protected def startSimulation(t:Int, s:Simulation, e:SimulatorExecutor[_]) :Boolean = {
+  protected def startSimulation(t:Long, s:Simulation, e:SimulatorExecutor[_]) :Boolean = {
     if (t == time) {
       println("["+time+"] Starting simulation: \"" + s.name +"\".") 
-      val metrics = new WorkflowMetricTracker().simStart(time)
+      metrics += (s,t)
       // change to ? to require acknowledgement
       system.actorOf(SimulationActor.props(s)) ! SimulationActor.Run(self,e) // TODO need to escape actor name
-      simulations += ((s.name,metrics,e))
+      simulations += ((s.name,e))
       true
     } else false
   }
   
-  protected def updateSimulation(s:String, f:WorkflowMetricTracker=>WorkflowMetricTracker) = simulations = simulations map { 
-    case (n,m,e) if n.equals(s) => (n,f(m),e) 
-    case x => x
-  }
+//  protected def updateSimulation(s:String, f:WorkflowMetricTracker=>WorkflowMetricTracker) = simulations = simulations map { 
+//    case (n,m,e) if n.equals(s) => (n,f(m),e) 
+//    case x => x
+//  }
   
   def resourceAssign(r:TaskResource) = 
     if (r.isIdle) scheduler.getNextTask(r.name,time,resourceMap,tasks) match {
@@ -90,7 +90,7 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
   }
   
   protected def startTask(task:Task) {
-    task.taskStart(time)
+    (metrics^task.id)(_.start(time))
     val duration = task.duration.get
     (task.resources map (resourceMap.get(_)) flatten) map (_.startTask(task, time, duration))
     events += FinishingTask(time+duration,task)
@@ -115,6 +115,7 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
     val res = task.resources.map(resourceMap.get(_)).flatten
     task.execute(time)
     task.taskDone(task,time,task.cost,(0 /: res)(_+_.costPerTick))
+    (metrics^task.simulation)(_.
     updateSimulation(task.simulation,_.taskDone(task.metrics))
     metrics += task
   }
