@@ -35,6 +35,7 @@ case class TaskMetrics (
     case None => 0L
     case Some(s) => s - created
   }
+  def fullName = s"$task($simulation)"
 //  def done(t:Task, time:Long, cost:Long, costPerTick:Long) = {
 //    val st = started match {
 //      case None => time

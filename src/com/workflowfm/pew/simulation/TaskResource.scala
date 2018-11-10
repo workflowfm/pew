@@ -39,9 +39,7 @@ class TaskResource(val name:String,val costPerTick:Int) {
       case None => {
         println("["+currentTime+"] \"" + name + "\" is NOW attached to task \"" + task.name + " (" + task.simulation +")\" - " + task.duration + " ticks remaining.")
         currentTask = Some(currentTime,task)
-        //TODO idle(currentTime-lastUpdate)
         lastUpdate = currentTime
-        //TODO resStart(currentTime)
         true
       }
       case Some((_,currentTask)) => {

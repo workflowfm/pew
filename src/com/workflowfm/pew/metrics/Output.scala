@@ -59,10 +59,12 @@ class MetricsPrinter[KeyT] extends MetricsStringOutput[KeyT] {
 s"""
 Tasks
 -----
+${procHeader(separator)}
 ${processes(aggregator,separator,lineSep,timeFormat)}
 
 Workflows
------------
+---------
+${workflowHeader(separator)}
 ${workflows(aggregator,separator,lineSep,timeFormat)}
 """
         )
@@ -89,8 +91,8 @@ class MetricsCSVFileOutput[KeyT](path:String,name:String) extends MetricsStringO
   override def apply(aggregator:MetricsAggregator[KeyT]) = {
     val taskFile = s"$path$name-tasks.csv"
     val workflowFile = s"$path$name-workflows.csv"
-    writeToFile(taskFile, processes(aggregator,separator) + "\n")
-    writeToFile(workflowFile, workflows(aggregator,separator) + "\n")      
+    writeToFile(taskFile, procHeader(separator) + "\n" + processes(aggregator,separator) + "\n")
+    writeToFile(workflowFile, workflowHeader(separator) + "\n" + workflows(aggregator,separator) + "\n")      
   }
 }
 

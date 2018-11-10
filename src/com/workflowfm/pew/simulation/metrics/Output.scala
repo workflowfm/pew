@@ -58,14 +58,17 @@ class SimMetricsPrinter extends SimMetricsStringOutput {
 s"""
 Tasks
 -----
+${taskHeader(sep)}
 ${tasks(aggregator,sep,lineSep)}
 
 Simulations
 -----------
+${simHeader(sep)}
 ${simulations(aggregator,sep,lineSep)}
 
 Resources
 ---------
+${resHeader(sep)}
 ${resources(aggregator,sep,lineSep)}
 """
         )
@@ -82,9 +85,9 @@ class MetricsCSVFileOutput(path:String,name:String) extends SimMetricsStringOutp
     val taskFile = s"$path$name-tasks.csv"
     val simulationFile = s"$path$name-simulations.csv"
     val resourceFile = s"$path$name-resources.csv"
-    writeToFile(taskFile, tasks(aggregator,separator,lineSep))
-    writeToFile(simulationFile, simulations(aggregator,separator,lineSep))
-    writeToFile(resourceFile, resources(aggregator,separator,lineSep))        
+    writeToFile(taskFile, taskHeader(separator) + "\n" + tasks(aggregator,separator,lineSep))
+    writeToFile(simulationFile, simHeader(separator) + "\n" + simulations(aggregator,separator,lineSep))
+    writeToFile(resourceFile, resHeader(separator) + "\n" + resources(aggregator,separator,lineSep))        
   }
 }
 
@@ -131,10 +134,9 @@ $times
 
   
   def taskEntry(m:TaskMetrics) = {
-    val name = s"${m.task}(${m.simulation})"
     val start = (m.started.getOrElse(1L) - 1L) * tick
     val finish = (m.started.getOrElse(1L) + m.duration - 1L) * tick
     val delay = m.delay * tick
-    s"""{"label":"$name", task: "${m.task}", "id":${m.id}, "starting_time": $start, "ending_time": $finish, delay: $delay, cost: ${m.cost},\n"""
+    s"""{"label":"${m.fullName}", task: "${m.task}", "id":${m.id}, "starting_time": $start, "ending_time": $finish, delay: $delay, cost: ${m.cost},\n"""
   }
 }

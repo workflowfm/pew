@@ -85,20 +85,22 @@ class Coordinator(scheduler :Scheduler, timeoutMillis:Int)(implicit system: Acto
   
   protected def resourceAssign(r:TaskResource) = 
     if (r.isIdle) scheduler.getNextTask(r.name,time,resourceMap,tasks) match {
-    case None => {
-      (metrics^r)(_.idle(time-r.lastUpdate))
-      r.update(time)
+      case None => {
+      	(metrics^r)(_.idle(time-r.lastUpdate))
+      	r.update(time)
+      }
+      case Some(task) => {
+        tasks.dequeueFirst (_.compare(task) == 0) // TODO This should remove the correct task right?
+        startTask(task)
+      }
     }
-    case Some(task) => {
-      tasks.dequeueFirst (_.compare(task) == 0) // TODO This should remove the correct task right?
-      startTask(task)
-    }
-  }
-  
+
   protected def startTask(task:Task) {
     // Mark the start of the task in the metrics
     (metrics^task.id)(_.start(time))
     task.taskResources(resourceMap) map { r => 
+      // Update idle time if resource has been idle
+      if (r.isIdle) (metrics^r)(_.idle(time-r.lastUpdate))
       // Bind each resource to this task
       r.startTask(task, time)
       // Add the task and resource cost to the resource metrics
