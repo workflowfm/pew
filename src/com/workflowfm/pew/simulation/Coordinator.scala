@@ -21,7 +21,9 @@ object Coordinator {
   case class AddSimNow(sim:Simulation,exe:SimulatorExecutor[_])
   case class AddSimsNow(l:Seq[Simulation],exe:SimulatorExecutor[_])
   
-  case class AddRes(r:TaskResource)
+  case class AddResource(r:TaskResource)
+  case class AddResources(l:Seq[TaskResource])
+  
   case class SimDone(name:String,result:String)
 
   case class AddTask(t:TaskGenerator, promise:Promise[Unit], resources:Seq[String])
@@ -30,10 +32,10 @@ object Coordinator {
   case object Tick
   case object Tack
 
-  def props(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMillis:Int = 40)(implicit system: ActorSystem): Props = Props(new Coordinator(scheduler,resources,timeoutMillis)(system))//.withDispatcher("akka.my-dispatcher")
+  def props(scheduler :Scheduler, timeoutMillis:Int = 40)(implicit system: ActorSystem): Props = Props(new Coordinator(scheduler,timeoutMillis)(system))//.withDispatcher("akka.my-dispatcher")
 }
 
-class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMillis:Int)(implicit system: ActorSystem) extends Actor {
+class Coordinator(scheduler :Scheduler, timeoutMillis:Int)(implicit system: ActorSystem) extends Actor {
   import scala.collection.mutable.Queue
   
   sealed trait Event extends Ordered[Event] { 
@@ -45,8 +47,8 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
   case class FinishingTask(override val time:Long,task:Task) extends Event
   case class StartingSim(override val time:Long,simulation:Simulation,executor:SimulatorExecutor[_]) extends Event
   
-  var resourceMap :Map[String,TaskResource] = (Map[String,TaskResource]() /: resources){ case (m,r) => m + (r.name -> r)}
-  var simulations :Queue[(String,SimulatorExecutor[_])] = Queue() //WorkflowMetricTracker,
+  var resourceMap :Map[String,TaskResource] = Map[String,TaskResource]() ///: resources){ case (m,r) => m + (r.name -> r)}
+  var simulations :Map[String,SimulatorExecutor[_]] = Map[String,SimulatorExecutor[_]]()
   val tasks :Queue[Task] = Queue()
   
   val events = new PriorityQueue[Event]()
@@ -71,7 +73,7 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
       metrics += (s,t)
       // change to ? to require acknowledgement
       system.actorOf(SimulationActor.props(s)) ! SimulationActor.Run(self,e) // TODO need to escape actor name
-      simulations += ((s.name,e))
+      simulations += (s.name -> e)
       true
     } else false
   }
@@ -163,9 +165,11 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
     case Coordinator.AddSimNow(s,e) => events += StartingSim(time,s,e)
     case Coordinator.AddSimsNow(l,e) => events ++= l map { s => StartingSim(time,s,e) }  
       
-    case Coordinator.AddRes(r) => addResource(r)
+    case Coordinator.AddResource(r) => addResource(r)
+    case Coordinator.AddResources(r) => r foreach addResource
+    
     case Coordinator.SimDone(name,result) => {
-      simulations.dequeueFirst(_._1.equals(name))
+      simulations -= name
       (metrics^name) (_.done(result,time)) 
       println("["+time+"] Simulation " + name + " reported done.")
     }

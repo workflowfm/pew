@@ -99,13 +99,6 @@ class SimMetricsAggregator {
 //    resourceMap.get(resource).map { m => this += u(m) }
   def ^(resource:TaskResource)(u:ResourceMetrics=>ResourceMetrics):Option[ResourceMetrics] = 
     resourceMap.get(resource.name).map { m => this += u(m) }
-  def ^^(resources:Seq[String])(u:ResourceMetrics=>ResourceMetrics):Unit = 
-    for (r <- resources) resourceMap.get(r).map { m => this += u(m) }
-
-  
-  // Events
-  
-  //def taskDone(
   
   // TODO  getters
   
