@@ -58,5 +58,7 @@ class TaskResource(val name:String,val costPerTick:Int) {
       startTime + t.estimatedDuration
     }
   }
-    
+  
+  
+  def update(time:Long) = lastUpdate = time
 }

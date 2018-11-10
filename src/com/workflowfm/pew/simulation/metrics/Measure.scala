@@ -31,6 +31,10 @@ case class TaskMetrics (
 //  def addDuration(d :Long) = copy(duration = duration + d)
 //  def addCost(c:Long) = copy(cost = cost + c)
   def start(st:Long) = copy(started=Some(st))
+  def delay = started match {
+    case None => 0L
+    case Some(s) => s - created
+  }
 //  def done(t:Task, time:Long, cost:Long, costPerTick:Long) = {
 //    val st = started match {
 //      case None => time
@@ -43,18 +47,32 @@ object TaskMetrics {
   def apply(task:Task):TaskMetrics = TaskMetrics(task.id, task.name, task.simulation, task.created, None, task.duration, task.cost, task.resources)
 }
 
-case class SimulationMetrics(name:String, started:Long, duration:Long, tasks:Int, cost:Long, result:Option[String]) {
-//  override def stringValues = List(start,duration,cost,"\"" + result + "\"") map (_.toString)
+case class SimulationMetrics(
+    name:String, 
+    started:Long, 
+    duration:Long, 
+    delay:Long,
+    tasks:Int, 
+    cost:Long, 
+    result:Option[String]
+      ) {
   def addDuration(d:Long) = copy(duration = duration + d)
   def addCost(c:Long) = copy(cost = cost + c)
+  def addDelay(d:Long) = copy(delay = delay + d)
   def task(task:Task) = copy(tasks = tasks + 1, cost = cost + task.cost) 
   def done(res:String, time:Long) = copy( result = Some(res), duration = duration + time - started ) // TODO should this and result be one?
 }
 object SimulationMetrics {
-  def apply(name:String, t:Long):SimulationMetrics = SimulationMetrics(name,t,0L,0,0L,None) 
+  def apply(name:String, t:Long):SimulationMetrics = SimulationMetrics(name,t,0L,0L,0,0L,None) 
 }
 
-case class ResourceMetrics (name:String, busyTime:Long, idleTime:Long, tasks:Int, cost:Long) {
+case class ResourceMetrics (
+    name:String, 
+    busyTime:Long, 
+    idleTime:Long, 
+    tasks:Int, 
+    cost:Long
+      ) {
   def idle(i:Long) = copy(idleTime = idleTime + i)
   def task(task:Task, costPerTick:Long) = copy(
       tasks = tasks + 1, 
@@ -74,6 +92,7 @@ class SimMetricsAggregator {
   val simMap = scala.collection.mutable.Map[String,SimulationMetrics]()
   val resourceMap = scala.collection.mutable.Map[String,ResourceMetrics]()
 
+  
   // Set 
   
   def +=(m:TaskMetrics):TaskMetrics = { taskMap += (m.id->m) ; m }
@@ -100,20 +119,15 @@ class SimMetricsAggregator {
   def ^(resource:TaskResource)(u:ResourceMetrics=>ResourceMetrics):Option[ResourceMetrics] = 
     resourceMap.get(resource.name).map { m => this += u(m) }
   
-  // TODO  getters
   
+  // Getters
+  
+  def taskMetrics = taskMap.values.toSeq.sortBy(_.started)
+  def simulationMetrics = simMap.values.toSeq.sortBy(_.started)
+  def resourceMetrics = resourceMap.values.toSeq.sortBy(_.name)
+  def taskSet = taskMap.values.map(_.task).toSet[String]
+  
+  // TODO: we used to have 2 levels of sorting!
+  def taskMetricsOf(r:ResourceMetrics) = taskMap.values.toSeq.filter(_.resources.contains(r.name)).sortBy(_.started)
+  def taskMetricsOf(s:SimulationMetrics) = taskMap.values.toSeq.filter(_.simulation.equals(s.name)).sortBy(_.started)
 }
-
-
-
-//
-//  def taskValues(sep:String) = (taskMetrics map values(sep)).mkString("\n")
-//  def workflowValues(sep:String) = (workflowMetrics map values(sep)).mkString("\n")
-//  def resourceValues(sep:String) = (resourceMetrics map values(sep)).mkString("\n")
-//
-//  def taskTable(sep:String) = 
-//    "Name" + sep + TaskMetrics.header(sep) + "\n" + taskValues(sep) + "\n"
-//  def workflowTable(sep:String) =
-//    "Name" + sep + WorkflowMetrics.header(sep) + "\n" + workflowValues(sep) + "\n"
-//  def resourceTable(sep:String) =
-//    "Name" + sep + ResourceMetrics.header(sep) + "\n" + resourceValues(sep) + "\n"

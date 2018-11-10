@@ -85,7 +85,10 @@ class Coordinator(scheduler :Scheduler, timeoutMillis:Int)(implicit system: Acto
   
   protected def resourceAssign(r:TaskResource) = 
     if (r.isIdle) scheduler.getNextTask(r.name,time,resourceMap,tasks) match {
-    case None => 
+    case None => {
+      (metrics^r)(_.idle(time-r.lastUpdate))
+      r.update(time)
+    }
     case Some(task) => {
       tasks.dequeueFirst (_.compare(task) == 0) // TODO This should remove the correct task right?
       startTask(task)
@@ -102,7 +105,7 @@ class Coordinator(scheduler :Scheduler, timeoutMillis:Int)(implicit system: Acto
       (metrics^r)(_.task(task, r.costPerTick))
     }
     // Add the task to the simulation metrics
-    (metrics^task.simulation)(_.task(task))
+    (metrics^task.simulation)(_.task(task).addDelay(time - task.created))
     // Generate a FinishTask event to be triggered at the end of the event
     events += FinishingTask(time+task.duration,task)
   }
