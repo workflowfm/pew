@@ -75,7 +75,7 @@ ${resources(aggregator,sep,lineSep)}
   }
 }
 
-class MetricsCSVFileOutput(path:String,name:String) extends SimMetricsStringOutput with FileOutput {  
+class SimCSVFileOutput(path:String,name:String) extends SimMetricsStringOutput with FileOutput {  
   import java.io._
 
   val separator = ","
@@ -117,16 +117,14 @@ class SimD3Timeline(path:String,file:String,tick:Int=1) extends SimMetricsOutput
   }
   
   def simulationEntry(s:SimulationMetrics,agg:SimMetricsAggregator) = {
-    val tasks = agg.taskMetricsOf(s)
-    val times = ("" /: tasks)(_ + "\t" + taskEntry(_))
-s"""{label: "${s.name}, times: [
+    val times = agg.taskMetricsOf(s).map(taskEntry).mkString(",\n")
+s"""{label: "${s.name}", times: [
 $times
 ]},"""
   }
   
   def resourceEntry(res:ResourceMetrics,agg:SimMetricsAggregator) = {
-    val tasks = agg.taskMetricsOf(res)
-    val times = ("" /: tasks)(_ + "\t" + taskEntry(_))
+    val times = agg.taskMetricsOf(res).map(taskEntry).mkString(",\n")
 s"""{label: "${res.name}", times: [
 $times
 ]},"""
@@ -137,6 +135,6 @@ $times
     val start = (m.started.getOrElse(1L) - 1L) * tick
     val finish = (m.started.getOrElse(1L) + m.duration - 1L) * tick
     val delay = m.delay * tick
-    s"""{"label":"${m.fullName}", task: "${m.task}", "id":${m.id}, "starting_time": $start, "ending_time": $finish, delay: $delay, cost: ${m.cost},\n"""
+    s"""\t{"label":"${m.fullName}", task: "${m.task}", "id":${m.id}, "starting_time": $start, "ending_time": $finish, delay: $delay, cost: ${m.cost}}"""
   }
 }

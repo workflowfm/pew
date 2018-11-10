@@ -118,4 +118,4 @@ function displayOne(tag,workflowData) {
 }
 
 displayOne("#resources",resourceData);
-displayOne("#workflows",workflowData);
+displayOne("#simulations",simulationData);
