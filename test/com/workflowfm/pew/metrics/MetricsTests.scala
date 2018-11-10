@@ -68,6 +68,7 @@ class MetricsTests extends FlatSpec with Matchers with BeforeAndAfterAll with Pr
 	
     ex.unsubscribe("metrics")
     
+    new MetricsPrinter[Int]()(handler)
     new MetricsD3Timeline[Int]("resources/d3-timeline","Rexample3")(handler)
   }
   
