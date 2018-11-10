@@ -23,6 +23,7 @@ class Task (
     val id:Long, 
     val name:String, 
     val simulation:String, 
+    val created:Long,
     val resources:Seq[String], 
     val duration:Long, 
     val estimatedDuration:Long, 
@@ -33,14 +34,10 @@ class Task (
   
   val promise:Promise[Unit] = Promise()
   
-  protected var creationTime:Long = -1
   var cost:Long = initialCost 
   
   // execute will be called once by each associated TaskResource 
   def complete(time:Long) = if (!promise.isCompleted) promise.success(Unit)
-  
-  def created(time:Long) = if (creationTime < 0) creationTime = time
-  def createdTime:Long = creationTime
   
   def addCost(extra:Long) = cost += extra
   
@@ -57,11 +54,7 @@ class Task (
   def compare(that:Task) = {
     lazy val cPriority = that.priority.compare(this.priority)
     lazy val cResources = that.resources.size.compare(this.resources.size)
-    lazy val cAge = 
-      if (this.createdTime < 0 && that.createdTime < 0) 0 
-      else if (this.createdTime < 0) 1
-      else if (that.createdTime < 0) -1
-      else this.createdTime.compare(that.createdTime)
+    lazy val cAge = this.created.compare(that.created)
     lazy val cDuration = that.estimatedDuration.compare(this.estimatedDuration)
     lazy val cInterrupt = that.interrupt.compare(this.interrupt)
     lazy val cName = this.name.compare(that.name)
@@ -90,7 +83,7 @@ case class TaskGenerator (
     interrupt:Int=(-1), 
     priority:Task.Priority=Task.Medium
       ) {
-  def create(id:Long, resources:String*) = new Task(id,name,simulation,resources,duration.get,duration.estimate,cost.get,interrupt,priority)
+  def create(id:Long, time:Long, resources:String*) = new Task(id,name,simulation,time,resources,duration.get,duration.estimate,cost.get,interrupt,priority)
   def withPriority(p:Task.Priority) = copy(priority = p)
   def withInterrupt(int:Int) = copy(interrupt = int)
   def withDuration(dur:ValueGenerator[Long]) = copy(duration = dur)

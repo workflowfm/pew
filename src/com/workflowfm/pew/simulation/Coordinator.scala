@@ -83,7 +83,7 @@ class Coordinator(scheduler :Scheduler, timeoutMillis:Int)(implicit system: Acto
 //    case x => x
 //  }
   
-  def resourceAssign(r:TaskResource) = 
+  protected def resourceAssign(r:TaskResource) = 
     if (r.isIdle) scheduler.getNextTask(r.name,time,resourceMap,tasks) match {
     case None => 
     case Some(task) => {
@@ -93,36 +93,57 @@ class Coordinator(scheduler :Scheduler, timeoutMillis:Int)(implicit system: Acto
   }
   
   protected def startTask(task:Task) {
+    // Mark the start of the task in the metrics
     (metrics^task.id)(_.start(time))
     task.taskResources(resourceMap) map { r => 
+      // Bind each resource to this task
       r.startTask(task, time)
+      // Add the task and resource cost to the resource metrics
       (metrics^r)(_.task(task, r.costPerTick))
     }
-    events += FinishingTask(time+task.duration,task)
+    // Add the task to the simulation metrics
     (metrics^task.simulation)(_.task(task))
+    // Generate a FinishTask event to be triggered at the end of the event
+    events += FinishingTask(time+task.duration,task)
   }
   
-  protected def runNoResourceTasks() {
-    tasks.dequeueAll(_.resources.isEmpty).map(startTask)
-  }
+  /**
+   * Runs all tasks that require no resources
+   */
+  protected def runNoResourceTasks() = tasks.dequeueAll(_.resources.isEmpty).map(startTask)
      
   protected def workflowsReady = simulations forall (_._2.simulationReady)
   
+  /**
+   * First half of a clock tick
+   * We need two halves because we want to give the workflows a chance to reduce
+   * and register new tasks to the Coordinator. The Coordinator must receive those
+   * through messages between now and the Tack message.  
+   */
   protected def tick :Unit = {
-    if (!events.isEmpty) { 
+    // Are events pending?
+    if (!events.isEmpty) {
+      // Grab the first event
       val event = events.dequeue()
+      // Did we somehow go past the event time? This should never happen.
       if (event.time < time) {
          println("["+time+"] *** Unable to handle past event for time: ["+event.time+"]")
       } else {
+          // Jump ahead to the event time. This is a priority queue so we shouldn't skip any events        
     	    time = event.time
     			println("["+time+"] ========= Event! ========= ")
 
     			event match {
+    	      // A task is finished
     			  case FinishingTask(_,task) => {
+    			    // Unbind the resources
     			    //resourceMap map { case (n,r) => (n,resourceUpdate(r)) } TODO why was that better originally?
     			    task.taskResources(resourceMap).foreach(_.finishTask(time))
+    			    // Mark the task as completed
+    			    // This will cause workflows to reduce and maybe produce more tasks
     			    task.complete(time)
     			  }
+    			  // A simulation (workflow) is starting now
     			  case StartingSim(_,sim,exec) => startSimulation(time,sim,exec)
     	    }
       }
@@ -144,12 +165,16 @@ class Coordinator(scheduler :Scheduler, timeoutMillis:Int)(implicit system: Acto
   }
   
   protected def tack :Unit = {
+    // Try to assign tasks to all resources
     resourceMap map { case (n,r) => (n,resourceAssign(r)) }
+    // Make sure we run tasks that need no resources
     runNoResourceTasks()
     
+    // We finish if there are no events, no tasks, and all workflows have reduced
+    // Actually all workflows must have reduced at this stage, but we check anyway
     if (events.isEmpty && tasks.isEmpty && workflowsReady) { //&& resources.forall(_.isIdle)
       println("["+time+"] All events done. All tasks done. All workflows idle. All resources idle.")
-      resourceMap.values map (metrics += _)
+      // Tell whoever started us that we are done
       starter map { a => a ! Coordinator.Done(time,metrics) }
       
     } else {
@@ -175,17 +200,22 @@ class Coordinator(scheduler :Scheduler, timeoutMillis:Int)(implicit system: Acto
     }
     
     case Coordinator.AddTask(gen,promise,resources) => {
-      val t = gen.create(taskID,resources:_*)
+      // Create the task
+      val t = gen.create(taskID,time,resources:_*)
+      // Make sure the next taskID will be fresh
       taskID = taskID + 1L
       println(s"[$time] Adding task [$taskID]: ${t.name} (${t.simulation}).")
            
+      // Calculate the cost of all resource usage. We only know this now!
       val resourceCost = (0L /: t.taskResources(resourceMap)) { case (c,r) => c + r.costPerTick * t.duration }
-      t.created(time)
       t.addCost(resourceCost)
 
       tasks += t
       metrics += t
       //sender() ! Coordinator.AckTask(t) //uncomment this to acknowledge AddTask
+      
+      // This is ok only if the simulation is running in memory
+      // Promises cannot be sent over messages otherwise as they are not serializable
       promise.completeWith(t.promise.future)
     }
 

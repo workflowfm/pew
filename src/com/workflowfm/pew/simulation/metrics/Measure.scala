@@ -40,7 +40,7 @@ case class TaskMetrics (
 //  }
 }
 object TaskMetrics {
-  def apply(task:Task):TaskMetrics = TaskMetrics(task.id, task.name, task.simulation, task.createdTime, None, task.duration, task.cost, task.resources)
+  def apply(task:Task):TaskMetrics = TaskMetrics(task.id, task.name, task.simulation, task.created, None, task.duration, task.cost, task.resources)
 }
 
 case class SimulationMetrics(name:String, started:Long, duration:Long, tasks:Int, cost:Long, result:Option[String]) {
