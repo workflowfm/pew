@@ -132,7 +132,8 @@ $times
 
   
   def taskEntry(m:TaskMetrics) = {
-    val start = (m.started.getOrElse(1L) - 1L) * tick
+    // we don't want it to be 0 because D3 doesn't deal with it well
+    val start = math.max((m.started.getOrElse(1L) - 1L) * tick,1L) 
     val finish = (m.started.getOrElse(1L) + m.duration - 1L) * tick
     val delay = m.delay * tick
     s"""\t{"label":"${m.fullName}", task: "${m.task}", "id":${m.id}, "starting_time": $start, "ending_time": $finish, delay: $delay, cost: ${m.cost}}"""

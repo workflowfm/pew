@@ -171,7 +171,7 @@ class Coordinator(scheduler :Scheduler, timeoutMillis:Int)(implicit system: Acto
   
   protected def tack :Unit = {
     // Try to assign tasks to all resources
-    resourceMap map { case (n,r) => (n,resourceAssign(r)) }
+    resourceMap.values.foreach(resourceAssign) 
     // Make sure we run tasks that need no resources
     runNoResourceTasks()
     
@@ -207,6 +207,9 @@ class Coordinator(scheduler :Scheduler, timeoutMillis:Int)(implicit system: Acto
     case Coordinator.AddTask(gen,promise,resources) => {
       // Create the task
       val t = gen.create(taskID,time,resources:_*)
+      // This is ok only if the simulation is running in memory
+      // Promises cannot be sent over messages otherwise as they are not serializable
+      promise.completeWith(t.promise.future)
       // Make sure the next taskID will be fresh
       taskID = taskID + 1L
       println(s"[$time] Adding task [$taskID]: ${t.name} (${t.simulation}).")
@@ -214,14 +217,11 @@ class Coordinator(scheduler :Scheduler, timeoutMillis:Int)(implicit system: Acto
       // Calculate the cost of all resource usage. We only know this now!
       val resourceCost = (0L /: t.taskResources(resourceMap)) { case (c,r) => c + r.costPerTick * t.duration }
       t.addCost(resourceCost)
-
-      tasks += t
-      metrics += t
-      //sender() ! Coordinator.AckTask(t) //uncomment this to acknowledge AddTask
       
-      // This is ok only if the simulation is running in memory
-      // Promises cannot be sent over messages otherwise as they are not serializable
-      promise.completeWith(t.promise.future)
+      metrics += t
+      tasks += t
+      
+      //sender() ! Coordinator.AckTask(t) //uncomment this to acknowledge AddTask
     }
 
     case Coordinator.Start => start(sender)

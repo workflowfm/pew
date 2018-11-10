@@ -124,7 +124,7 @@ class SimMetricsAggregator {
   // Getters
   
   def taskMetrics = taskMap.values.toSeq.sortBy(_.started)
-  def simulationMetrics = simMap.values.toSeq.sortBy(_.started)
+  def simulationMetrics = simMap.values.toSeq.sortBy(_.name)
   def resourceMetrics = resourceMap.values.toSeq.sortBy(_.name)
   def taskSet = taskMap.values.map(_.task).toSet[String]
   
