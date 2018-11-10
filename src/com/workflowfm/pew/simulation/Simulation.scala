@@ -17,7 +17,7 @@ abstract class Simulation(val name:String)  { //extends SimulationMetricTracker
   def getProcesses():Seq[PiProcess]
 }
 
-class TaskSimulation(simulationName:String, coordinator:ActorRef, resources:Seq[String], duration:ValueGenerator[Int]=new ConstantGenerator(1), val cost:ValueGenerator[Int]=new ConstantGenerator(1), interrupt:Int=(-1), priority:Task.Priority=Task.Medium)(implicit system: ActorSystem) extends Simulation(simulationName) {
+class TaskSimulation(simulationName:String, coordinator:ActorRef, resources:Seq[String], duration:ValueGenerator[Long], val cost:ValueGenerator[Long]=new ConstantGenerator(0L), interrupt:Int=(-1), priority:Task.Priority=Task.Medium)(implicit system: ActorSystem) extends Simulation(simulationName) {
   def run(executor:SimulatorExecutor[_]) = {
     TaskGenerator(simulationName + "Task", simulationName, duration, cost, interrupt, priority).addTo(coordinator,resources :_*)
 	}

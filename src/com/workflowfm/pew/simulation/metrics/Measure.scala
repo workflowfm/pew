@@ -16,48 +16,55 @@ import com.workflowfm.pew.simulation._
 //object TaskMetrics {
 //  def header(sep:String) = List("Task","Start","Delay","Duration","Cost","Workflow","Resources").mkString(sep)
 //}
-case class TaskMetrics (id:Long, task:String, simulation:String, created:Long, started:Option[Long], duration:Long, cost:Long, resources:Seq[String]) {
+case class TaskMetrics (
+    id:Long, 
+    task:String, 
+    simulation:String, 
+    created:Long, 
+    started:Option[Long], 
+    duration:Long, 
+    cost:Long, 
+    resources:Seq[String]
+      ) {
   //override def stringValues = List(task,start,delay,duration,cost,workflow,"\"" + resources.mkString(",") + "\"") map (_.toString)
 //  def addDelay(d :Long) = copy(delay = delay + d)
 //  def addDuration(d :Long) = copy(duration = duration + d)
 //  def addCost(c:Long) = copy(cost = cost + c)
   def start(st:Long) = copy(started=Some(st))
-  def done(t:Task, time:Long, cost:Long, costPerTick:Long) = {
-    val st = started match {
-      case None => time
-      case Some(t) => t
-    }
-    copy( duration = duration + time - st, cost = cost + costPerTick * (time-st), resources = t.resources)
-  }
+//  def done(t:Task, time:Long, cost:Long, costPerTick:Long) = {
+//    val st = started match {
+//      case None => time
+//      case Some(t) => t
+//    }
+//    copy( duration = duration + time - st, cost = cost + costPerTick * (time-st), resources = t.resources)
+//  }
 }
 object TaskMetrics {
-  def apply(task:Task):TaskMetrics = TaskMetrics(task.id, task.name, task.simulation, task.createdTime, None, 0L, 0L, Seq())
+  def apply(task:Task):TaskMetrics = TaskMetrics(task.id, task.name, task.simulation, task.createdTime, None, task.duration, task.cost, task.resources)
 }
 
-case class SimulationMetrics(name:String, started:Long, duration:Long, cost:Long, result:Option[String]) {
+case class SimulationMetrics(name:String, started:Long, duration:Long, tasks:Int, cost:Long, result:Option[String]) {
 //  override def stringValues = List(start,duration,cost,"\"" + result + "\"") map (_.toString)
-  def result(r:String) = copy(result = Some(r)) 
   def addDuration(d:Long) = copy(duration = duration + d)
   def addCost(c:Long) = copy(cost = cost + c)
-  def taskDone(tm:TaskMetrics) = copy(cost = cost + tm.cost) 
-  def done(time:Long) = copy( duration = duration + time - started ) // TODO should this and result be one?
+  def task(task:Task) = copy(tasks = tasks + 1, cost = cost + task.cost) 
+  def done(res:String, time:Long) = copy( result = Some(res), duration = duration + time - started ) // TODO should this and result be one?
 }
 object SimulationMetrics {
-  def apply(name:String, t:Long):SimulationMetrics = SimulationMetrics(name,t,0L,0L,None) 
+  def apply(name:String, t:Long):SimulationMetrics = SimulationMetrics(name,t,0L,0,0L,None) 
 }
 
-case class ResourceMetrics (name:String, started:Option[Long], busyTime:Long, idleTime:Long, tasks:Long, cost:Long) {
-  def start(t:Long) = copy(started=Some(t)) // TODO do we need this or just init?
+case class ResourceMetrics (name:String, busyTime:Long, idleTime:Long, tasks:Int, cost:Long) {
   def idle(i:Long) = copy(idleTime = idleTime + i)
-  def taskDone(tm:TaskMetrics,costPerTick:Long) = copy(
+  def task(task:Task, costPerTick:Long) = copy(
       tasks = tasks + 1, 
-      cost = cost + tm.duration * costPerTick, 
-      busyTime = busyTime + tm.duration
+      cost = cost + task.duration * costPerTick, 
+      busyTime = busyTime + task.duration
   )  
 }
 object ResourceMetrics {
-  def apply(name:String):ResourceMetrics = ResourceMetrics(name,None,0L,0L,0L,0L) 
-  def apply(r:TaskResource):ResourceMetrics = ResourceMetrics(r.name,None,0L,0L,0L,0L) 
+  def apply(name:String):ResourceMetrics = ResourceMetrics(name,0L,0L,0,0L) 
+  def apply(r:TaskResource):ResourceMetrics = ResourceMetrics(r.name,0L,0L,0,0L) 
 }
 
 class SimMetricsAggregator {
@@ -73,7 +80,7 @@ class SimMetricsAggregator {
   def +=(m:SimulationMetrics):SimulationMetrics = { simMap += (m.name->m) ; m }
   def +=(m:ResourceMetrics):ResourceMetrics = { resourceMap += (m.name->m) ; m }
   
-  def +=(t:Task):TaskMetrics = this += TaskMetrics(t)
+  def +=(task:Task):TaskMetrics = this += TaskMetrics(task)
   def +=(s:Simulation,t:Long):SimulationMetrics = this += SimulationMetrics(s.name,t)
   def +=(r:TaskResource):ResourceMetrics = this += ResourceMetrics(r)
 
@@ -86,10 +93,15 @@ class SimMetricsAggregator {
     taskMap.get(task.id).map { m => this += u(m) }
   def ^(simulation:Simulation)(u:SimulationMetrics=>SimulationMetrics):Option[SimulationMetrics] = 
     simMap.get(simulation.name).map { m => this += u(m) }
-  def ^(resource:String)(u:ResourceMetrics=>ResourceMetrics):Option[ResourceMetrics] = 
-    resourceMap.get(resource).map { m => this += u(m) }
+  def ^(simulationName:String)(u:SimulationMetrics=>SimulationMetrics):Option[SimulationMetrics] = 
+    simMap.get(simulationName).map { m => this += u(m) }
+//  def ^(resource:String)(u:ResourceMetrics=>ResourceMetrics):Option[ResourceMetrics] = 
+//    resourceMap.get(resource).map { m => this += u(m) }
   def ^(resource:TaskResource)(u:ResourceMetrics=>ResourceMetrics):Option[ResourceMetrics] = 
     resourceMap.get(resource.name).map { m => this += u(m) }
+  def ^^(resources:Seq[String])(u:ResourceMetrics=>ResourceMetrics):Unit = 
+    for (r <- resources) resourceMap.get(r).map { m => this += u(m) }
+
   
   // Events
   

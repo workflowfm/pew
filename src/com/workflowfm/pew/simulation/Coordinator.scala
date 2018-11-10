@@ -24,7 +24,7 @@ object Coordinator {
   case class AddRes(r:TaskResource)
   case class SimDone(name:String,result:String)
 
-  case class AddTask(t:TaskGenerator, promise:Promise[Unit], resources:String*)
+  case class AddTask(t:TaskGenerator, promise:Promise[Unit], resources:Seq[String])
   case object AckTask
 
   case object Tick
@@ -52,7 +52,7 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
   val events = new PriorityQueue[Event]()
     
   var starter:Option[ActorRef] = None
-  var time = 1
+  var time = 1L
   var taskID = 0L
   
   val metrics = new SimMetricsAggregator()
@@ -62,6 +62,7 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
   def addResource(r:TaskResource) = if (!resourceMap.contains(r.name)) {
     println("["+time+"] Adding resource " + r.name)
     resourceMap += r.name -> r
+    metrics += r
   }
   
   protected def startSimulation(t:Long, s:Simulation, e:SimulatorExecutor[_]) :Boolean = {
@@ -91,36 +92,19 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
   
   protected def startTask(task:Task) {
     (metrics^task.id)(_.start(time))
-    val duration = task.duration.get
-    (task.resources map (resourceMap.get(_)) flatten) map (_.startTask(task, time, duration))
-    events += FinishingTask(time+duration,task)
+    task.taskResources(resourceMap) map { r => 
+      r.startTask(task, time)
+      (metrics^r)(_.task(task, r.costPerTick))
+    }
+    events += FinishingTask(time+task.duration,task)
+    (metrics^task.simulation)(_.task(task))
   }
   
   protected def runNoResourceTasks() {
     tasks.dequeueAll(_.resources.isEmpty).map(startTask)
   }
-   
-  protected def resourceUpdate(r:TaskResource) :Boolean = {
-    r.finishTask(time) match {
-      case None => false
-      case Some(t) => {
-        val res = t.resources.map(resourceMap.get(_)).flatten
-        res map {r=>r.taskDone(t.metrics,r.costPerTick)}
-        true
-      }
-    }
-  }
-  
-  protected def finishTask(task:Task) {
-    val res = task.resources.map(resourceMap.get(_)).flatten
-    task.execute(time)
-    task.taskDone(task,time,task.cost,(0 /: res)(_+_.costPerTick))
-    (metrics^task.simulation)(_.
-    updateSimulation(task.simulation,_.taskDone(task.metrics))
-    metrics += task
-  }
-  
-  protected def workflowsReady = simulations forall (_._3.simulationReady)
+     
+  protected def workflowsReady = simulations forall (_._2.simulationReady)
   
   protected def tick :Unit = {
     if (!events.isEmpty) { 
@@ -133,8 +117,9 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
 
     			event match {
     			  case FinishingTask(_,task) => {
-    			    resourceMap map { case (n,r) => (n,resourceUpdate(r)) }
-    			    finishTask(task)
+    			    //resourceMap map { case (n,r) => (n,resourceUpdate(r)) } TODO why was that better originally?
+    			    task.taskResources(resourceMap).foreach(_.finishTask(time))
+    			    task.complete(time)
     			  }
     			  case StartingSim(_,sim,exec) => startSimulation(time,sim,exec)
     	    }
@@ -156,7 +141,7 @@ class Coordinator(scheduler :Scheduler, resources :Seq[TaskResource], timeoutMil
     self ! Coordinator.Tack // We need to give workflows a chance to generate new tasks
   }
   
-protected def tack :Unit = {
+  protected def tack :Unit = {
     resourceMap map { case (n,r) => (n,resourceAssign(r)) }
     runNoResourceTasks()
     
@@ -169,31 +154,33 @@ protected def tack :Unit = {
       self ! Coordinator.Tick
     }
   }
-  
+
   def start(a:ActorRef) = if (starter.isEmpty) { starter = Some(a) ; tick }
 
   def receive = {
-    case Coordinator.AddSim(t,s,e) =>
-      events += StartingSim(t,s,e)
-    case Coordinator.AddSims(l,e) =>
-      events ++= l map { case (t,s) => StartingSim(t,s,e) }
-    case Coordinator.AddSimNow(s,e) =>
-      events += StartingSim(time,s,e)
-    case Coordinator.AddSimsNow(l,e) =>
-      events ++= l map { s => StartingSim(time,s,e) }  
+    case Coordinator.AddSim(t,s,e) => events += StartingSim(t,s,e)
+    case Coordinator.AddSims(l,e) => events ++= l map { case (t,s) => StartingSim(t,s,e) }
+    case Coordinator.AddSimNow(s,e) => events += StartingSim(time,s,e)
+    case Coordinator.AddSimsNow(l,e) => events ++= l map { s => StartingSim(time,s,e) }  
       
     case Coordinator.AddRes(r) => addResource(r)
     case Coordinator.SimDone(name,result) => {
-      simulations.dequeueFirst(_._1.equals(name)) map { x => metrics += (x._1,x._2.setResult(result).simDone(time).metrics) }
+      simulations.dequeueFirst(_._1.equals(name))
+      (metrics^name) (_.done(result,time)) 
       println("["+time+"] Simulation " + name + " reported done.")
     }
     
     case Coordinator.AddTask(gen,promise,resources) => {
-      val t = gen.create(taskID,resources)
+      val t = gen.create(taskID,resources:_*)
       taskID = taskID + 1L
-      println("["+time+"] Adding task " + t.name + " ("+t.simulation+").")
+      println(s"[$time] Adding task [$taskID]: ${t.name} (${t.simulation}).")
+           
+      val resourceCost = (0L /: t.taskResources(resourceMap)) { case (c,r) => c + r.costPerTick * t.duration }
       t.created(time)
+      t.addCost(resourceCost)
+
       tasks += t
+      metrics += t
       //sender() ! Coordinator.AckTask(t) //uncomment this to acknowledge AddTask
       promise.completeWith(t.promise.future)
     }

@@ -1,7 +1,7 @@
 package com.workflowfm.pew.simulation
 
 trait Scheduler {
-  def getNextTask(resource:String, ticks:Int, resourceMap:Map[String,TaskResource], tasks:Seq[Task]) :Option[Task]
+  def getNextTask(resource:String, ticks:Long, resourceMap:Map[String,TaskResource], tasks:Seq[Task]) :Option[Task]
     
   def isIdleResource(r:String, resourceMap:Map[String,TaskResource]) = resourceMap.get(r) match {
       case None => false
@@ -11,12 +11,12 @@ trait Scheduler {
 }
 
 object DefaultScheduler extends Scheduler {
-  protected def nextEstimatedTaskStart(t:Task, ticks:Int, resourceMap:Map[String,TaskResource], tasks:Seq[Task]) = {
+  protected def nextEstimatedTaskStart(t:Task, ticks:Long, resourceMap:Map[String,TaskResource], tasks:Seq[Task]) = {
     val precedingTasks = tasks filter (_ < t)
-    t.nextPossibleStart(ticks, resourceMap) + (0 /: precedingTasks)(_ + _.duration.estimate)
+    t.nextPossibleStart(ticks, resourceMap) + (0L /: precedingTasks)(_ + _.estimatedDuration)
   }
   
-  def getNextTask(resource:String, ticks:Int, resourceMap:Map[String,TaskResource], tasks:Seq[Task]) :Option[Task] = {
+  def getNextTask(resource:String, ticks:Long, resourceMap:Map[String,TaskResource], tasks:Seq[Task]) :Option[Task] = {
     val relevant = tasks.toList filter (_.resources.contains(resource)) sorted
     val pairs = relevant map {t => (t,nextEstimatedTaskStart(t,ticks,resourceMap,relevant))}
     val canStart = pairs filter { case (t,s) => 
@@ -26,7 +26,7 @@ object DefaultScheduler extends Scheduler {
       // (1) the same task (name) or 
       // (2) lower or equal priority or 
       // (3) their estimated start time is later than our estimated finish time
-      pairs.forall({case (t2,s2) => t.name == t2.name || t.priority >= t2.priority || ticks + t.duration.estimate < s2})}
+      pairs.forall({case (t2,s2) => t.name == t2.name || t.priority >= t2.priority || ticks + t.estimatedDuration < s2})}
     if (canStart.isEmpty) None else Some(canStart.head._1)
   }
 }

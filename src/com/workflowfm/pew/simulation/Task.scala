@@ -19,26 +19,40 @@ object Task {
   case object VeryLow extends Priority { val value = 1 }
 }
 
-class Task (val id:Long, val name:String, val simulation:String, val resources:Seq[String], val duration:ValueGenerator[Int], costGenerator:ValueGenerator[Int], val interrupt:Int=Int.MaxValue, val priority:Task.Priority=Task.Medium) extends Ordered[Task] {
+class Task (
+    val id:Long, 
+    val name:String, 
+    val simulation:String, 
+    val resources:Seq[String], 
+    val duration:Long, 
+    val estimatedDuration:Long, 
+    val initialCost:Long, 
+    val interrupt:Int=Int.MaxValue, 
+    val priority:Task.Priority=Task.Medium
+      ) extends Ordered[Task] {
   
-  val cost = costGenerator.get
   val promise:Promise[Unit] = Promise()
   
-  protected var creationTime :Int = -1
-  var executed: Boolean = false
-
-  // execute will be called once by each associated TaskResource 
-  def execute(time:Int) = if (!promise.isCompleted) promise.success(Unit)
+  protected var creationTime:Long = -1
+  var cost:Long = initialCost 
   
-  def created(time :Int) = if (creationTime < 0) creationTime = time
-  def createdTime :Int = creationTime
-    
-  def nextPossibleStart(currentTime:Int, resourceMap:Map[String,TaskResource]) = {
+  // execute will be called once by each associated TaskResource 
+  def complete(time:Long) = if (!promise.isCompleted) promise.success(Unit)
+  
+  def created(time:Long) = if (creationTime < 0) creationTime = time
+  def createdTime:Long = creationTime
+  
+  def addCost(extra:Long) = cost += extra
+  
+  def nextPossibleStart(currentTime:Long, resourceMap:Map[String,TaskResource]) = {
     (currentTime /: resources){ case (i,rN) => resourceMap.get(rN) match {
       case None => throw new RuntimeException(s"Resource $rN not found!")
       case Some(r) => Math.max(i,r.nextAvailableTimestamp(currentTime))
     }}
   }
+
+  def taskResources(resourceMap:Map[String,TaskResource]) = resources flatMap (resourceMap.get(_))
+
   
   def compare(that:Task) = {
     lazy val cPriority = that.priority.compare(this.priority)
@@ -48,7 +62,7 @@ class Task (val id:Long, val name:String, val simulation:String, val resources:S
       else if (this.createdTime < 0) 1
       else if (that.createdTime < 0) -1
       else this.createdTime.compare(that.createdTime)
-    lazy val cDuration = that.duration.estimate.compare(this.duration.estimate)
+    lazy val cDuration = that.estimatedDuration.compare(this.estimatedDuration)
     lazy val cInterrupt = that.interrupt.compare(this.interrupt)
     lazy val cName = this.name.compare(that.name)
     lazy val cSimulation = this.simulation.compare(that.simulation)
@@ -68,11 +82,18 @@ class Task (val id:Long, val name:String, val simulation:String, val resources:S
   }
 }
 
-case class TaskGenerator (name :String, simulation:String, duration:ValueGenerator[Int]=new ConstantGenerator(1), val cost:ValueGenerator[Int]=new ConstantGenerator(1), interrupt:Int=(-1), priority:Task.Priority=Task.Medium) {
-  def create(id:Long, resources:String*) = new Task(id,name,simulation,resources,duration,cost,interrupt,priority)
+case class TaskGenerator (
+    name :String, 
+    simulation:String, 
+    duration:ValueGenerator[Long], 
+    cost:ValueGenerator[Long], 
+    interrupt:Int=(-1), 
+    priority:Task.Priority=Task.Medium
+      ) {
+  def create(id:Long, resources:String*) = new Task(id,name,simulation,resources,duration.get,duration.estimate,cost.get,interrupt,priority)
   def withPriority(p:Task.Priority) = copy(priority = p)
   def withInterrupt(int:Int) = copy(interrupt = int)
-  def withDuration(dur:ValueGenerator[Int]) = copy(duration = dur)
+  def withDuration(dur:ValueGenerator[Long]) = copy(duration = dur)
   def withName(n:String) = copy(name = n)
   def withSimulation(s:String) = copy(simulation=s)
   
@@ -80,7 +101,7 @@ case class TaskGenerator (name :String, simulation:String, duration:ValueGenerat
     //implicit val timeout = Timeout(1.second)
     // change this to ? to require an acknowledgement
     val promise = Promise[Unit]()
-    coordinator ! Coordinator.AddTask(this,promise,resources:_*)
+    coordinator ! Coordinator.AddTask(this,promise,resources)
     promise.future
   }
 
