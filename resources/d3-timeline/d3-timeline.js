@@ -169,28 +169,29 @@
 
       setWidth();
 
-      // check if the user wants relative time
-      // if so, substract the first timestamp from each subsequent timestamps
-      if(timeIsRelative){
-        g.each(function (d, i) {
-          d.forEach(function (datum, index) {
-            datum.times.forEach(function (time, j) {
-              if(index === 0 && j === 0){
-                originTime = time.starting_time;               //Store the timestamp that will serve as origin
-                time.starting_time = 0;                        //Set the origin
-                time.ending_time = time.ending_time - originTime;     //Store the relative time (millis)
-              }else{
-                time.starting_time = time.starting_time - originTime;
-                time.ending_time = time.ending_time - originTime;
-              }
-            });
-          });
-        });
-      }
+//      // check if the user wants relative time
+//      // if so, substract the first timestamp from each subsequent timestamps
+//      if(timeIsRelative){
+//        g.each(function (d, i) {
+//          d.forEach(function (datum, index) {
+//            datum.times.forEach(function (time, j) {
+//              if(index === 0 && j === 0){
+//                originTime = time.starting_time;               //Store the timestamp that will serve as origin
+//                time.starting_time = 0;                        //Set the origin
+//                time.ending_time = time.ending_time - originTime;     //Store the relative time (millis)
+//              }else{
+//                time.starting_time = time.starting_time - originTime;
+//                time.ending_time = time.ending_time - originTime;
+//              }
+//            });
+//          });
+//        });
+//      }
 
       // check how many stacks we're gonna need
       // do this here so that we can draw the axis before the graph
       if (stacked || ending === 0 || beginning === 0) {
+        minTime = -1 
         g.each(function (d, i) {
           d.forEach(function (datum, index) {
 
@@ -203,7 +204,7 @@
             // figure out beginning and ending times if they are unspecified
             datum.times.forEach(function (time, i) {
               if(beginning === 0)
-                if (time.starting_time < minTime || (minTime === 0 && timeIsRelative === false))
+                if (time.starting_time < minTime || minTime === -1)// && timeIsRelative === false))
                   minTime = time.starting_time;
               if(ending === 0)
                 if (time.ending_time > maxTime)
@@ -220,6 +221,23 @@
         }
       }
 
+    // check if the user wants relative time
+    // if so, substract the first timestamp from each subsequent timestamps
+    if(timeIsRelative){
+      g.each(function (d, i) {
+        d.forEach(function (datum, index) {
+          datum.times.forEach(function (time, j) {
+            time.starting_time = time.starting_time - beginning;
+            time.ending_time = time.ending_time - beginning;
+          });
+        });
+      });
+      maxTime = maxTime - minTime;
+      ending = maxTime;
+      minTime = 0;
+      beginning = 0;
+    }
+      
       var scaleFactor = (1/(ending - beginning)) * (width - margin.left - margin.right);
 
       // draw the axis

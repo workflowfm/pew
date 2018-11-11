@@ -19,14 +19,14 @@ function displayResults(selection,data) {
 	
 	var chart = d3.timeline()
 		.tickFormat( //
-				{format: d3.format("03d"),
+				{format: d3.format.utc("03d"),
 				tickInterval: 1, // This forces us to start from 001 
 				numTicks: totalTicks,
 				//tickValues: ticks, // Use this to start from 000
 				tickSize: 10,
 				})
 		/*.tickFormat( //
-				{format: d3.time.format("%H"),
+				{format: d3.time.format.utc("%H"),
 				tickTime: tickTime,
 				tickInterval: 1,
 				tickSize: 10,
@@ -38,7 +38,7 @@ function displayResults(selection,data) {
 		.width(totalTicks*widthPerTick+leftMargin+rightMargin);
 	
 	chart.showTimeAxisTick();
-	//chart.relativeTime();
+	chart.relativeTime();
 	//chart.rowSeparators("#555555");
 
 	var backgroundColor = "#eeeeee";
