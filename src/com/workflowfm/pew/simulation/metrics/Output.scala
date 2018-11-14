@@ -1,200 +1,141 @@
 package com.workflowfm.pew.simulation.metrics
 
-import akka.actor.Props
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import com.workflowfm.pew.execution.SimulatorExecutor
-import com.workflowfm.pew.simulation.Simulation
-import com.workflowfm.pew.simulation.Coordinator
+import scala.collection.immutable.Queue
+import com.workflowfm.pew.metrics.FileOutput
 
-
-object MetricsActor {
-  case class Start(coordinator:ActorRef)
-  case class StartSims(coordinator:ActorRef,sims:Seq[(Int,Simulation)],executor:SimulatorExecutor[_])
-  case class StartSimsNow(coordinator:ActorRef,sims:Seq[Simulation],executor:SimulatorExecutor[_])
-  
-  def props(m:MetricsOutput, callbackActor:Option[ActorRef]=None)(implicit system: ActorSystem): Props = Props(new MetricsActor(m,callbackActor)(system))
+trait SimMetricsOutput extends ((Long,SimMetricsAggregator) => Unit) {
+  def and(h:SimMetricsOutput) = SimMetricsOutputs(this,h) 
+}
+object SimMetricsOutput {
+  def formatOption[T](v:Option[T], nullValue: String, format:T=>String={ x:T => x.toString }) = v.map(format).getOrElse(nullValue)
 }
 
-// Provide a callbackActor to get a response when we are done. Otherwise we'll shutdown the ActorSystem 
+case class SimMetricsOutputs(handlers:Queue[SimMetricsOutput]) extends SimMetricsOutput {
+  override def apply(time:Long,aggregator:SimMetricsAggregator) = handlers map (_.apply(time,aggregator))
+  override def and(h:SimMetricsOutput) = SimMetricsOutputs(handlers :+ h)
+}
+object SimMetricsOutputs {
+  def apply(handlers:SimMetricsOutput*):SimMetricsOutputs = SimMetricsOutputs(Queue[SimMetricsOutput]() ++ handlers)
+}
 
-class MetricsActor(m:MetricsOutput, callbackActor:Option[ActorRef])(implicit system: ActorSystem) extends Actor {
-  var coordinator:Option[ActorRef] = None
+
+trait SimMetricsStringOutput extends SimMetricsOutput {
+  val nullValue = "NULL"
   
-  def receive = {
-    case MetricsActor.Start(coordinator) if this.coordinator.isEmpty => {
-      this.coordinator = Some(coordinator)
-      coordinator ! Coordinator.Start
-    }
-    
-    case MetricsActor.StartSims(coordinator,sims,executor) if this.coordinator.isEmpty => {
-      this.coordinator = Some(coordinator)
-      coordinator ! Coordinator.AddSims(sims,executor)
-      coordinator ! Coordinator.Start
-    }
-    
-    case MetricsActor.StartSimsNow(coordinator,sims,executor) if this.coordinator.isEmpty => {
-      this.coordinator = Some(coordinator)
-      coordinator ! Coordinator.AddSimsNow(sims,executor)
-      coordinator ! Coordinator.Start
-    }
-    
-    case Coordinator.Done(t:Int,ma:MetricAggregator) if this.coordinator == Some(sender) => {
-      this.coordinator = None
-      m(t,ma)
-      callbackActor match {
-        case None => system.terminate()
-        case Some(actor) => actor ! Coordinator.Done(t,ma)
-      }
-    }
+  def taskHeader(separator:String) = Seq("ID","Task","Simulation","Created","Start","Delay","Duration","Cost","Resources").mkString(separator)
+  def taskCSV(separator:String, resSeparator:String)(m:TaskMetrics) = m match {
+    case TaskMetrics(id,task,sim,ct,st,dur,cost,res) => 
+      Seq(id,task,sim,ct,SimMetricsOutput.formatOption(st,nullValue),m.delay,dur,cost,res.mkString(resSeparator)).mkString(separator)
   }
+  
+  def simHeader(separator:String) = Seq("Name","Start","Duration","Delay","Tasks","Cost","Result").mkString(separator)
+  def simCSV(separator:String)(m:SimulationMetrics) = m match {
+    case SimulationMetrics(name,st,dur,delay,ts,c,res) => 
+      Seq(name,st,dur,delay,ts,c,res).mkString(separator)
+  }
+
+  def resHeader(separator:String) = Seq("Name","Busy","Idle","Tasks","Cost").mkString(separator)
+  def resCSV(separator:String)(m:ResourceMetrics) = m match {
+    case ResourceMetrics(name,b,i,ts,c) => 
+      Seq(name,b,i,ts,c).mkString(separator)
+  }
+
+  
+  def tasks(aggregator:SimMetricsAggregator,separator:String,lineSep:String="\n",resSeparator:String=";") = 
+    aggregator.taskMetrics.map(taskCSV(separator,resSeparator)).mkString(lineSep)
+  def simulations(aggregator:SimMetricsAggregator,separator:String, lineSep:String="\n") = 
+    aggregator.simulationMetrics.map(simCSV(separator)).mkString(lineSep)
+  def resources(aggregator:SimMetricsAggregator,separator:String, lineSep:String="\n") = 
+    aggregator.resourceMetrics.map(resCSV(separator)).mkString(lineSep)
 }
 
 
-trait MetricsOutput extends ((Int,MetricAggregator) => Unit)
-
-case class MetricsOutputs(handlers:MetricsOutput*) extends MetricsOutput {
-  def apply(totalTicks:Int,aggregator:MetricAggregator) = handlers map (_.apply(totalTicks,aggregator))
-}
-
-class MetricsPrinter extends MetricsOutput {  
-  def apply(totalTicks:Int,aggregator:MetricAggregator) = {
+class SimMetricsPrinter extends SimMetricsStringOutput {  
+  def apply(totalTicks:Long,aggregator:SimMetricsAggregator) = {
     val sep = "\t| "
+    val lineSep = "\n"
     println(
-        "Tasks\n" +
-        "-----\n" +
-        aggregator.taskTable(sep) + "\n" +
-        "Workflows\n" +
-        "-----------\n" +
-        aggregator.workflowTable(sep) + "\n" +
-        "Resources\n" +
-        "---------\n" +
-        aggregator.resourceTable(sep) + "\n\n"
+s"""
+Tasks
+-----
+${taskHeader(sep)}
+${tasks(aggregator,sep,lineSep)}
+
+Simulations
+-----------
+${simHeader(sep)}
+${simulations(aggregator,sep,lineSep)}
+
+Resources
+---------
+${resHeader(sep)}
+${resources(aggregator,sep,lineSep)}
+"""
         )
   }
 }
 
-class MetricsCSVFileOutput(path:String,name:String) extends MetricsOutput {  
+class SimCSVFileOutput(path:String,name:String) extends SimMetricsStringOutput with FileOutput {  
   import java.io._
+
+  val separator = ","
+  val lineSep = "\n"
   
-  def apply(totalTicks:Int,aggregator:MetricAggregator) = {
-    val sep = ","
+  def apply(totalTicks:Long,aggregator:SimMetricsAggregator) = {
     val taskFile = s"$path$name-tasks.csv"
-    val workflowFile = s"$path$name-workflows.csv"
+    val simulationFile = s"$path$name-simulations.csv"
     val resourceFile = s"$path$name-resources.csv"
-    writeToFile(taskFile, aggregator.taskTable(sep) + "\n")
-    writeToFile(workflowFile, aggregator.workflowTable(sep) + "\n")
-    writeToFile(resourceFile, aggregator.resourceTable(sep) + "\n")        
-  }
-  
-  def writeToFile(filePath:String,output:String) = try {
-    val file = new File(filePath)
-    val bw = new BufferedWriter(new FileWriter(file))
-    bw.write(output)
-    bw.close()
-  } catch {
-    case e:Exception => e.printStackTrace()
+    writeToFile(taskFile, taskHeader(separator) + "\n" + tasks(aggregator,separator,lineSep))
+    writeToFile(simulationFile, simHeader(separator) + "\n" + simulations(aggregator,separator,lineSep))
+    writeToFile(resourceFile, resHeader(separator) + "\n" + resources(aggregator,separator,lineSep))        
   }
 }
 
-class MetricsPythonGantt(path:String,name:String) extends MetricsOutput {  
-  import java.io._
-  import sys.process._
-  
-  def apply(totalTicks:Int,aggregator:MetricAggregator) = {
-    val sep = ","
-    val taskFile = s"$path$name.csv"
-    writeToFile(taskFile, aggregator.taskTable(sep) + "\n") match {
-      case None => Unit
-      case Some(f) => {
-        val osname = System.getProperty("os.name").toLowerCase()
-        val script = new File(getClass.getResource("/python/pappilib-gantt.py").toURI()).getAbsolutePath
-        val cmd = (if (osname.contains("win")) s"python.exe $script " else s"$script ") + f.getAbsolutePath
-        println(s"*** Executing: $cmd")
-        println(cmd !!)
-      }
-    }
-      
-  }
-  
-  def writeToFile(filePath:String,output:String) :Option[File] = try {
-    val file = new File(filePath)
-    val bw = new BufferedWriter(new FileWriter(file))
-    bw.write(output)
-    bw.close()
-    Some(file)
-  } catch {
-    case e:Exception => e.printStackTrace()
-    None
-  }
-}
 
-class MetricsD3Timeline(path:String,name:String,tick:Int=1) extends MetricsOutput {  
+class SimD3Timeline(path:String,file:String,tick:Int=1) extends SimMetricsOutput with FileOutput {  
   import java.io._
-  import sys.process._
   
-  def apply(totalTicks:Int,aggregator:MetricAggregator) = {
-    val result = build(totalTicks,aggregator)
+  override def apply(totalTicks:Long, aggregator:SimMetricsAggregator) = {
+    val result = build(aggregator,System.currentTimeMillis())
     println(result)
-    val dataFile = s"$path$name-data.js"
+    val dataFile = s"$path$file-simdata.js"
     writeToFile(dataFile, result)
   }
   
-  def writeToFile(filePath:String,output:String) = try {
-    val file = new File(filePath)
-    val bw = new BufferedWriter(new FileWriter(file))
-    bw.write(output)
-    bw.close()
-  } catch {
-    case e:Exception => e.printStackTrace()
-  }
-  
-  def build(totalTicks:Int,aggregator:MetricAggregator) = {
+  def build(aggregator:SimMetricsAggregator, now:Long) = {
     var buf:StringBuilder = StringBuilder.newBuilder
-    buf.append(s"var totalTicks = $totalTicks\n")
-    buf.append("\nvar tasks = [\n")
-    for (t <- aggregator.taskMetrics.map(_._2.task).toSet[String]) buf.append(s"""\t"$t",\n""")
-    buf.append("];\n\nvar resourceData = [\n")
-    for (r <- aggregator.resourceMetrics.sortWith(sortRes)) buf.append(resourceEntry(r._1,aggregator))
-    buf.append("];\n\nvar workflowData = [\n")
-    for (s <- aggregator.workflowMetrics.sortWith(sortWf)) buf.append(workflowEntry(s._1,aggregator))
+    buf.append("var tasks = [\n")
+    for (p <- aggregator.taskSet) buf.append(s"""\t"$p",\n""")
+    buf.append("];\n\n")
+    buf.append("var resourceData = [\n")
+    for (m <- aggregator.resourceMetrics) buf.append(s"""${resourceEntry(m, aggregator)}\n""")
+    buf.append("];\n\n")
+    buf.append("var simulationData = [\n")
+    for (m <- aggregator.simulationMetrics) buf.append(s"""${simulationEntry(m, aggregator)}\n""")
     buf.append("];\n")
     buf.toString
   }
   
-  def sortWf(l:(String,WorkflowMetrics),r:(String,WorkflowMetrics)) = 
-    (l._2.start.compareTo(r._2.start)) match {
-    case 0 => l._1.compareTo(r._1) < 0
-    case c => c < 0
+  def simulationEntry(s:SimulationMetrics,agg:SimMetricsAggregator) = {
+    val times = agg.taskMetricsOf(s).map(taskEntry).mkString(",\n")
+s"""{label: "${s.name}", times: [
+$times
+]},"""
+  }
+  
+  def resourceEntry(res:ResourceMetrics,agg:SimMetricsAggregator) = {
+    val times = agg.taskMetricsOf(res).map(taskEntry).mkString(",\n")
+s"""{label: "${res.name}", times: [
+$times
+]},"""
   }
 
   
-  def workflowEntry(wf:String,agg:MetricAggregator) = {
-    val tasks = agg.taskMetrics.filter(_._2.workflow==wf)
-    val times = ("" /: tasks)(_ + "\t" + taskEntry(_))
-    s"""{label: \"$wf\", times: [""" + "\n" + times + "]},\n"
-  }
-  
-  def sortRes(l:(String,ResourceMetrics),r:(String,ResourceMetrics)) =
-		(l._2.start.compareTo(r._2.start)) match {
-    case 0 => l._1.compareTo(r._1) < 0
-    case c => c < 0
-  }
-  
-  def resourceEntry(res:String,agg:MetricAggregator) = {
-    val tasks = agg.taskMetrics.filter(_._2.resources.contains(res))
-    val times = ("" /: tasks)(_ + "\t" + taskEntry(_))
-    s"""{label: \"$res\", times: [""" + "\n" + times + "]},\n"
-  }
-  
-  def taskEntry(entry:(String,TaskMetrics)) = entry match { case (name,metrics) =>
-    val start = (metrics.start - 1) * tick
-    val finish = (metrics.start + metrics.duration - 1) * tick
-    val task = metrics.task
-    val delay = metrics.delay * tick
-    val cost = metrics.cost
-    s"""{"label":"$name", task: "$task", "starting_time": $start, "ending_time": $finish, delay: $delay, cost: $cost},\n"""
-    
+  def taskEntry(m:TaskMetrics) = {
+    // we don't want it to be 0 because D3 doesn't deal with it well
+    val start = m.started.getOrElse(1L) * tick 
+    val finish = (m.started.getOrElse(1L) + m.duration) * tick
+    val delay = m.delay * tick
+    s"""\t{"label":"${m.fullName}", task: "${m.task}", "id":${m.id}, "starting_time": $start, "ending_time": $finish, delay: $delay, cost: ${m.cost}}"""
   }
 }

@@ -1,6 +1,5 @@
 package com.workflowfm.pew.metrics
 
-import scala.collection.immutable.Queue
 import com.workflowfm.pew._
 
 case class ProcessMetrics[KeyT] (piID:KeyT, ref:Int, process:String, start:Long=System.currentTimeMillis(), finish:Option[Long]=None, result:Option[String]=None) {

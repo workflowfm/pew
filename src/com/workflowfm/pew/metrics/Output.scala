@@ -59,27 +59,20 @@ class MetricsPrinter[KeyT] extends MetricsStringOutput[KeyT] {
 s"""
 Tasks
 -----
+${procHeader(separator)}
 ${processes(aggregator,separator,lineSep,timeFormat)}
 
 Workflows
------------
+---------
+${workflowHeader(separator)}
 ${workflows(aggregator,separator,lineSep,timeFormat)}
 """
         )
   }
 }
 
-class MetricsCSVFileOutput[KeyT](path:String,name:String) extends MetricsStringOutput[KeyT] {  
+trait FileOutput {
   import java.io._
-  
-  val separator = ","
-  
-  override def apply(aggregator:MetricsAggregator[KeyT]) = {
-    val taskFile = s"$path$name-tasks.csv"
-    val workflowFile = s"$path$name-workflows.csv"
-    writeToFile(taskFile, processes(aggregator,separator) + "\n")
-    writeToFile(workflowFile, workflows(aggregator,separator) + "\n")      
-  }
   
   def writeToFile(filePath:String,output:String) = try {
     val file = new File(filePath)
@@ -91,24 +84,26 @@ class MetricsCSVFileOutput[KeyT](path:String,name:String) extends MetricsStringO
   }
 }
 
-class MetricsD3Timeline[KeyT](path:String,name:String) extends MetricsOutput[KeyT] {  
+class MetricsCSVFileOutput[KeyT](path:String,name:String) extends MetricsStringOutput[KeyT] with FileOutput {  
+
+  val separator = ","
+  
+  override def apply(aggregator:MetricsAggregator[KeyT]) = {
+    val taskFile = s"$path$name-tasks.csv"
+    val workflowFile = s"$path$name-workflows.csv"
+    writeToFile(taskFile, procHeader(separator) + "\n" + processes(aggregator,separator) + "\n")
+    writeToFile(workflowFile, workflowHeader(separator) + "\n" + workflows(aggregator,separator) + "\n")      
+  }
+}
+
+class MetricsD3Timeline[KeyT](path:String,file:String) extends MetricsOutput[KeyT] with FileOutput {  
   import java.io._
-  import sys.process._
   
   override def apply(aggregator:MetricsAggregator[KeyT]) = {
     val result = build(aggregator,System.currentTimeMillis())
     println(result)
-    val dataFile = s"$path$name-data.js"
+    val dataFile = s"$path$file-data.js"
     writeToFile(dataFile, result)
-  }
-  
-  def writeToFile(filePath:String,output:String) = try {
-    val file = new File(filePath)
-    val bw = new BufferedWriter(new FileWriter(file))
-    bw.write(output)
-    bw.close()
-  } catch {
-    case e:Exception => e.printStackTrace()
   }
   
   def build(aggregator:MetricsAggregator[KeyT], now:Long) = {

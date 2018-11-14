@@ -1,110 +1,134 @@
 package com.workflowfm.pew.simulation.metrics
 
+import com.workflowfm.pew.simulation._
 
-import com.workflowfm.pew.execution.ProcessExecutor
-import com.workflowfm.pew.simulation.Coordinator
-import com.workflowfm.pew.simulation.Simulation
-import com.workflowfm.pew.simulation.Task
-import com.workflowfm.pew.simulation.TaskResource
-import scala.collection.Seq
 
-trait Metrics {
-  def stringValues :List[String]
-  def values(sep:String=",") = stringValues.mkString(sep)
-}
-
-class MetricTracker[T <: Metrics](init :T) {
-  var metrics :T = init
-  def <~(u:T=>T) :this.type = { synchronized { metrics = u(metrics) } ; this }
-}
-
-object TaskMetrics {
-  def header(sep:String) = List("Task","Start","Delay","Duration","Cost","Workflow","Resources").mkString(sep)
-}
-case class TaskMetrics (task:String, start:Int, delay:Int, duration:Int, cost:Int, workflow:String, resources:Seq[String]) extends Metrics {
-  override def stringValues = List(task,start,delay,duration,cost,workflow,"\"" + resources.mkString(",") + "\"") map (_.toString)
-//  def addDelay(d :Int) = copy(delay = delay + d)
-//  def addDuration(d :Int) = copy(duration = duration + d)
-//  def addCost(c:Int) = copy(cost = cost + c)
-  def setStart(st:Int) = copy(start=st)
-  def setResources(wf:String,rs:Seq[String]) = copy(workflow=wf,resources=rs)
-  def add(dl:Int, dur:Int, c:Int) = copy(delay = delay + dl, duration = duration + dur, cost = cost + c)
-}
-
-class TaskMetricTracker(task:String) extends MetricTracker[TaskMetrics](TaskMetrics(task,-1,0,0,0,"",Seq())) {
-  def taskStart(t:Int) = this <~ (_.setStart(t))
-  def taskDone(t:Task, time:Int, cost:Int, costPerTick:Int) = if (metrics.start > 0) {
-    this <~ (_.add(metrics.start - t.createdTime, time - metrics.start, cost + costPerTick * (time-metrics.start))) <~
-    (_.setResources(t.simulation,t.resources))
+//trait Metrics {
+//  def stringValues :List[String]
+//  def values(sep:String=",") = stringValues.mkString(sep)
+//}
+//
+//class MetricTracker[T <: Metrics](init :T) {
+//  var metrics :T = init
+//  def <~(u:T=>T) :this.type = { synchronized { metrics = u(metrics) } ; this }
+//}
+//
+//object TaskMetrics {
+//  def header(sep:String) = List("Task","Start","Delay","Duration","Cost","Workflow","Resources").mkString(sep)
+//}
+case class TaskMetrics (
+    id:Long, 
+    task:String, 
+    simulation:String, 
+    created:Long, 
+    started:Option[Long], 
+    duration:Long, 
+    cost:Long, 
+    resources:Seq[String]
+      ) {
+  //override def stringValues = List(task,start,delay,duration,cost,workflow,"\"" + resources.mkString(",") + "\"") map (_.toString)
+//  def addDelay(d :Long) = copy(delay = delay + d)
+//  def addDuration(d :Long) = copy(duration = duration + d)
+//  def addCost(c:Long) = copy(cost = cost + c)
+  def start(st:Long) = copy(started=Some(st))
+  def delay = started match {
+    case None => 0L
+    case Some(s) => s - created
   }
+  def fullName = s"$task($simulation)"
+//  def done(t:Task, time:Long, cost:Long, costPerTick:Long) = {
+//    val st = started match {
+//      case None => time
+//      case Some(t) => t
+//    }
+//    copy( duration = duration + time - st, cost = cost + costPerTick * (time-st), resources = t.resources)
+//  }
+}
+object TaskMetrics {
+  def apply(task:Task):TaskMetrics = TaskMetrics(task.id, task.name, task.simulation, task.created, None, task.duration, task.cost, task.resources)
 }
 
-object WorkflowMetrics {
-  def header(sep:String) = List("Start","Duration","Cost","Result").mkString(sep)
+case class SimulationMetrics(
+    name:String, 
+    started:Long, 
+    duration:Long, 
+    delay:Long,
+    tasks:Int, 
+    cost:Long, 
+    result:Option[String]
+      ) {
+  def addDuration(d:Long) = copy(duration = duration + d)
+  def addCost(c:Long) = copy(cost = cost + c)
+  def addDelay(d:Long) = copy(delay = delay + d)
+  def task(task:Task) = copy(tasks = tasks + 1, cost = cost + task.cost) 
+  def done(res:String, time:Long) = copy( result = Some(res), duration = duration + time - started ) // TODO should this and result be one?
 }
-case class WorkflowMetrics (start:Int, duration: Int, cost: Int, result :String) extends Metrics {
-  override def stringValues = List(start,duration,cost,"\"" + result + "\"") map (_.toString)
-  def setStart(st:Int) = copy(start=st)
-  def setResult(r:String) = copy(result = r) 
-  def addDuration(d:Int) = copy(duration = duration + d)
-  def addCost(c:Int) = copy(cost = cost + c)
+object SimulationMetrics {
+  def apply(name:String, t:Long):SimulationMetrics = SimulationMetrics(name,t,0L,0L,0,0L,None) 
 }
 
-class WorkflowMetricTracker() extends MetricTracker[WorkflowMetrics](WorkflowMetrics(-1,0,0,"None")) {
-  def simStart(t:Int) = this <~ (_.setStart(t))
-  def simDone(t:Int) = if (metrics.start > 0) {
-    this <~ (_.addDuration(t - metrics.start)) 
-  } else this
-  def taskDone(tm:TaskMetrics) = this <~ (_.addCost(tm.cost)) 
-  def setResult(r:String) = this <~ (_.setResult(r)) 
+case class ResourceMetrics (
+    name:String, 
+    busyTime:Long, 
+    idleTime:Long, 
+    tasks:Int, 
+    cost:Long
+      ) {
+  def idle(i:Long) = copy(idleTime = idleTime + i)
+  def task(task:Task, costPerTick:Long) = copy(
+      tasks = tasks + 1, 
+      cost = cost + task.duration * costPerTick, 
+      busyTime = busyTime + task.duration
+  )  
 }
-
-
 object ResourceMetrics {
-  def header(sep:String) = List("Start","Busy","Idle","Tasks","Cost").mkString(sep)
-}
-case class ResourceMetrics (start:Int, busy:Int, idle:Int, tasks:Int, cost:Int) extends Metrics {
-  override def stringValues = List(start,busy,idle,tasks,cost) map (_.toString)
-  def setStart(t:Int) = if (start < 0) copy(start=t) else this
-  def addBusy(b:Int) = copy(busy = busy + b)
-  def addIdle(i:Int) = copy(idle = idle + i)
-  def addTask = copy(tasks = tasks + 1)
-  def addCost(c:Int) = copy(cost = cost + c)
+  def apply(name:String):ResourceMetrics = ResourceMetrics(name,0L,0L,0,0L) 
+  def apply(r:TaskResource):ResourceMetrics = ResourceMetrics(r.name,0L,0L,0,0L) 
 }
 
-class ResourceMetricTracker() extends MetricTracker[ResourceMetrics](ResourceMetrics(-1,0,0,0,0)) { 
-  def resStart(t:Int) = this <~ (_.setStart(t))
-  def idle(t:Int) = this <~ (_.addIdle(t)) 
-  def taskDone(tm:TaskMetrics,costPerTick:Int) = this <~ (_.addCost(tm.duration * costPerTick)) <~ (_.addBusy(tm.duration)) <~ (_.addTask)  
+class SimMetricsAggregator {
+  import scala.collection.immutable.Map
+  
+  val taskMap = scala.collection.mutable.Map[Long,TaskMetrics]()
+  val simMap = scala.collection.mutable.Map[String,SimulationMetrics]()
+  val resourceMap = scala.collection.mutable.Map[String,ResourceMetrics]()
+
+  
+  // Set 
+  
+  def +=(m:TaskMetrics):TaskMetrics = { taskMap += (m.id->m) ; m }
+  def +=(m:SimulationMetrics):SimulationMetrics = { simMap += (m.name->m) ; m }
+  def +=(m:ResourceMetrics):ResourceMetrics = { resourceMap += (m.name->m) ; m }
+  
+  def +=(task:Task):TaskMetrics = this += TaskMetrics(task)
+  def +=(s:Simulation,t:Long):SimulationMetrics = this += SimulationMetrics(s.name,t)
+  def +=(r:TaskResource):ResourceMetrics = this += ResourceMetrics(r)
+
+  
+  // Update
+  
+  def ^(taskID:Long)(u:TaskMetrics=>TaskMetrics):Option[TaskMetrics] = 
+    taskMap.get(taskID).map { m => this += u(m) }
+  def ^(task:Task)(u:TaskMetrics=>TaskMetrics):Option[TaskMetrics] = 
+    taskMap.get(task.id).map { m => this += u(m) }
+  def ^(simulation:Simulation)(u:SimulationMetrics=>SimulationMetrics):Option[SimulationMetrics] = 
+    simMap.get(simulation.name).map { m => this += u(m) }
+  def ^(simulationName:String)(u:SimulationMetrics=>SimulationMetrics):Option[SimulationMetrics] = 
+    simMap.get(simulationName).map { m => this += u(m) }
+//  def ^(resource:String)(u:ResourceMetrics=>ResourceMetrics):Option[ResourceMetrics] = 
+//    resourceMap.get(resource).map { m => this += u(m) }
+  def ^(resource:TaskResource)(u:ResourceMetrics=>ResourceMetrics):Option[ResourceMetrics] = 
+    resourceMap.get(resource.name).map { m => this += u(m) }
+  
+  
+  // Getters
+  
+  def taskMetrics = taskMap.values.toSeq.sortBy(_.started)
+  def simulationMetrics = simMap.values.toSeq.sortBy(_.name)
+  def resourceMetrics = resourceMap.values.toSeq.sortBy(_.name)
+  def taskSet = taskMap.values.map(_.task).toSet[String]
+  
+  // TODO: we used to have 2 levels of sorting!
+  def taskMetricsOf(r:ResourceMetrics) = taskMap.values.toSeq.filter(_.resources.contains(r.name)).sortBy(_.started)
+  def taskMetricsOf(s:SimulationMetrics) = taskMap.values.toSeq.filter(_.simulation.equals(s.name)).sortBy(_.started)
 }
-
-
-class MetricAggregator() {
-  import scala.collection.mutable.Queue
-  val taskMetrics = Queue[(String,TaskMetrics)]()
-  val workflowMetrics = Queue[(String,WorkflowMetrics)]()
-  val resourceMetrics = Queue[(String,ResourceMetrics)]()
-  
-  def +=(s:String,m:TaskMetrics) = taskMetrics += (s->m)
-  def +=(s:String,m:WorkflowMetrics) = workflowMetrics += (s->m)
-  def +=(s:String,m:ResourceMetrics) = resourceMetrics += (s->m)
-  
-  def +=(t:Task) = taskMetrics += ((t.name + "(" + t.simulation + ")")->t.metrics)
-  //def +=(s:Simulation) = simulationMetrics += (s.name->s.metrics)
-  def +=(r:TaskResource) = resourceMetrics += (r.name->r.metrics)
-  
-  def values(sep:String)(e:(String,Metrics)) = e._1 + sep + e._2.values(sep)
-  
-  def taskValues(sep:String) = (taskMetrics map values(sep)).mkString("\n")
-  def workflowValues(sep:String) = (workflowMetrics map values(sep)).mkString("\n")
-  def resourceValues(sep:String) = (resourceMetrics map values(sep)).mkString("\n")
-
-  def taskTable(sep:String) = 
-    "Name" + sep + TaskMetrics.header(sep) + "\n" + taskValues(sep) + "\n"
-  def workflowTable(sep:String) =
-    "Name" + sep + WorkflowMetrics.header(sep) + "\n" + workflowValues(sep) + "\n"
-  def resourceTable(sep:String) =
-    "Name" + sep + ResourceMetrics.header(sep) + "\n" + resourceValues(sep) + "\n"
-}
-
-
