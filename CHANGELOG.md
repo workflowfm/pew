@@ -1,6 +1,7 @@
 # Changelog
 
 A list of all tagged versions of [WorkflowFM-PEW](https://github.com/PetrosPapapa/WorkflowFM-PEW).
+
 Includes feature updates, bug fixes, and open issues.
 
 ## Known Issues
@@ -31,8 +32,8 @@ Includes feature updates, bug fixes, and open issues.
 
 ### Features
 
-* Implementation of `KafkaExecutor`.
-* [Executors are now Observable #8](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/8) using `PiEventHandler`s and observing `PiEvent`s (see also [#8](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/5)).
+* Implementation of `KafkaExecutor` ([#10](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/10),[#11](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/11)).
+* [Executors are now Observable #8](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/8) using `PiEventHandler`s and observing `PiEvent`s (see also [#5](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/5)).
 * Also improved `ProcessExecutor` trait/API.
 * Various improvements in simulation and the D3 timeline.
 
