@@ -32,10 +32,10 @@ object Coordinator {
   case object Tick
   case object Tack
 
-  def props(scheduler :Scheduler, timeoutMillis:Int = 40)(implicit system: ActorSystem): Props = Props(new Coordinator(scheduler,timeoutMillis)(system))//.withDispatcher("akka.my-dispatcher")
+  def props(scheduler: Scheduler, startingTime: Long = 0L, timeoutMillis: Int = 50)(implicit system: ActorSystem): Props = Props(new Coordinator(scheduler,startingTime,timeoutMillis)(system))//.withDispatcher("akka.my-dispatcher")
 }
 
-class Coordinator(scheduler :Scheduler, timeoutMillis:Int)(implicit system: ActorSystem) extends Actor {
+class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(implicit system: ActorSystem) extends Actor {
   import scala.collection.mutable.Queue
   
   sealed trait Event extends Ordered[Event] { 
@@ -54,7 +54,7 @@ class Coordinator(scheduler :Scheduler, timeoutMillis:Int)(implicit system: Acto
   val events = new PriorityQueue[Event]()
     
   var starter:Option[ActorRef] = None
-  var time = 1L
+  var time = startingTime
   var taskID = 0L
   
   val metrics = new SimMetricsAggregator()
