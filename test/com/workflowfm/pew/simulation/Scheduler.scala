@@ -53,6 +53,13 @@ class SchedulerTests extends WordSpecLike with Matchers with BeforeAndAfterAll w
       val m = new TestResourceMap("A","B") + ("B",1L)
       m.s("A",
         t(1L,Seq("A","B"),Task.Highest),
+        t(2L,Seq("A"),Task.VeryLow,0L,2L)) should be (None)
+    }
+
+    "select a lower priority task if it will finish on time" in {
+      val m = new TestResourceMap("A","B") + ("B",1L)
+      m.s("A",
+        t(1L,Seq("A","B"),Task.Highest),
         t(2L,Seq("A"),Task.VeryLow)) should be (Some(2L))
     }
 
@@ -78,12 +85,21 @@ class SchedulerTests extends WordSpecLike with Matchers with BeforeAndAfterAll w
         t(2L,Seq("A","B"),Task.VeryLow,0L,100L)) should be (None)
     }
 
+    "consider all higher priority tasks for availability" in {
+      val m = new TestResourceMap("A","B") + ("B",1L)
+      m.s("A",
+        t(1L,Seq("B"),Task.Highest),
+        t(2L,Seq("A","B"),Task.Medium),
+        t(3L,Seq("A"),Task.VeryLow,0L,2L)) should be (Some(3L))
+    }
+
   }
 
 }
 
 
 trait SchedulerTester {
+  // create a Task
   def t(
     id:Long,
     resources:Seq[String],
@@ -97,15 +113,19 @@ trait SchedulerTester {
 }
 
 class TestResourceMap(names:String*) {
+  // create a resource map
   val m:Map[String,TaskResource] = Map[String,TaskResource]() ++ (names map { n => (n,r(n)) })
 
+  // create a resource
   def r(name:String) = new TaskResource(name,0)
 
+  // pre-attach Tasks to resources
   def +(r:String,duration:Long):TestResourceMap = {
     m.get(r).map { _.startTask(new Task(0,"_","_",0L,Seq(r),duration,duration,0L), 0L) }
     this
   }
 
+  // test DefaultScheduler
   def s(resource:String, tasks:Task*):Option[Long] =
     DefaultScheduler.getNextTask(resource, 0L, m, tasks) map (_.id)
 
