@@ -11,3 +11,7 @@
 /resources/data
 .ensime
 .ensime_cache/
+*~
+\#*\#
+.\#*
+.projectile

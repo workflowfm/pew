@@ -56,17 +56,15 @@ class Task (
     lazy val cResources = that.resources.size.compare(this.resources.size)
     lazy val cAge = this.created.compare(that.created)
     lazy val cDuration = that.estimatedDuration.compare(this.estimatedDuration)
-    lazy val cInterrupt = that.interrupt.compare(this.interrupt)
-    lazy val cName = this.name.compare(that.name)
-    lazy val cSimulation = this.simulation.compare(that.simulation)
+    lazy val cInterrupt = this.interrupt.compare(that.interrupt)
+    lazy val cID = this.id.compare(that.id)
     
     if (cPriority != 0) cPriority
     else if (cAge != 0) cAge
     else if (cResources != 0) cResources
     else if (cDuration != 0) cDuration
     else if (cInterrupt != 0) cInterrupt
-    else if (cName != 0) cName
-    else cSimulation
+    else cID
   }
   
   override def toString = {

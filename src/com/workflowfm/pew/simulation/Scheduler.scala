@@ -11,7 +11,7 @@ trait Scheduler {
 }
 
 object DefaultScheduler extends Scheduler {
-  protected def nextEstimatedTaskStart(t:Task, ticks:Long, resourceMap:Map[String,TaskResource], tasks:Seq[Task]) = {
+  def nextEstimatedTaskStart(t:Task, ticks:Long, resourceMap:Map[String,TaskResource], tasks:Seq[Task]) = {
     val precedingTasks = tasks filter (_ < t)
     t.nextPossibleStart(ticks, resourceMap) + (0L /: precedingTasks)(_ + _.estimatedDuration)
   }
@@ -26,7 +26,7 @@ object DefaultScheduler extends Scheduler {
       // (1) the same task (name) or 
       // (2) lower or equal priority or 
       // (3) their estimated start time is later than our estimated finish time
-      pairs.forall({case (t2,s2) => t.name == t2.name || t.priority >= t2.priority || ticks + t.estimatedDuration < s2})}
+      pairs.forall({case (t2,s2) => t.id == t2.id || t <= t2 || ticks + t.estimatedDuration <= s2})}
     if (canStart.isEmpty) None else Some(canStart.head._1)
   }
 }
