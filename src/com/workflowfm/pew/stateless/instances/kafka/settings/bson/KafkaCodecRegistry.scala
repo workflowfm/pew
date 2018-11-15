@@ -43,17 +43,18 @@ class KafkaCodecRegistry(
   private val fut =  new PiFutureCodec(this) with AutoCodec
   private val piState = new PiStateCodec(this, processes) with AutoCodec
   private val piInst = new PiInstanceCodec(this, processes) with AutoCodec
+  private val times = new PiTimesCodec() with AutoCodec
 
-  new PiEventCallCodec[ObjectId]( idc, obj, procc ) with AutoCodec
-  new PiEventExceptionCodec[ObjectId]( idc ) with AutoCodec
-  new PiEventProcessExceptionCodec[ObjectId]( idc ) with AutoCodec
-  new PiEventResultCodec[ObjectId]( piInst, anyc ) with AutoCodec
-  new PiEventReturnCodec[ObjectId]( idc, anyc ) with AutoCodec
-  new PiEventStartCodec[ObjectId]( piInst ) with AutoCodec
-  new PiFailureAtomicProcessIsCompositeCodec[ObjectId]( piInst ) with AutoCodec
-  new PiFailureNoResultCodec[ObjectId]( piInst ) with AutoCodec
-  new PiFailureNoSuchInstanceCodec[ObjectId]( idc ) with AutoCodec
-  new PiFailureUnknownProcessCodec[ObjectId]( piInst ) with AutoCodec
+  new PiEventCallCodec[ObjectId]( idc, obj, procc, times ) with AutoCodec
+  new PiEventExceptionCodec[ObjectId]( idc, times ) with AutoCodec
+  new PiEventProcessExceptionCodec[ObjectId]( idc, times ) with AutoCodec
+  new PiEventResultCodec[ObjectId]( piInst, anyc, times ) with AutoCodec
+  new PiEventReturnCodec[ObjectId]( idc, anyc, times ) with AutoCodec
+  new PiEventStartCodec[ObjectId]( piInst, times ) with AutoCodec
+  new PiFailureAtomicProcessIsCompositeCodec[ObjectId]( piInst, times ) with AutoCodec
+  new PiFailureNoResultCodec[ObjectId]( piInst, times ) with AutoCodec
+  new PiFailureNoSuchInstanceCodec[ObjectId]( idc, times ) with AutoCodec
+  new PiFailureUnknownProcessCodec[ObjectId]( piInst, times ) with AutoCodec
   private val peExEvent = new SuperclassCodec[PiExceptionEvent[ObjectId]] with AutoCodec
   private val peEvent = new SuperclassCodec[PiEvent[ObjectId]] with AutoCodec
 

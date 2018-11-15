@@ -1,6 +1,5 @@
 package com.workflowfm.pew.metrics
 
-import scala.collection.immutable.Queue
 import com.workflowfm.pew._
 
 case class ProcessMetrics[KeyT] (piID:KeyT, ref:Int, process:String, start:Long=System.currentTimeMillis(), finish:Option[Long]=None, result:Option[String]=None) {
@@ -66,15 +65,21 @@ class MetricsAggregator[KeyT] {
   def processSet = processMap.values.flatMap(_.values.map(_.process)).toSet[String]
 }
 
-class MetricsHandler[KeyT](override val name:String) extends MetricsAggregator[KeyT] with PiEventHandler[KeyT] {
-  override def apply(e:PiEvent[KeyT]) = { e match {
-    case PiEventStart(i,t) => workflowStart(i.id,t)
-    case PiEventResult(i,r,t) => workflowResult(i.id,r,t)
-    case PiEventCall(i,r,p,_,t) => procCall(i,r,p.iname,t)
-    case PiEventReturn(i,r,s,t) => procReturn(i,r,s,t)
-    case PiEventProcessException(i,r,m,_,t) => processFailure(i,r,m,t)
-    case x:PiExceptionEvent[KeyT] => workflowException(x.id,x.exception,x.time)
+class MetricsHandler[KeyT](override val name: String, timeT: PiTimeType = SystemPiTime )
+  extends MetricsAggregator[KeyT] with PiEventHandler[KeyT] {
+
+  override def apply( e: PiEvent[KeyT] ): Boolean = {
+    e match {
+      case PiEventStart(i,t)      => workflowStart( i.id, t(timeT) )
+      case PiEventResult(i,r,t)   => workflowResult( i.id, r, t(timeT) )
+      case PiEventCall(i,r,p,_,t) => procCall( i, r, p.iname, t(timeT) )
+      case PiEventReturn(i,r,s,t) => procReturn( i, r, s, t(timeT) )
+      case PiEventProcessException(i,r,m,_,t) => processFailure( i, r, m, t(timeT) )
+
+      case ev: PiExceptionEvent[KeyT] =>
+        workflowException( ev.id, ev.exception, ev.times(timeT) )
+    }
+    false
   }
-  false }
 }
 

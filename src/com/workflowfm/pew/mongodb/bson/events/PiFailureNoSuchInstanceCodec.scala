@@ -1,11 +1,11 @@
 package com.workflowfm.pew.mongodb.bson.events
 
-import com.workflowfm.pew.PiFailureNoSuchInstance
+import com.workflowfm.pew.{PiFailureNoSuchInstance, PiTimes}
 import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import org.bson.{BsonReader, BsonWriter}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 
-class PiFailureNoSuchInstanceCodec[T]( tCodec: Codec[T] )
+class PiFailureNoSuchInstanceCodec[T]( tCodec: Codec[T], timeCodec: Codec[PiTimes] )
   extends ClassCodec[PiFailureNoSuchInstance[T]] {
 
   val tIdN: String = "tId"
@@ -15,8 +15,9 @@ class PiFailureNoSuchInstanceCodec[T]( tCodec: Codec[T] )
 
     writer.writeName( tIdN )
     ctx.encodeWithChildContext( tCodec, writer, value.id )
-    
-    writer.writeInt64( timeN, value.time )
+
+    writer.writeName( timeN )
+    ctx.encodeWithChildContext( timeCodec, writer, value.times )
   }
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): PiFailureNoSuchInstance[T] = {
@@ -24,7 +25,8 @@ class PiFailureNoSuchInstanceCodec[T]( tCodec: Codec[T] )
     reader.readName( tIdN )
     val tId: T = ctx.decodeWithChildContext( tCodec, reader )
 
-    val time: Long = reader.readInt64( timeN )
+    reader.readName( timeN )
+    val time: PiTimes = ctx.decodeWithChildContext( timeCodec, reader )
     
     PiFailureNoSuchInstance( tId, time )
   }

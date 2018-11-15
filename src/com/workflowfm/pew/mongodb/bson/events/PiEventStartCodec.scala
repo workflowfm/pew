@@ -1,11 +1,11 @@
 package com.workflowfm.pew.mongodb.bson.events
 
 import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
-import com.workflowfm.pew.{PiEventStart, PiInstance}
+import com.workflowfm.pew.{PiEventStart, PiInstance, PiTimes}
 import org.bson.{BsonReader, BsonWriter}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 
-class PiEventStartCodec[T]( piiCodec: Codec[PiInstance[T]] )
+class PiEventStartCodec[T]( piiCodec: Codec[PiInstance[T]], timeCodec: Codec[PiTimes] )
   extends ClassCodec[PiEventStart[T]] {
 
   val piiN: String = "pii"
@@ -15,8 +15,9 @@ class PiEventStartCodec[T]( piiCodec: Codec[PiInstance[T]] )
 
     writer.writeName( piiN )
     ctx.encodeWithChildContext( piiCodec, writer, value.i )
-    
-    writer.writeInt64( timeN, value.time )
+
+    writer.writeName( timeN )
+    ctx.encodeWithChildContext( timeCodec, writer, value.times )
   }
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): PiEventStart[T] = {
@@ -24,7 +25,8 @@ class PiEventStartCodec[T]( piiCodec: Codec[PiInstance[T]] )
     reader.readName( piiN )
     val pii: PiInstance[T] = ctx.decodeWithChildContext( piiCodec, reader )
 
-    val time: Long = reader.readInt64( timeN )
+    reader.readName( timeN )
+    val time: PiTimes = ctx.decodeWithChildContext( timeCodec, reader )
     
     PiEventStart( pii, time )
   }

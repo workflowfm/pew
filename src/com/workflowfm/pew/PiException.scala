@@ -53,7 +53,7 @@ class RemoteException[KeyT](
   ) extends PiException[KeyT]( message ) {
 
   override def event: PiExceptionEvent[KeyT]
-    = PiEventException( id, message, getStackTrace, time )
+    = PiEventException( id, message, getStackTrace, PiTimes( SystemPiTime -> time ) )
 }
 
 object RemoteException {
@@ -77,7 +77,7 @@ class RemoteProcessException[KeyT](
   ) extends PiException[KeyT]( message ) {
 
   override def event: PiExceptionEvent[KeyT]
-    = PiEventProcessException( id, ref, message, getStackTrace, time )
+    = PiEventProcessException( id, ref, message, getStackTrace, PiTimes( SystemPiTime -> time ) )
 }
 
 object RemoteProcessException {
