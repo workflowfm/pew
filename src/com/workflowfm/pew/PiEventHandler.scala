@@ -6,15 +6,15 @@ import scala.collection.immutable.Queue
 import scala.concurrent.Promise
 
 sealed trait PiEvent[KeyT] {
-  def id:KeyT
-  def asString:String
-  val time:Long
+  def id:KeyT    // This corresponds to the PiInstance ID field ? Or Can it be a PiProcess 
+  def asString:String  // String representation of the event
+  val time:Long // Timestamp of the event
 }
 
 /** PiEvents which are associated with a specific AtomicProcess call.
   */
 sealed trait PiAtomicProcessEvent[KeyT] extends PiEvent[KeyT] {
-  def ref: Int
+  def ref: Int  // reference
 }
 
 sealed trait PiExceptionEvent[KeyT] extends PiEvent[KeyT] {
@@ -33,7 +33,7 @@ sealed trait PiExceptionEvent[KeyT] extends PiEvent[KeyT] {
 }
 
 case class PiEventStart[KeyT](i:PiInstance[KeyT], override val time:Long=System.currentTimeMillis()) extends PiEvent[KeyT] {
-  override def id = i.id
+  override def id = i.id // yup, PiInstance ID
   override def asString = " === [" + i.id + "] INITIAL STATE === \n" + i.state + "\n === === === === === === === ==="
 }
 
