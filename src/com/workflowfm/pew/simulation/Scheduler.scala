@@ -29,4 +29,67 @@ object DefaultScheduler extends Scheduler {
       pairs.forall({case (t2,s2) => t.id == t2.id || t <= t2 || ticks + t.estimatedDuration <= s2})}
     if (canStart.isEmpty) None else Some(canStart.head._1)
   }
+
+}
+
+case class Schedule(gaps:List[(Long,Long)]) {
+  def +(start:Long,end:Long):Option[Schedule] = Schedule.fit(start,end,gaps) match {
+    case None => None
+    case Some(l) => Some(copy(gaps=l))
+  }
+
+  def +(startTime:Long, t:Task):Option[Schedule] = this + (startTime,startTime+t.estimatedDuration)
+
+  def ++(s:Schedule):Schedule = Schedule(Schedule.merge(gaps,s.gaps))
+
+  def isValid = Schedule.isValid(gaps)
+}
+
+object Schedule {
+  import scala.collection.immutable.Queue
+
+  def apply(r:TaskResource,currentTime:Long) = r.currentTask match {
+    case None => (currentTime,Long.MaxValue)
+    case Some((s,t)) => (s + t.estimatedDuration,Long.MaxValue)
+  }
+
+  def fit (
+    start:Long, end:Long,
+    gaps:List[(Long,Long)],
+    result:Queue[(Long,Long)] = Queue[(Long,Long)]()
+  ):Option[List[(Long,Long)]] = gaps match {
+    case Nil => Some(result.toList)
+    case (l:Long,r:Long) :: t =>
+      if (l == start && end == r) fit(start,end,t,result) // event fits exactly
+      else if (l == start && end <= r) fit(start,end,t,result :+ ((end,r)) )// add an event at the beginning of the gap
+      else if (l <= start && end == r) fit(start,end,t,result :+ ((l,start)) ) // add an event at the end of the gaps
+      else if (l < start && end < r) fit(start,end,t,result :+ ((l,start)) :+ ((end,r)) ) // add an event within a gap
+      else if (start > r || end < l) fit(start,end,t,result :+ ((l,r)) )
+      else None
+  }
+
+  // we assume all gap lists finish with a (t,Long.MaxValue) gap
+  def merge (
+    g1:List[(Long,Long)],
+    g2:List[(Long,Long)],
+    result:Queue[(Long,Long)] = Queue[(Long,Long)]()
+  ):List[(Long,Long)] = g1 match {
+    case Nil => result toList
+    case (l1,r1) :: t1 => g2 match {
+      case Nil => result toList
+      case (l2,r2) :: t2 => {
+        if (r2 <= l1) merge(g1,t2,result)
+        else if (r1 <= l2) merge (t1,g2,result)
+        else if (r1 == Long.MaxValue && r1 == r2) result :+ (math.max(l1,l2),r1) toList
+        else if (r2 <= r1) merge(g1,t2,result :+ (math.max(l1,l2),r2))
+        else /* if (r1 < r2) */ merge(t1,g2,result :+ (math.max(l1,l2),r1))
+      }
+    }
+  }
+
+  def isValid(gaps:List[(Long,Long)], start:Long = Long.MinValue):Boolean = gaps match {
+    case Nil => true
+    case (l,r) :: t if start < l && l < r => isValid(t, r)
+    case _ => false
+  }
 }

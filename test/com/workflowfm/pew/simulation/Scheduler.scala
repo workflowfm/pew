@@ -5,34 +5,44 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class SchedulerTests extends WordSpecLike with Matchers with BeforeAndAfterAll with SchedulerTester {
+class SchedulerTests extends WordSpecLike with Matchers with BeforeAndAfterAll
+    with TaskTester with ScheduleTester {
 
-  "Task priority" must {
+  "The Schedule" must {
 
-    "prioritize higher priority" in {
-      t(2L,Seq("A"),Task.High,2L,1L,0) < t(1L,Seq("A","B"),Task.Medium,1L,2L,1) should be (true)
+    "fit a task exactly" in {
+      s((1,3)) + (1,3) should be (Some(s()))
+      s((1,3),(4,5)) + (1,3) should be (Some(s((4,5))))
+      s((1,3),(4,5)) + (4,5) should be (Some(s((1,3))))
     }
 
-    "prioritize old age" in {
-      t(2L,Seq("A","B"),Task.Medium,2L,1L,0) > t(1L,Seq("A"),Task.Medium,1L,2L,1) should be (true)
+    "fit a task at the start" in {
+      s((1,3)) + (1,2) should be (Some(s((2,3))))
+      s((1,3),(4,5)) + (1,2) should be (Some(s((2,3),(4,5))))
+      s((1,3),(4,6)) + (4,5) should be (Some(s((1,3),(5,6))))
     }
 
-    "prioritize more resources" in {
-      t(2L,Seq("A","B"),Task.Medium,0L,1L,0) < t(1L,Seq("A"),Task.Medium,0L,2L,1) should be (true)
+    "fit a task at the end" in {
+      s((1,3)) + (2,3) should be (Some(s((1,2))))
+      s((1,3),(4,5)) + (2,3) should be (Some(s((1,2),(4,5))))
+      s((1,3),(4,6)) + (5,6) should be (Some(s((1,3),(4,5))))
     }
 
-    "prioritize longer duration" in {
-      t(2L,Seq("A"),Task.Medium,0L,1L,0) > t(1L,Seq("A"),Task.Medium,0L,2L,1) should be (true)
+    "fit a task in-between" in {
+      s((1,4)) + (2,3) should be (Some(s((1,2),(3,4))))
+      s((1,4),(5,6)) + (2,3) should be (Some(s((1,2),(3,4),(5,6))))
+      s((1,4),(5,8)) + (6,7) should be (Some(s((1,4),(5,6),(7,8))))
     }
 
-    "prioritize lower interrupt" in {
-      t(2L,Seq("A"),Task.Medium,0L,1L,0) < t(1L,Seq("A"),Task.Medium,0L,1L,1) should be (true)
+    "not fit tasks that don't fit" in {
+      s((1,2)) + (1,3) should be (None)
+      s((1,2),(3,4)) + (1,3) should be (None)
+      s((1,2),(3,4)) + (3,5) should be (None)
+      s((2,3)) + (1,3) should be (None)
+      s((2,3),(4,5)) + (1,3) should be (None)
+      s((2,3),(4,5)) + (3,5) should be (None)
+      s((2,3)) + (1,4) should be (None)
     }
-
-    "prioritize lower ID if all else fails" in {
-      t(2L,Seq("A"),Task.Medium,0L,1L,0) > t(1L,Seq("A"),Task.Medium,0L,1L,0) should be (true)
-    }
-
   }
 
   "The DefaultScheduler" must {
@@ -97,19 +107,8 @@ class SchedulerTests extends WordSpecLike with Matchers with BeforeAndAfterAll w
 
 }
 
-
-trait SchedulerTester {
-  // create a Task
-  def t(
-    id:Long,
-    resources:Seq[String],
-    priority:Task.Priority=Task.Medium,
-    created:Long = 0L,
-    duration:Long = 1L,
-    interrupt:Int = 0,
-    name:String="X"
-  ) =
-    new Task(id,name,"Test",created,resources,duration,duration,0L,interrupt,priority)
+trait ScheduleTester {
+  def s(l:(Long,Long)*) = Schedule(l.toList)
 }
 
 class TestResourceMap(names:String*) {
