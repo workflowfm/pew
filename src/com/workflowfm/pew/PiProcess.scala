@@ -1,5 +1,7 @@
 package com.workflowfm.pew
 
+import com.workflowfm.pew.PiMetadata.PiMetadataMap
+
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 
@@ -88,6 +90,47 @@ trait AtomicProcess extends PiProcess {
   
   override val dependencies:Seq[PiProcess] = Seq()
   
+}
+
+
+trait MetadataAtomicProcess extends AtomicProcess {
+
+  /** Implements the standard AtomicProcess interface for unsupporting ProcessExecutors.
+    */
+  final override def run( args: Seq[PiObject] )( implicit ec: ExecutionContext ): Future[PiObject]
+    = runMeta( args ).map( _._1 )
+
+  /** Extention to the run method, allows the child processes to return arbitrary meta-data
+    * which can be incorporated into the PiEvent history using supported ProcessExecutors.
+    *
+    * @return A future containing the result of computation and optional meta-data.
+    */
+  def runMeta( args: Seq[PiObject] )( implicit ec: ExecutionContext ): Future[(PiObject, PiMetadataMap)]
+
+}
+
+object MetadataAtomicProcess {
+
+  /** Upgrade AtomicProcess to MetadataAtomicProcesses so ProcessExecutors
+    * can simply integrate existing process.
+    *
+    * @return A MetadataAtomicProcess wrapper around the input AtomicProcess
+    *         *IFF* it's not already a MetadataAtomicProcess.
+    */
+  implicit def from: AtomicProcess => MetadataAtomicProcess = {
+    case existing: MetadataAtomicProcess => existing
+
+    case original: AtomicProcess =>
+      new MetadataAtomicProcess {
+        override def name: String = original.name
+        override def output: (PiObject, String) = original.output
+        override def inputs: Seq[(PiObject, String)] = original.inputs
+
+        override def runMeta(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[(PiObject, PiMetadataMap)]
+          = run(args).map((_, PiMetadata()))
+      }
+  }
+
 }
 
 case class DummyProcess(override val name:String, override val channels:Seq[String], outChan:String, override val inputs:Seq[(PiObject,String)]) extends AtomicProcess {
