@@ -9,6 +9,13 @@ object PiMetadata {
     */
   type PiMetadataMap = immutable.Map[String, Any]
 
+  /** A tuple used to construct a meta-data map, ensures
+    * the data's key type matches the data's value type.
+    *
+    * @tparam T The meta-data value type.
+    */
+  type PiMetadataElem[T] = (Key[T], T)
+
   /** Lightweight wrapper around a String to safely retrieve
     * a value of the given type from the metadata map.
     *
@@ -32,10 +39,10 @@ object PiMetadata {
 
   /** Construct a PiMetadataMap with the given meta-data.
     */
-  def apply( data: (Key[_], Any)* ): PiMetadataMap = {
+  def apply( data: PiMetadataElem[_]* ): PiMetadataMap = {
     // Jev, ensure there's at least a SystemPiTime.
     lazy val current = SystemTime -> System.currentTimeMillis()
-    (current +: data).map({ case (k, v) => (k.id, v) }).toMap
+    (current +: data).map( elem => (elem._1.id, elem._2) ).toMap
   }
 
 }
