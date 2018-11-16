@@ -65,19 +65,19 @@ class MetricsAggregator[KeyT] {
   def processSet = processMap.values.flatMap(_.values.map(_.process)).toSet[String]
 }
 
-class MetricsHandler[KeyT](override val name: String, timeT: PiTimeType = SystemPiTime )
+class MetricsHandler[KeyT](override val name: String, timeFn: PiMetadata.Key[Long] = PiMetadata.SystemTime )
   extends MetricsAggregator[KeyT] with PiEventHandler[KeyT] {
 
   override def apply( e: PiEvent[KeyT] ): Boolean = {
     e match {
-      case PiEventStart(i,t)      => workflowStart( i.id, t(timeT) )
-      case PiEventResult(i,r,t)   => workflowResult( i.id, r, t(timeT) )
-      case PiEventCall(i,r,p,_,t) => procCall( i, r, p.iname, t(timeT) )
-      case PiEventReturn(i,r,s,t) => procReturn( i, r, s, t(timeT) )
-      case PiEventProcessException(i,r,m,_,t) => processFailure( i, r, m, t(timeT) )
+      case PiEventStart(i,t)      => workflowStart( i.id, timeFn(t) )
+      case PiEventResult(i,r,t)   => workflowResult( i.id, r, timeFn(t) )
+      case PiEventCall(i,r,p,_,t) => procCall( i, r, p.iname, timeFn(t) )
+      case PiEventReturn(i,r,s,t) => procReturn( i, r, s, timeFn(t) )
+      case PiEventProcessException(i,r,m,_,t) => processFailure( i, r, m, timeFn(t) )
 
       case ev: PiExceptionEvent[KeyT] =>
-        workflowException( ev.id, ev.exception, ev.times(timeT) )
+        workflowException( ev.id, ev.exception, timeFn(ev.metadata) )
     }
     false
   }

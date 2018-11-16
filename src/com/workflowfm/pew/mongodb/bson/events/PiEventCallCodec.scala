@@ -1,5 +1,6 @@
 package com.workflowfm.pew.mongodb.bson.events
 
+import com.workflowfm.pew.PiMetadata.PiMetadataMap
 import com.workflowfm.pew._
 import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import org.bson.{BsonReader, BsonWriter}
@@ -9,7 +10,7 @@ class PiEventCallCodec[T](
     tCodec: Codec[T],
     objCodec: Codec[PiObject],
     procCodec: Codec[PiProcess],
-    timeCodec: Codec[PiTimes]
+    metaCodec: Codec[PiMetadataMap]
 
   ) extends ClassCodec[PiEventCall[T]] {
 
@@ -36,7 +37,7 @@ class PiEventCallCodec[T](
     }
 
     writer.writeName( timeN )
-    ctx.encodeWithChildContext( timeCodec, writer, value.times )
+    ctx.encodeWithChildContext( metaCodec, writer, value.metadata )
   }
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): PiEventCall[T] = {
@@ -56,8 +57,8 @@ class PiEventCallCodec[T](
       }
 
     reader.readName( timeN )
-    val time: PiTimes = ctx.decodeWithChildContext( timeCodec, reader )
+    val data: PiMetadataMap = ctx.decodeWithChildContext( metaCodec, reader )
 
-    PiEventCall( tId, ref, proc, args, time )
+    PiEventCall( tId, ref, proc, args, data )
   }
 }

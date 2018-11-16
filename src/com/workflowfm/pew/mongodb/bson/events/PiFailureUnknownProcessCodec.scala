@@ -1,11 +1,12 @@
 package com.workflowfm.pew.mongodb.bson.events
 
+import com.workflowfm.pew.PiMetadata.PiMetadataMap
 import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
-import com.workflowfm.pew.{PiFailureUnknownProcess, PiInstance, PiTimes}
+import com.workflowfm.pew.{PiFailureUnknownProcess, PiInstance}
 import org.bson.{BsonReader, BsonWriter}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 
-class PiFailureUnknownProcessCodec[T]( piiCodec: Codec[PiInstance[T]], timeCodec: Codec[PiTimes] )
+class PiFailureUnknownProcessCodec[T]( piiCodec: Codec[PiInstance[T]], metaCodec: Codec[PiMetadataMap] )
   extends ClassCodec[PiFailureUnknownProcess[T]]{
 
   val piiN: String = "pii"
@@ -20,7 +21,7 @@ class PiFailureUnknownProcessCodec[T]( piiCodec: Codec[PiInstance[T]], timeCodec
     writer.writeString( atomicProcN, value.process )
 
     writer.writeName( timeN )
-    ctx.encodeWithChildContext( timeCodec, writer, value.times )
+    ctx.encodeWithChildContext( metaCodec, writer, value.metadata )
   }
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): PiFailureUnknownProcess[T] = {
@@ -31,8 +32,8 @@ class PiFailureUnknownProcessCodec[T]( piiCodec: Codec[PiInstance[T]], timeCodec
     val proc: String = reader.readString( atomicProcN )
 
     reader.readName( timeN )
-    val time: PiTimes = ctx.decodeWithChildContext( timeCodec, reader )
+    val data: PiMetadataMap = ctx.decodeWithChildContext( metaCodec, reader )
     
-    PiFailureUnknownProcess( pii, proc, time )
+    PiFailureUnknownProcess( pii, proc, data )
   }
 }

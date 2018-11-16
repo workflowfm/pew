@@ -1,5 +1,7 @@
 package com.workflowfm.pew
 
+import com.workflowfm.pew.PiMetadata.SystemTime
+
 sealed abstract class PiException[KeyT]( message: String )
   extends Exception( message ) {
 
@@ -53,7 +55,7 @@ class RemoteException[KeyT](
   ) extends PiException[KeyT]( message ) {
 
   override def event: PiExceptionEvent[KeyT]
-    = PiEventException( id, message, getStackTrace, PiTimes( SystemPiTime -> time ) )
+    = PiEventException( id, message, getStackTrace, PiMetadata( SystemTime -> time ) )
 }
 
 object RemoteException {
@@ -77,7 +79,7 @@ class RemoteProcessException[KeyT](
   ) extends PiException[KeyT]( message ) {
 
   override def event: PiExceptionEvent[KeyT]
-    = PiEventProcessException( id, ref, message, getStackTrace, PiTimes( SystemPiTime -> time ) )
+    = PiEventProcessException( id, ref, message, getStackTrace, PiMetadata( SystemTime -> time ) )
 }
 
 object RemoteProcessException {
