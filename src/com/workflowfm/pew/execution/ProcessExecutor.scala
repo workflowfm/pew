@@ -4,9 +4,12 @@ import com.workflowfm.pew._
 import scala.concurrent._
 import scala.concurrent.duration._
 
-/**
- * Executes an atomic process - blocking
- */
+/** Executes an atomic process - blocking
+  *
+  * Built before the normal executors and kept around for testing.
+  *
+  * @deprecated
+  */
 case class AtomicProcessExecutor(process:AtomicProcess) {
   def call(args:PiObject*)(implicit ec:ExecutionContext) = {
     val s = process.execState(args) fullReduce()
