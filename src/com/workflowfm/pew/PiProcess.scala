@@ -100,7 +100,7 @@ trait MetadataAtomicProcess extends AtomicProcess {
   final override def run( args: Seq[PiObject] )( implicit ec: ExecutionContext ): Future[PiObject]
     = runMeta( args ).map( _._1 )
 
-  /** Extention to the run method, allows the child processes to return arbitrary meta-data
+  /** Extension to the run method, allows the child processes to return arbitrary meta-data
     * which can be incorporated into the PiEvent history using supported ProcessExecutors.
     *
     * @return A future containing the result of computation and optional meta-data.
@@ -127,7 +127,7 @@ object MetadataAtomicProcess {
         override def inputs: Seq[(PiObject, String)] = original.inputs
 
         override def runMeta(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[(PiObject, PiMetadataMap)]
-          = run(args).map((_, PiMetadata()))
+          = original.run(args).map((_, PiMetadata()))
       }
   }
 
