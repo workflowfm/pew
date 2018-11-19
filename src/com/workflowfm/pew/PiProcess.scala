@@ -1,6 +1,7 @@
 package com.workflowfm.pew
 
-import com.workflowfm.pew.PiMetadata.PiMetadataMap
+import com.workflowfm.pew.MetadataAtomicProcess.MetadataAtomicResult
+import com.workflowfm.pew.PiMetadata.{PiMetadataElem, PiMetadataMap}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
@@ -92,7 +93,6 @@ trait AtomicProcess extends PiProcess {
   
 }
 
-
 trait MetadataAtomicProcess extends AtomicProcess {
 
   /** Implements the standard AtomicProcess interface for unsupporting ProcessExecutors.
@@ -105,11 +105,22 @@ trait MetadataAtomicProcess extends AtomicProcess {
     *
     * @return A future containing the result of computation and optional meta-data.
     */
-  def runMeta( args: Seq[PiObject] )( implicit ec: ExecutionContext ): Future[(PiObject, PiMetadataMap)]
+  def runMeta( args: Seq[PiObject] )( implicit ec: ExecutionContext ): Future[MetadataAtomicResult]
 
 }
 
 object MetadataAtomicProcess {
+
+  type MetadataAtomicResult = (PiObject, PiMetadataMap)
+
+  /** Syntactic sugar for returning results from MetadataAtomicProcesses.
+    *
+    * @param result Result of the AtomicProcess.
+    * @param data Metadata elements with their keys.
+    * @return Tuple of Result and Meta-data map.
+    */
+  def result( result: PiObject, data: PiMetadataElem[_]* ): MetadataAtomicResult
+    = (result, PiMetadata( data: _* ) )
 
   /** Upgrade AtomicProcess to MetadataAtomicProcesses so ProcessExecutors
     * can simply integrate existing process.
