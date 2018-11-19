@@ -55,11 +55,11 @@ class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
 
     val response = SequenceRequest( pii.id, ( CallRef(t), PiItem("PbISleptFor1s") ) )
 
-    await( atomExec.respond( task ) ) shouldBe response
+    await( atomExec.respond( task ) ) should contain( response )
   }
 
   def runAEx( history: (Assignment, Int)* ): MockTracked[MessageMap] = {
-    val fut: Future[ Seq[MockTracked[AnyMsg]]]
+    val fut: Future[ Seq[MockTracked[Seq[AnyMsg]]]]
       = MockTracked
         .source( history )
         .groupBy( Int.MaxValue, _.part )
@@ -70,6 +70,7 @@ class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
 
     Await.result(
       fut.map( Tracked.flatten )
+      .map( Tracked.fmap( _.flatten ) )
       .map( Tracked.fmap( new MessageMap(_) ) ),
 
       1.minute
