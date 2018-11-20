@@ -83,19 +83,13 @@ class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(im
 //    case x => x
 //  }
   
-  protected def resourceAssign(r:TaskResource) = 
-    if (r.isIdle) scheduler.getNextTask(r.name,time,resourceMap,tasks) match {
-      case None => {
-      	(metrics^r)(_.idle(time-r.lastUpdate))
-      	r.update(time)
-      }
-      case Some(task) => {
-        tasks.dequeueFirst (_.compare(task) == 0) // TODO This should remove the correct task right?
-        startTask(task)
-      }
-    }
+  protected def resourceIdle(r:TaskResource) = if (r.isIdle) {
+    (metrics^r)(_.idle(time-r.lastUpdate))
+    r.update(time)
+  }
 
   protected def startTask(task:Task) {
+    tasks.dequeueFirst (_.id == task.id)
     // Mark the start of the task in the metrics
     (metrics^task.id)(_.start(time))
     task.taskResources(resourceMap) map { r => 
@@ -170,10 +164,13 @@ class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(im
   }
   
   protected def tack :Unit = {
-    // Try to assign tasks to all resources
-    resourceMap.values.foreach(resourceAssign) 
     // Make sure we run tasks that need no resources
     runNoResourceTasks()
+    // Assign the next tasks
+    scheduler.getNextTasks(tasks, time, resourceMap).foreach(startTask)
+    // Update idle resources
+    resourceMap.values.foreach(resourceIdle) 
+
     
     // We finish if there are no events, no tasks, and all workflows have reduced
     // Actually all workflows must have reduced at this stage, but we check anyway

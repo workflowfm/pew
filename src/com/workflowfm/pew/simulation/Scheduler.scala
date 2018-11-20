@@ -1,9 +1,10 @@
 package com.workflowfm.pew.simulation
 
+import scala.annotation.tailrec
+
 trait Scheduler {
-  def getNextTask(resource:String, ticks:Long, resourceMap:Map[String,TaskResource], tasks:Seq[Task]) :Option[Task]
-  //  def getNextTasks(currentTime:Long, resourceMap:Map[String,TaskResource], tasks:Seq[Task]) :Seq[(String,Task)]
-  
+  def getNextTasks(tasks:Seq[Task], currentTime:Long, resourceMap:Map[String,TaskResource]) :Seq[Task]
+
   def isIdleResource(r:String, resourceMap:Map[String,TaskResource]) = resourceMap.get(r) match {
       case None => false
       case Some(s) => s.isIdle
@@ -11,24 +12,39 @@ trait Scheduler {
   
 }
 
-object DefaultScheduler {// extends Scheduler {
-  def nextEstimatedTaskStart(t:Task, ticks:Long, resourceMap:Map[String,TaskResource], tasks:Seq[Task]) = {
-    val precedingTasks = tasks filter (_ < t)
-    t.nextPossibleStart(ticks, resourceMap) + (0L /: precedingTasks)(_ + _.estimatedDuration)
-  }
+object DefaultScheduler extends Scheduler {
+  import scala.collection.immutable.Queue
 
-  def getNextTasks(currentTime:Long, resourceMap:Map[String,TaskResource], tasks:Seq[Task]) :Seq[(String,Task)] = {
-    val x = (resourceMap.mapValues(Schedule(_)) /: tasks)(fit(currentTime))
-  }
+  override def getNextTasks(tasks:Seq[Task], currentTime:Long, resourceMap:Map[String,TaskResource]) :Seq[Task] =
+    findNextTasks(currentTime, resourceMap.mapValues(Schedule(_)),tasks.toList, Queue())
 
-  def fit(currentTime:Long)(schedules:Map[String,Schedule],t:Task):Map[String,Schedule] = {
-    val start = Schedule.merge(t.resources.flatMap(schedules.get(_))) ? (currentTime,t)
-    (schedules /: t.resources) { case (s,r) => s + (r -> (s.getOrElse(r,Schedule(Nil)) + (start,t))) }
-  }
+  @tailrec
+  def findNextTasks(
+    currentTime:Long,
+    schedules:Map[String,Schedule],
+    tasks:List[Task],
+    result:Queue[Task]
+  ):Seq[Task] = tasks match {
+    case Nil => result
+    case t :: rest => {
+      val start = Schedule.merge(t.resources.flatMap(schedules.get(_))) ? (currentTime,t)
+      val schedules2 = (schedules /: t.resources) {
+        case (s,r) => s + (r -> (s.getOrElse(r,Schedule(Nil)) +> (start,t)))
+      }
+      val result2 = if (start == currentTime) result :+ t else result
+      findNextTasks(currentTime, schedules2, rest, result2)
+    }
+  }    
 }
 
 case class Schedule(tasks:List[(Long,Long)]) {
-  def +(start:Long,end:Long):Schedule = Schedule.add(start,end,tasks) match {
+
+  def +(start:Long,end:Long):Option[Schedule] = Schedule.add(start,end,tasks) match {
+    case None => None
+    case Some(l) => Some(copy(tasks=l))
+  }
+
+  def +>(start:Long,end:Long):Schedule = Schedule.add(start,end,tasks) match {
     case None => {
       System.err.println(s"*** Unable to add ($start,$end) to Schedule: $tasks")
       this
@@ -36,7 +52,7 @@ case class Schedule(tasks:List[(Long,Long)]) {
     case Some(l) => copy(tasks=l)
   }
 
-  def +(startTime:Long, t:Task):Schedule = this + (startTime,startTime+t.estimatedDuration)
+  def +>(startTime:Long, t:Task):Schedule = this +> (startTime,startTime+t.estimatedDuration)
 
   def ?(currentTime:Long, t:Task):Long = Schedule.fit(currentTime,t.estimatedDuration,tasks)
 
@@ -54,6 +70,7 @@ object Schedule {
     case Some((s,t)) => Schedule((s,s + t.estimatedDuration) :: Nil)
   }
 
+  @tailrec
   def add (
     start:Long, end:Long,
     tasks:List[(Long,Long)],
@@ -69,6 +86,7 @@ object Schedule {
       //else None
   }
 
+  @tailrec
   def fit (
     start:Long,
     duration:Long,
@@ -79,7 +97,7 @@ object Schedule {
     case (_,r) :: t => fit(r,duration,t)
   }
 
-  // we assume all gap lists finish with a (t,Long.MaxValue) gap
+  @tailrec
   def merge(
     g1:List[(Long,Long)],
     g2:List[(Long,Long)],
