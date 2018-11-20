@@ -16,11 +16,12 @@ object DefaultScheduler extends Scheduler {
   import scala.collection.immutable.Queue
 
   override def getNextTasks(tasks:Seq[Task], currentTime:Long, resourceMap:Map[String,TaskResource]) :Seq[Task] =
-    findNextTasks(currentTime, resourceMap.mapValues(Schedule(_)),tasks.toList, Queue())
+    findNextTasks(currentTime, resourceMap, resourceMap.mapValues(Schedule(_)), tasks.toList, Queue())
 
   @tailrec
   def findNextTasks(
     currentTime:Long,
+    resourceMap:Map[String,TaskResource],
     schedules:Map[String,Schedule],
     tasks:List[Task],
     result:Queue[Task]
@@ -31,8 +32,8 @@ object DefaultScheduler extends Scheduler {
       val schedules2 = (schedules /: t.resources) {
         case (s,r) => s + (r -> (s.getOrElse(r,Schedule(Nil)) +> (start,t)))
       }
-      val result2 = if (start == currentTime) result :+ t else result
-      findNextTasks(currentTime, schedules2, rest, result2)
+      val result2 = if (start == currentTime && t.taskResources(resourceMap).forall(_.isIdle)) result :+ t else result
+      findNextTasks(currentTime, resourceMap, schedules2, rest, result2)
     }
   }    
 }
