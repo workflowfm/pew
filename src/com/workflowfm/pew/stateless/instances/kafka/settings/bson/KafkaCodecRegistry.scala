@@ -29,8 +29,6 @@ class KafkaCodecRegistry(
 
   new Tuple2Codec( anyc ) with AutoCodec
 
-  new PiObjectCodec() with AutoCodec
-
   // Keep explicit references to these PEW codec instances,
   // We don't have a registry that includes them.
   private val idc = new ObjectIdCodec() with AutoCodec
