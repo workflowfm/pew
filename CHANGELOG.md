@@ -10,6 +10,12 @@ Includes feature updates, bug fixes, and open issues.
 * [MultiStateExecutor race condition problems #9](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/9) - since v0.1
 * [AkkaExecutor.Call may timeout #4](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/4) - since v0.1
 
+## [v1.2.1](https://github.com/PetrosPapapa/WorkflowFM-PEW/releases/tag/v1.2.1) - 2018-11-21
+
+### Features
+
+* Fixed problems and improved the `Scheduler` ([issue 20](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/20)).
+* Added unit tests for the `Scheduler` and `Task` priority.
 
 ## [v1.2.0](https://github.com/PetrosPapapa/WorkflowFM-PEW/releases/tag/v1.2.0) - 2018-11-14
 
