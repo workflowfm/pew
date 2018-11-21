@@ -62,6 +62,15 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
     ExtendedCodecRegistry.testCodec.asInstanceOf[Codec[TestObject]] shouldNot be (null)
   }
 
+  def testCodec[T]( tOriginal: T )( implicit ct: ClassTag[T], codec: Codec[T] ): scalatest.Assertion = {
+
+    val wrapper = new CodecWrapper[T]( codec )
+    val bytes = wrapper.serialize( "FakeTopic", tOriginal )
+    val tReserialized = wrapper.deserialize( "FakeTopic", bytes )
+
+    tReserialized shouldEqual tOriginal
+  }
+
   it should "correctly (de)serialise additional Codecs" in {
     implicit val codec: Codec[TestObject] = ExtendedCodecRegistry.get( classOf[TestObject] )
     codec shouldNot be (null)
@@ -78,15 +87,6 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
     testCodec[PiObject]( PiItem( TestObject( "easy", 1 ) ) )
     testCodec[PiObject]( PiItem( TestObject( "H4rD!!``", -1 ) ) )
     testCodec[PiObject]( PiItem( TestObject( "", 0 ) ) )
-  }
-
-  def testCodec[T]( tOriginal: T )( implicit ct: ClassTag[T], codec: Codec[T] ): scalatest.Assertion = {
-
-    val wrapper = new CodecWrapper[T]( codec )
-    val bytes = wrapper.serialize( "FakeTopic", tOriginal )
-    val tReserialized = wrapper.deserialize( "FakeTopic", bytes )
-
-    tReserialized shouldEqual tOriginal
   }
 
   it should "correctly (de)serialise KeyPiiIds" in {
