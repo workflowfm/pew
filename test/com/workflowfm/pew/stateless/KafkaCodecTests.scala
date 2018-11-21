@@ -47,6 +47,7 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
     override def encodeBody(writer: BsonWriter, value: TestObject, ctx: EncoderContext): Unit = {
       writer.writeName("1")
       writer.writeString( value.arg1 )
+      writer.writeName("2")
       writer.writeInt32( value.arg2 )
     }
   }
@@ -55,8 +56,15 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
     val testCodec: Codec[TestObject] = new TestObjectCodec with AutoCodec
   }
 
+  it should "correctly expose additional Codecs" in {
+    ExtendedCodecRegistry.registeredCodecs.values should contain( ExtendedCodecRegistry.testCodec )
+    ExtendedCodecRegistry.registeredCodecs.keys should contain( classOf[TestObject] )
+    ExtendedCodecRegistry.testCodec.asInstanceOf[Codec[TestObject]] shouldNot be (null)
+  }
+
   it should "correctly (de)serialise additional Codecs" in {
     implicit val codec: Codec[TestObject] = ExtendedCodecRegistry.get( classOf[TestObject] )
+    codec shouldNot be (null)
 
     testCodec( TestObject( "easy", 1 ) )
     testCodec( TestObject( "H4rD!!``", -1 ) )
@@ -65,6 +73,7 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
 
   it should "expose itself via to AnyCodec to PiObjects" in {
     implicit val codec: Codec[PiObject] = ExtendedCodecRegistry.get( classOf[PiObject] )
+    codec shouldNot be (null)
 
     testCodec[PiObject]( PiItem( TestObject( "easy", 1 ) ) )
     testCodec[PiObject]( PiItem( TestObject( "H4rD!!``", -1 ) ) )
@@ -73,7 +82,7 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
 
   def testCodec[T]( tOriginal: T )( implicit ct: ClassTag[T], codec: Codec[T] ): scalatest.Assertion = {
 
-    val wrapper = CodecWrapper[T]( ct, registry )
+    val wrapper = new CodecWrapper[T]( codec )
     val bytes = wrapper.serialize( "FakeTopic", tOriginal )
     val tReserialized = wrapper.deserialize( "FakeTopic", bytes )
 
