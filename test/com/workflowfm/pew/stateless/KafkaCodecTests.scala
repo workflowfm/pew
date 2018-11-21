@@ -51,13 +51,20 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
     }
   }
 
-  class ExtKafkaCodecRegistry extends KafkaCodecRegistry( completeProcess.store ) {
+  object ExtendedCodecRegistry extends KafkaCodecRegistry( completeProcess.store ) {
     val testCodec: Codec[TestObject] = new TestObjectCodec with AutoCodec
   }
 
+  it should "correctly (de)serialise additional Codecs" in {
+    implicit val codec: Codec[TestObject] = ExtendedCodecRegistry.get( classOf[TestObject] )
+
+    testCodec( TestObject( "easy", 1 ) )
+    testCodec( TestObject( "H4rD!!``", -1 ) )
+    testCodec( TestObject( "", 0 ) )
+  }
+
   it should "expose itself via to AnyCodec to PiObjects" in {
-    val extRegistry: ExtKafkaCodecRegistry = new ExtKafkaCodecRegistry
-    implicit val codec: Codec[PiObject] = extRegistry.get( classOf[PiObject] )
+    implicit val codec: Codec[PiObject] = ExtendedCodecRegistry.get( classOf[PiObject] )
 
     testCodec[PiObject]( PiItem( TestObject( "easy", 1 ) ) )
     testCodec[PiObject]( PiItem( TestObject( "H4rD!!``", -1 ) ) )
