@@ -4,7 +4,7 @@ import org.bson.{BsonReader, BsonWriter}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.codecs.configuration.CodecRegistry
 
-class AnyCodec( registry: CodecRegistry )
+class AnyCodec( val registry: CodecRegistry )
   extends Codec[Any] {
 
   val classN: String = "class"

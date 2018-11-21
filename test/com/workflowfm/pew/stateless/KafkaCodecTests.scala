@@ -1,11 +1,13 @@
 package com.workflowfm.pew.stateless
 
 import com.workflowfm.pew._
+import com.workflowfm.pew.mongodb.bson.AnyCodec
+import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.{AnyKey, KeyPiiId, KeyPiiIdCall}
-import com.workflowfm.pew.stateless.instances.kafka.settings.bson.CodecWrapper
-import org.bson.codecs.Codec
-import org.bson.codecs.configuration.CodecRegistry
+import com.workflowfm.pew.stateless.instances.kafka.settings.bson.{CodecWrapper, KafkaCodecRegistry}
+import org.bson.{BsonReader, BsonWriter}
+import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
 import org.scalatest
@@ -16,7 +18,61 @@ import scala.reflect.ClassTag
 @RunWith(classOf[JUnitRunner])
 class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
 
-  val registry: CodecRegistry = completeProcess.settings.reg
+  lazy val registry: KafkaCodecRegistry = new KafkaCodecRegistry( completeProcess.store )
+
+  it should "expose itself via the AnyCodec" in {
+    val anyc: AnyCodec = new AnyCodec( registry )
+    anyc.registry shouldBe registry
+
+    val codecs: Seq[Codec[_]] = registry.registeredCodecs.values.toSeq
+    val codecs2 = codecs.map( c => anyc.codec( c.getEncoderClass ) )
+
+    codecs2 should not contain null
+  }
+
+  case class TestObject( arg1: String, arg2: Int )
+
+  class TestObjectCodec extends ClassCodec[TestObject] {
+
+    override def decodeBody(reader: BsonReader, ctx: DecoderContext): TestObject = {
+      reader.readName("1")
+      val arg1 = reader.readString()
+
+      reader.readName("2")
+      val arg2 = reader.readInt32()
+
+      TestObject(arg1, arg2)
+    }
+
+    override def encodeBody(writer: BsonWriter, value: TestObject, ctx: EncoderContext): Unit = {
+      writer.writeName("1")
+      writer.writeString( value.arg1 )
+      writer.writeInt32( value.arg2 )
+    }
+  }
+
+  class ExtKafkaCodecRegistry extends KafkaCodecRegistry( completeProcess.store ) {
+    val testCodec: Codec[TestObject] = new TestObjectCodec with AutoCodec
+  }
+
+  lazy val extendedRegistry: ExtKafkaCodecRegistry = new ExtKafkaCodecRegistry
+
+  it should "expose itself via the AnyCodec in subclasses too" in {
+
+    val anyc: AnyCodec = new AnyCodec( extendedRegistry )
+    anyc.registry shouldBe extendedRegistry
+
+    val codecs: Seq[Codec[_]] = extendedRegistry.registeredCodecs.values.toSeq
+    val codecs2 = codecs.map( c => anyc.codec( c.getEncoderClass ) )
+
+    codecs2 should not contain null
+
+    anyc.codec( classOf[TestObject] ) shouldBe extendedRegistry.testCodec
+  }
+
+  it should "expose itself full to AnyCodecs within PiObjects" in {
+
+  }
 
   def testCodec[T]( tOriginal: T )( implicit ct: ClassTag[T], codec: Codec[T] ): scalatest.Assertion = {
 
