@@ -17,8 +17,12 @@ class PiMetadataMapCodec( anyCodec: Codec[Any] )
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): PiMetadataMap = {
     readArray( reader, fieldsN ) {
       () =>
+        reader.readStartDocument()
         val datatype: String = reader.readString( typeN )
+
+        reader.readName( valueN )
         val value: Any = ctx.decodeWithChildContext( anyCodec, reader )
+        reader.readEndDocument()
 
         datatype -> value
     }
@@ -27,8 +31,12 @@ class PiMetadataMapCodec( anyCodec: Codec[Any] )
   override def encodeBody(writer: BsonWriter, value: PiMetadataMap, ctx: EncoderContext): Unit = {
     writeArray( writer, fieldsN, value.to ) {
       case (key, data) =>
+        writer.writeStartDocument()
         writer.writeString( typeN, key )
+
+        writer.writeName( valueN )
         ctx.encodeWithChildContext( anyCodec, writer, data )
+        writer.writeEndDocument()
     }
   }
 
