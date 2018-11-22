@@ -60,11 +60,8 @@ trait AutoCodecStore {
   /** Dumb helper inner-trait to automatically register instances of this trait with
     * the parent `AutoCodecStore`.
     */
-  trait AutoCodec {
-    this match {
-      case codec: Codec[_] =>
-        registerCodec( codec )
-    }
+  trait AutoCodec { this:Codec[_] =>
+      registerCodec( this )
   }
 
 }
