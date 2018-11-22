@@ -156,6 +156,21 @@ class PromiseHandlerFactory[T](name:T=>String) extends PiEventHandlerFactory[T,P
   override def build(id:T) = new PromiseHandler[T](name(id),id)
 }
 
+class CounterHandler[T](override val name:String, val id:T) extends PiEventHandler[T] {   
+  private var counter:Int = 0
+  def count = counter
+  
+  override def apply(e:PiEvent[T]) = if (e.id == this.id) e match {  
+    case PiEventResult(i,res,_) => counter++ ; true
+    case ex: PiExceptionEvent[T] => counter++ ; true
+    case _ => counter++ ; false
+  } else false 
+}
+
+class CounterHandlerFactory[T](name:T=>String) extends PiEventHandlerFactory[T,CounterHandler[T]] {
+  override def build(id:T) = new CounterHandler[T](name(id),id)
+}
+
 case class MultiPiEventHandler[T](handlers:Queue[PiEventHandler[T]]) extends PiEventHandler[T] {
   override def name = handlers map (_.name) mkString(",")
   override def apply(e:PiEvent[T]) = handlers map (_(e)) forall (_ == true)

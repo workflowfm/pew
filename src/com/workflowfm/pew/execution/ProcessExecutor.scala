@@ -109,28 +109,3 @@ trait SimulatorExecutor[KeyT] extends ProcessExecutor[KeyT] { this:PiObservable[
     */
   def simulationReady:Boolean
 }
-
-/**
-  * Shortcut methods for unit testing
-  */
-trait ProcessExecutorTester {
-  def exe(e:ProcessExecutor[_],p:PiProcess,args:Any*) = await(e.execute(p,args:Seq[Any]))
-  def await[A](f:Future[A]):A = try {
-    Await.result(f,15.seconds)
-  } catch {
-    case e:Throwable => {
-      System.out.println("=== RESULT FAILED! ===: " + e.getLocalizedMessage)
-      throw e
-    }
-  }
-
-//  def awaitf[A](f:Future[Future[A]]):A = try {
-//    Await.result(Await.result(f,15.seconds),15.seconds)
-//  } catch {
-//    case e:Throwable => {
-//      System.out.println("=== RESULT FAILED! ===")
-//      throw e
-//    }
-//  }
-
-}
