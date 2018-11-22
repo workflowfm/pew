@@ -20,8 +20,8 @@ trait AutoCodecStore {
     *
      * @param codec The new codec to register with this `AutoCodecStore`.
     */
-  protected def registerCodec(codec: Codec[_])
-    : Unit = this.synchronized {
+  final def registerCodec[CodecT <: Codec[_]](codec: CodecT)
+    : CodecT = this.synchronized {
 
     val clazz: Class[_] = codec.getEncoderClass
 
@@ -55,6 +55,8 @@ trait AutoCodecStore {
 
       case _: Codec[_] => // No actions needed.
     }
+
+    codec
   }
 
   /** Dumb helper inner-trait to automatically register instances of this trait with
