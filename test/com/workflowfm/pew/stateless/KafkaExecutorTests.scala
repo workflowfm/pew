@@ -20,7 +20,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
   // Ensure there are no outstanding messages before starting testing.
   new MessageDrain( true )
 
-  it should "execute and atomic PbI using DIY KafkaExecutor" in {
+  it should "execute an atomic PbI using a DIY KafkaExecutor" in {
     implicit val settings = completeProcess.settings
     val listener = new ResultListener
 
@@ -45,6 +45,26 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
     msgsOf[Assignment] shouldBe empty
     msgsOf[PiiUpdate] shouldBe empty
   }
+
+  it should "execute an atomic PbI using the baremetal Executor interface" in {
+    val ex = makeExecutor( completeProcess.settings )
+
+    val piiId = await( ex.init( pbi, Seq( PiObject(1) ) ) )
+    val handler = new PromiseHandler( "test", piiId )
+    ex.subscribe( handler )
+
+    val f1 = handler.promise.future
+    ex.start( piiId )
+
+    await( f1 ) should be ("PbISleptFor1s")
+    ex.syncShutdown()
+
+    val msgsOf = new MessageDrain( true )
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty  }
 
   it should "execute atomic PbI once" in {
 
