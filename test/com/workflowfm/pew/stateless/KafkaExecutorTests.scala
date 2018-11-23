@@ -1,8 +1,11 @@
 package com.workflowfm.pew.stateless
 
-import com.workflowfm.pew.stateless.StatelessMessages._
+import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, _}
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
-import com.workflowfm.pew._
+import com.workflowfm.pew.{PromiseHandler, _}
+import com.workflowfm.pew.stateless.components.{AtomicExecutor, Reducer, ResultListener}
+import com.workflowfm.pew.stateless.instances.kafka.MinimalKafkaExecutor
+import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors.{indyReducer, indySequencer, sendMessages}
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -16,6 +19,32 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   // Ensure there are no outstanding messages before starting testing.
   new MessageDrain( true )
+
+  it should "execute and atomic PbI using DIY KafkaExecutor" in {
+    implicit val settings = completeProcess.settings
+    val listener = new ResultListener
+
+    val c1 = KafkaConnectors.indyReducer( new Reducer )
+    val c2 = KafkaConnectors.indySequencer
+    val c3 = KafkaConnectors.indyAtomicExecutor( AtomicExecutor() )
+    val c4 = KafkaConnectors.uniqueResultListener( listener )
+
+    val pii = PiInstance( ObjectId.get, pbi, PiObject(1) )
+    sendMessages( ReduceRequest( pii, Seq() ) )
+
+    val handler = new PromiseHandler( "test", pii.id )
+    listener.subscribe( handler )
+
+    await( handler.promise.future ) should be ("PbISleptFor1s")
+    await( KafkaConnectors.shutdown( c1, c2, c3, c4 ) )
+
+    val msgsOf = new MessageDrain( true )
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty
+  }
 
   it should "execute atomic PbI once" in {
 
