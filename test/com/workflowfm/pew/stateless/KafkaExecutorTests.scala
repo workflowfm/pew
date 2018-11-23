@@ -7,6 +7,7 @@ import com.workflowfm.pew.{PromiseHandler, _}
 import com.workflowfm.pew.stateless.components.{AtomicExecutor, Reducer, ResultListener}
 import com.workflowfm.pew.stateless.instances.kafka.MinimalKafkaExecutor
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors.{indyReducer, indySequencer, sendMessages}
+import org.apache.kafka.common.utils.Utils
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
