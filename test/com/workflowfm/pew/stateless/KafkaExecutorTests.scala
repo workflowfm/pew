@@ -1,5 +1,6 @@
 package com.workflowfm.pew.stateless
 
+import akka.Done
 import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, _}
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
 import com.workflowfm.pew.{PromiseHandler, _}
@@ -19,6 +20,18 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   // Ensure there are no outstanding messages before starting testing.
   new MessageDrain( true )
+
+  it should "start a producer from inside a ExecutionContext" in {
+    implicit val settings = completeProcess.settings
+
+    val future: Future[Done] = Future { Thread.sleep(100) } map { _ =>
+      val pii = PiInstance( ObjectId.get, pbi, PiObject(1) )
+      sendMessages( ReduceRequest( pii, Seq() ) )
+      Done
+    }
+
+    await( future ) shouldBe Done
+  }
 
   it should "execute an atomic PbI using a DIY KafkaExecutor" in {
     implicit val settings = completeProcess.settings
