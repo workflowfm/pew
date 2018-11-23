@@ -21,6 +21,18 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
   // Ensure there are no outstanding messages before starting testing.
   new MessageDrain( true )
 
+  lazy val mainClassLoader: ClassLoader = Thread.currentThread().getContextClassLoader
+  lazy val kafkaClassLoader: ClassLoader = Utils.getContextOrKafkaClassLoader
+  lazy val threadClassLoader: ClassLoader = await( Future.unit.map(_ => Thread.currentThread().getContextClassLoader ) )
+
+  it should "use the same ClassLoader for Kafka as the Main thread" in {
+    mainClassLoader shouldBe kafkaClassLoader
+  }
+
+  it should "use the same ClassLoader for the ExecutionContext threads as the Main thread" in {
+    mainClassLoader shouldBe threadClassLoader
+  }
+
   it should "start a producer from inside a ExecutionContext" in {
     implicit val settings = completeProcess.settings
 
