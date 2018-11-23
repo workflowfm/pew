@@ -65,7 +65,7 @@ object RemoteException {
   }
 
   def apply[KeyT]( id: KeyT, t: Throwable ): RemoteException[KeyT]
-    = apply[KeyT]( id, t.getMessage, t.getStackTrace, System.nanoTime() )
+    = apply[KeyT]( id, t.getMessage, t.getStackTrace, System.currentTimeMillis() )
 }
 
 class RemoteProcessException[KeyT](
@@ -88,5 +88,5 @@ object RemoteProcessException {
   }
 
   def apply[KeyT]( id: KeyT, ref: Int, t: Throwable ): RemoteProcessException[KeyT]
-    = apply[KeyT]( id, ref, t.getMessage, t.getStackTrace, System.nanoTime() )
+    = apply[KeyT]( id, ref, t.getMessage, t.getStackTrace, System.currentTimeMillis() )
 }

@@ -84,7 +84,7 @@ class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStor
         publish(PiEventCall(i.id,ref,p,objs))
         p.run(args map (_.obj)).onComplete{ 
           case Success(res) => {
-            publish(PiEventReturn(i.id,ref,res))
+            publish(PiEventReturn(i.id,ref,PiObject.get(res)))
             postResult(i.id,ref,res)
           }
           case Failure (ex) => publish(PiEventProcessException(i.id,ref,ex))

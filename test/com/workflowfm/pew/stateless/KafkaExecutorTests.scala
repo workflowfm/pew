@@ -1,12 +1,8 @@
 package com.workflowfm.pew.stateless
 
-import akka.kafka.scaladsl.Consumer.Control
-import com.workflowfm.pew._
 import com.workflowfm.pew.stateless.StatelessMessages._
-import com.workflowfm.pew.stateless.components.AtomicExecutor
-import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows._
-import com.workflowfm.pew.stateless.instances.kafka.components.{KafkaConnectors, KafkaWrapperFlows, Tracked, Transaction}
-import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
+import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
+import com.workflowfm.pew._
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -338,8 +334,9 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
     val ex = makeExecutor( completeProcess.settings )
     var errors: List[Exception] = List()
 
-    for (i <- 0 to 240) {
-      try {
+    try {
+      for (i <- 0 to 240) {
+
         // Jev, intersperse some timeconsuming tasks.
         val b: Seq[Int]
           = Seq( 41, 43, 47, 53, 59, 61 )
@@ -352,15 +349,15 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
         await(f0) shouldBe (s"PbISleptFor${b(0)}s", s"PcISleptFor${b(1)}s")
         await(f1) shouldBe (s"PbISleptFor${b(2)}s", s"PcISleptFor${b(3)}s")
         await(f2) shouldBe (s"PbISleptFor${b(4)}s", s"PcISleptFor${b(5)}s")
-
-      } catch {
-        case e: Exception =>
-          e.printStackTrace()
-          errors = e :: errors
       }
-    }
 
-    ex.syncShutdown()
+      ex.syncShutdown()
+
+    } catch {
+      case e: Exception =>
+        e.printStackTrace()
+        errors = e :: errors
+    }
 
     val msgsOf = new MessageDrain( true )
     msgsOf[SequenceRequest] shouldBe empty
@@ -370,59 +367,5 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
     msgsOf[PiiUpdate] shouldBe empty
 
     errors shouldBe empty
-  }
-
-  ignore should "execute correctly during Assignment partition rebalances" in {
-
-    // Jev, test parameters.
-    val nWorkload: Int = 40
-    val nAssignments: Int = 1000
-    val nAtomicExecutors: Int = nAssignments / nWorkload
-
-    // Jev, paranoid sanity checks.
-    require( (nAssignments % nWorkload) == 0)
-    require( (nAtomicExecutors * nWorkload) == nAssignments )
-
-    val atomicExec: AtomicExecutor = AtomicExecutor()
-    implicit val settings: KafkaExecutorSettings = completeProcess.settings
-
-    // Jev, enter all the assignments to be evaluated.
-    KafkaConnectors.sendMessages(
-      (0 to nAssignments)
-      .map( i => {
-        val arg: PiObject = PiObject( i % 100 )
-
-        Assignment(
-          PiInstance( ObjectId.get, ri, arg )
-            .reduce.handleThreads((_, _) => true)._2,
-          CallRef(i),
-          pai.iname,
-          Seq( PiResource( arg, pai.inputs.head._1 ) )
-        )
-      }): _*
-    )
-
-    for ( _ <- 0 to nAtomicExecutors ) {
-
-      val control: Control
-        = KafkaWrapperFlows.run(
-          srcAssignment[Transaction]
-          .take( nWorkload )
-          .via( flowLogIn )
-          .groupBy( Int.MaxValue, _.part )
-          .via( flowRespond( atomicExec ) )
-          .via( flowWaitFuture( 5 ) )
-          .mergeSubstreams
-          .via( flowLogOut ),
-          Tracked.sink[Transaction, AnyMsg]
-        )
-
-      await( control.isShutdown )
-    }
-
-    val msgsOf = new MessageDrain( true )
-    msgsOf[SequenceRequest] should have size nAssignments
-    msgsOf[SequenceFailure] shouldBe empty
-    msgsOf[Assignment] shouldBe empty
   }
 }
