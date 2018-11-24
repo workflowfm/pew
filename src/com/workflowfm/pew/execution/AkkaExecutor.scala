@@ -9,35 +9,27 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-class AkkaPiEventHandler(handler:PiEventHandler[Int]) extends Actor {
-  def receive = {
-    case AkkaExecutor.E(event) => if (handler(event)) unsubscribe(context)
-    case AkkaExecutor.Unsubscribe(name:String) => if (name == handler.name) unsubscribe(context)
-  }
-  
-  def unsubscribe(context:ActorContext) = {
-    context.system.eventStream.unsubscribe(self,classOf[AkkaExecutor.Event])
-    context.stop(self)
-  }
-}
 
-trait AkkaPiObservable extends PiObservable[Int] {
-  implicit val system:ActorSystem
-  override def subscribe(handler:PiEventHandler[Int]):Unit = {
-    val handlerActor = system.actorOf(AkkaExecutor.handlerprops(handler))
-    system.eventStream.subscribe(handlerActor, classOf[AkkaExecutor.Event])
-  }
-  override def unsubscribe(name:String):Unit = {
-    system.eventStream.publish(AkkaExecutor.Unsubscribe(name))
-  }
-}
+class AkkaExecutor (
+  store:PiInstanceStore[Int],
+  processes:PiProcessStore
+)(
+  implicit val system: ActorSystem,
+  override implicit val context: ExecutionContext = ExecutionContext.global,
+  implicit val timeout:FiniteDuration = 10.seconds
+) extends SimulatorExecutor[Int] with PiObservable[Int] {
+
+  def this(store:PiInstanceStore[Int], l:PiProcess*)
+    (implicit system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration) =
+    this(store,SimpleProcessStore(l :_*))
+
+  def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration,l:PiProcess*) =
+    this(SimpleInstanceStore[Int](),SimpleProcessStore(l :_*))(system,context,timeout)
+
+  def this(l:PiProcess*)(implicit system: ActorSystem) =
+    this(SimpleInstanceStore[Int](),SimpleProcessStore(l :_*))(system,ExecutionContext.global,10.seconds)
 
 
-class AkkaExecutor(store:PiInstanceStore[Int], processes:PiProcessStore)(override implicit val system: ActorSystem, override implicit val context: ExecutionContext = ExecutionContext.global, implicit val timeout:FiniteDuration = 10.seconds) extends SimulatorExecutor[Int] with AkkaPiObservable {
-  def this(store:PiInstanceStore[Int], l:PiProcess*)(implicit system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration) = this(store,SimpleProcessStore(l :_*))
-  def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration,l:PiProcess*) = this(SimpleInstanceStore[Int](),SimpleProcessStore(l :_*))(system,context,timeout)
-  def this(l:PiProcess*)(implicit system: ActorSystem) = this(SimpleInstanceStore[Int](),SimpleProcessStore(l :_*))(system,ExecutionContext.global,10.seconds)
-  
   val execActor = system.actorOf(AkkaExecutor.execprops(store,processes))
   implicit val tOut = Timeout(timeout) 
   
@@ -47,6 +39,10 @@ class AkkaExecutor(store:PiInstanceStore[Int], processes:PiProcessStore)(overrid
     execActor ? AkkaExecutor.Init(process,args) map (_.asInstanceOf[Int])
     
   override protected def start(id:Int) = execActor ! AkkaExecutor.Start(id)
+
+  override def subscribe(handler:PiEventHandler[Int]):Unit = execActor ? AkkaExecutor.Subscribe(handler)
+
+  override def unsubscribe(name:String):Unit = execActor ? AkkaExecutor.Unsubscribe(name)
 }
 
 object AkkaExecutor {
@@ -63,20 +59,23 @@ object AkkaExecutor {
   case object Ping
   case object SimReady
   
-  sealed trait Event
-  case class E(evt:PiEvent[Int]) extends Event
-  case class Unsubscribe(name:String) extends Event
-  
+  case class Subscribe(handler:PiEventHandler[Int])
+  case class Unsubscribe(name:String)
+
   def atomicprops(implicit context: ExecutionContext = ExecutionContext.global): Props = Props(new AkkaAtomicProcessExecutor())
   def execprops(store:PiInstanceStore[Int], processes:PiProcessStore)(implicit system: ActorSystem, exc: ExecutionContext): Props = Props(new AkkaExecActor(store,processes))
-  def handlerprops(handler:PiEventHandler[Int])(implicit context: ExecutionContext = ExecutionContext.global): Props = Props(new AkkaPiEventHandler(handler))
 }
 
-class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(implicit system: ActorSystem, implicit val exc: ExecutionContext = ExecutionContext.global) extends Actor {
+class AkkaExecActor(
+  var store:PiInstanceStore[Int],
+  processes:PiProcessStore
+)(
+  implicit system: ActorSystem,
+  implicit val exc: ExecutionContext = ExecutionContext.global
+) extends Actor with SimplePiObservable[Int] {
+
   var ctr:Int = 0
 
-  def publish(evt:PiEvent[Int]) = system.eventStream.publish(AkkaExecutor.E(evt))
-  
   def init(p:PiProcess,args:Seq[PiObject]):Int = { 
 	  val inst = PiInstance(ctr,p,args:_*)
 	  store = store.put(inst)
@@ -192,6 +191,8 @@ class AkkaExecActor(var store:PiInstanceStore[Int], processes:PiProcessStore)(im
     case AkkaExecutor.Ping => sender() ! AkkaExecutor.Ping
     case AkkaExecutor.AckCall => Unit
     case AkkaExecutor.SimReady => sender() ! simulationReady()
+    case AkkaExecutor.Subscribe(h) => sender() ! subscribe(h)
+    case AkkaExecutor.Unsubscribe(name) => sender() ! unsubscribe(name)
     case m => System.err.println("!!! Received unknown message: " + m)
   }
 

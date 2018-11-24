@@ -1,7 +1,7 @@
 package com.workflowfm.pew.stateless
 
 import akka.actor.ActorSystem
-import com.workflowfm.pew.execution.RexampleTypes.{R, Y}
+import com.workflowfm.pew.execution.RexampleTypes._
 import com.workflowfm.pew.execution._
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows
