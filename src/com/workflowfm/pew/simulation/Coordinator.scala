@@ -33,6 +33,7 @@ object Coordinator {
 
   private case object Tick
   private case object Tack
+  private case object Tock
 
   def props(scheduler: Scheduler, startingTime: Long = 0L, timeoutMillis: Int = 50)(implicit system: ActorSystem): Props = Props(new Coordinator(scheduler,startingTime,timeoutMillis)(system))//.withDispatcher("akka.my-dispatcher")
 }
@@ -157,20 +158,22 @@ class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(im
     //    val startedActors = res filter (_._1 == true) map (_._2.executor)
     //    for (a <- startedActors)
     //      a ? AkkaExecutor.Ping
-    
-    for (i <- 1 to 100 if !workflowsReady) {
-      println("["+time+"] Waiting for workflow progress...")
-      Thread.sleep(timeoutMillis)
-    }
-    
+
+    self ! Coordinator.Tack
+  }
+
+  protected def tack :Unit = if (!workflowsReady) {
+    println("["+time+"] Waiting for workflow progress...")
+    Thread.sleep(timeoutMillis)
+    self ! Coordinator.Tack
     //    val simActors = simulations map (_._2.executor)
     //    for (a <- simActors)
-    //      a ? AkkaExecutor.Ping
+    //      a ? AkkaExecutor.Ping}
+
+  } else self ! Coordinator.Tock
     
-    self ! Coordinator.Tack // We need to give workflows a chance to generate new tasks
-  }
-  
-  protected def tack :Unit = {
+
+  protected def tock :Unit = {
     // Make sure we run tasks that need no resources
     runNoResourceTasks()
     // Assign the next tasks
@@ -232,6 +235,7 @@ class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(im
     case Coordinator.Start => start(sender)
     case Coordinator.Tick => tick
     case Coordinator.Tack => tack
+    case Coordinator.Tock => tock
     case Coordinator.Ping => sender() ! Coordinator.Time(time)
       
     case SimulationActor.AckRun => Unit
