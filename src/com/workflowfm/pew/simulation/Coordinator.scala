@@ -207,14 +207,15 @@ class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(im
     }
       
     case Coordinator.AddTask(gen,promise,resources) => {
+      val creation = if (gen.createTime > 0) gen.createTime else time
       // Create the task
-      val t = gen.create(taskID,time,resources:_*)
+      val t = gen.create(taskID,creation,resources:_*)
       // This is ok only if the simulation is running in memory
       // Promises cannot be sent over messages otherwise as they are not serializable
       promise.completeWith(t.promise.future)
       // Make sure the next taskID will be fresh
       taskID = taskID + 1L
-      println(s"[$time] Adding task [$taskID]: ${t.name} (${t.simulation}).")
+      println(s"[$time] Adding task [$taskID] created at [$creation]: ${t.name} (${t.simulation}).")
       
       // Calculate the cost of all resource usage. We only know this now!
       val resourceCost = (0L /: t.taskResources(resourceMap)) { case (c,r) => c + r.costPerTick * t.duration }

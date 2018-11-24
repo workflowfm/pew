@@ -74,19 +74,21 @@ class Task (
 }
 
 case class TaskGenerator (
-    name :String, 
-    simulation:String, 
-    duration:ValueGenerator[Long], 
-    cost:ValueGenerator[Long], 
-    interrupt:Int=(-1), 
-    priority:Task.Priority=Task.Medium
-      ) {
+  name :String,
+  simulation:String,
+  duration:ValueGenerator[Long],
+  cost:ValueGenerator[Long],
+  interrupt:Int=(-1),
+  priority:Task.Priority=Task.Medium,
+  createTime:Long=(-1)
+) {
   def create(id:Long, time:Long, resources:String*) = new Task(id,name,simulation,time,resources,duration.get,duration.estimate,cost.get,interrupt,priority)
   def withPriority(p:Task.Priority) = copy(priority = p)
   def withInterrupt(int:Int) = copy(interrupt = int)
   def withDuration(dur:ValueGenerator[Long]) = copy(duration = dur)
   def withName(n:String) = copy(name = n)
   def withSimulation(s:String) = copy(simulation=s)
+  def withCreationTime(t:Long) = copy(createTime=t)
   
   def addTo(coordinator:ActorRef, resources:String*)(implicit system: ActorSystem) = {
     //implicit val timeout = Timeout(1.second)
