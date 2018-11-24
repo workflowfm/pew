@@ -15,7 +15,9 @@ object Coordinator {
   case object Start
   //TODO case object Stop
   case class Done(time:Long,metrics:SimMetricsAggregator)
-  
+  case object Ping
+  case class Time(time:Long)
+
   case class AddSim(t:Long,sim:Simulation,exe:SimulatorExecutor[_])
   case class AddSims(l:Seq[(Long,Simulation)],exe:SimulatorExecutor[_])
   case class AddSimNow(sim:Simulation,exe:SimulatorExecutor[_])
@@ -29,8 +31,8 @@ object Coordinator {
   case class AddTask(t:TaskGenerator, promise:Promise[TaskMetrics], resources:Seq[String])
   case object AckTask
 
-  case object Tick
-  case object Tack
+  private case object Tick
+  private case object Tack
 
   def props(scheduler: Scheduler, startingTime: Long = 0L, timeoutMillis: Int = 50)(implicit system: ActorSystem): Props = Props(new Coordinator(scheduler,startingTime,timeoutMillis)(system))//.withDispatcher("akka.my-dispatcher")
 }
@@ -230,7 +232,9 @@ class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(im
     case Coordinator.Start => start(sender)
     case Coordinator.Tick => tick
     case Coordinator.Tack => tack
+    case Coordinator.Ping => sender() ! Coordinator.Time(time)
       
     case SimulationActor.AckRun => Unit
+    
   }
 }
