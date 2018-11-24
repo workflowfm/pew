@@ -32,12 +32,12 @@ class Task (
     val priority:Task.Priority=Task.Medium
       ) extends Ordered[Task] {
   
-  val promise:Promise[Unit] = Promise()
+  val promise:Promise[TaskMetrics] = Promise()
   
   var cost:Long = initialCost 
   
   // execute will be called once by each associated TaskResource 
-  def complete(time:Long) = if (!promise.isCompleted) promise.success(Unit)
+  def complete(metrics:TaskMetrics) = if (!promise.isCompleted) promise.success(metrics)
   
   def addCost(extra:Long) = cost += extra
   
@@ -91,7 +91,7 @@ case class TaskGenerator (
   def addTo(coordinator:ActorRef, resources:String*)(implicit system: ActorSystem) = {
     //implicit val timeout = Timeout(1.second)
     // change this to ? to require an acknowledgement
-    val promise = Promise[Unit]()
+    val promise = Promise[TaskMetrics]()
     coordinator ! Coordinator.AddTask(this,promise,resources)
     promise.future
   }

@@ -3,7 +3,7 @@ name := "PEW"
 sbtVersion := "1.2.6"
 
 lazy val commonSettings = Seq (
-	version := "1.2.1-SNAPSHOT",
+	version := "1.2.2-SNAPSHOT",
 	organization := "com.workflowfm",
 	scalaVersion := "2.12.6"
 )

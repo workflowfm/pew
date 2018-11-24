@@ -26,7 +26,7 @@ object Coordinator {
   
   case class SimDone(name:String,result:String)
 
-  case class AddTask(t:TaskGenerator, promise:Promise[Unit], resources:Seq[String])
+  case class AddTask(t:TaskGenerator, promise:Promise[TaskMetrics], resources:Seq[String])
   case object AckTask
 
   case object Tick
@@ -76,7 +76,7 @@ class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(im
       task.taskResources(resourceMap).foreach(_.finishTask(time))
       // Mark the task as completed
       // This will cause workflows to reduce and maybe produce more tasks
-      task.complete(time)
+      task.complete(metrics.taskMap.getOrElse(task.id, TaskMetrics(task).start(time - task.duration)))
     }
     // A simulation (workflow) is starting now
     case StartingSim(t,sim,exec) if (t == time)=> startSimulation(time,sim,exec)
