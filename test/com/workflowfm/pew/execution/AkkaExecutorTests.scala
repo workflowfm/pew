@@ -164,13 +164,49 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     val f1 = ex.call(ri,Seq(99),factory) flatMap(_.future)
     val f2 = ex2.execute(ri,Seq(11))
 
-//    val r2 = await(f2)
-//    r2 should be (("PbISleptFor2s","PcISleptFor1s")) 
+    //    val r2 = await(f2)
+    //    r2 should be (("PbISleptFor2s","PcISleptFor1s"))
 
     val r1 = await(f1)
     r1 should be (8)
- 
+    
     ex.unsubscribe("printer")
+    ex2.unsubscribe("printer")
+  }
+
+  it should "allow separate handlers for separate workflows" in {
+    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val factory = new CounterHandlerFactory[Int]("counter" + _)
+
+    val f1 = ex.call(ri,Seq(55),factory) flatMap(_.future)
+    val f2 = ex.call(ri,Seq(11),factory) flatMap(_.future)
+
+    //    val r2 = await(f2)
+    //    r2 should be (("PbISleptFor2s","PcISleptFor1s"))
+
+    val r1 = await(f1)
+    r1 should be (8)
+    val r2 = await(f2)
+    r2 should be (8)
+    
+  }
+
+  it should "unsubscribe handlers successfully" in {
+    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val factory = new CounterHandlerFactory[Int]("counter" + _)
+    ex.subscribe(new PrintEventHandler("printerX"))
+    ex.unsubscribe("printerX")
+
+    val f1 = ex.call(ri,Seq(55),factory) flatMap(_.future)
+    val f2 = ex.call(ri,Seq(11),factory) flatMap(_.future)
+
+    //    val r2 = await(f2)
+    //    r2 should be (("PbISleptFor2s","PcISleptFor1s"))
+
+    val r1 = await(f1)
+    r1 should be (8)
+    val r2 = await(f2)
+    r2 should be (8)
   }
 }
 
