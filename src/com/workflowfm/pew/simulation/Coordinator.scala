@@ -139,6 +139,9 @@ class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(im
     * through messages between now and the Tack message.  
     */
   protected def tick :Unit = {
+    // Make sure we run tasks that need no resources
+    runNoResourceTasks()
+
     // Are events pending?
     if (!events.isEmpty) {
       // Grab the first event
@@ -162,6 +165,7 @@ class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(im
     self ! Coordinator.Tack
   }
 
+
   protected def tack :Unit = if (!workflowsReady) {
     println("["+time+"] Waiting for workflow progress...")
     Thread.sleep(timeoutMillis)
@@ -170,12 +174,13 @@ class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(im
     //    for (a <- simActors)
     //      a ? AkkaExecutor.Ping}
 
-  } else self ! Coordinator.Tock
-    
+  } else {
+    println("################### pass!!! #######################")
+    self ! Coordinator.Tock
+  }
+   
 
   protected def tock :Unit = {
-    // Make sure we run tasks that need no resources
-    runNoResourceTasks()
     // Assign the next tasks
     scheduler.getNextTasks(tasks, time, resourceMap).foreach(startTask)
     // Update idle resources
@@ -184,8 +189,8 @@ class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(im
     
     // We finish if there are no events, no tasks, and all workflows have reduced
     // Actually all workflows must have reduced at this stage, but we check anyway
-    if (events.isEmpty && tasks.isEmpty && workflowsReady) { //&& resources.forall(_.isIdle)
-      println("["+time+"] All events done. All tasks done. All workflows idle. All resources idle.")
+    if (events.isEmpty && tasks.isEmpty && workflowsReady && simulations.isEmpty) { //&& resources.forall(_.isIdle)
+      println("["+time+"] All events done. All tasks done. All workflows idle. All simulations done..")
       // Tell whoever started us that we are done
       starter map { a => a ! Coordinator.Done(time,metrics) }
       
@@ -212,7 +217,7 @@ class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(im
     }
       
     case Coordinator.AddTask(gen,promise,resources) => {
-      val creation = if (gen.createTime > 0) gen.createTime else time
+      val creation = if (gen.createTime >= 0) gen.createTime else time
       // Create the task
       val t = gen.create(taskID,creation,resources:_*)
       // This is ok only if the simulation is running in memory
