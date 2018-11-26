@@ -7,7 +7,8 @@ import scala.concurrent.duration._
 import com.workflowfm.pew.simulation.metrics._
 import com.workflowfm.pew.execution._
 import scala.collection.mutable.PriorityQueue
-import scala.concurrent.Promise
+import scala.concurrent.{ Promise, Await, ExecutionContext }
+import scala.util.{ Success, Failure }
 
 
 
@@ -35,10 +36,23 @@ object Coordinator {
   private case object Tack
   private case object Tock
 
-  def props(scheduler: Scheduler, startingTime: Long = 0L, timeoutMillis: Int = 50)(implicit system: ActorSystem): Props = Props(new Coordinator(scheduler,startingTime,timeoutMillis)(system))//.withDispatcher("akka.my-dispatcher")
+  def props(
+    scheduler: Scheduler,
+    startingTime: Long = 0L,
+    timeoutMillis: Int = 50
+  )(implicit system: ActorSystem, executionContext:ExecutionContext
+  ): Props = Props(new Coordinator(scheduler,startingTime,timeoutMillis)(system,executionContext))
 }
 
-class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(implicit system: ActorSystem) extends Actor {
+class Coordinator(
+  scheduler :Scheduler,
+  startingTime:Long,
+  timeoutMillis:Int
+)(
+  implicit system: ActorSystem,
+  implicit val executionContext:ExecutionContext
+) extends Actor {
+
   import scala.collection.mutable.Queue
   
   sealed trait Event extends Ordered[Event] {
@@ -62,7 +76,7 @@ class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(im
   
   val metrics = new SimMetricsAggregator()
   
-  implicit val timeout = Timeout(timeoutMillis.millis)
+  //implicit val timeout = Timeout(timeoutMillis.millis)
   
   def addResource(r:TaskResource) = if (!resourceMap.contains(r.name)) {
     println("["+time+"] Adding resource " + r.name)
@@ -90,13 +104,29 @@ class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(im
     if (t == time) {
       println("["+time+"] Starting simulation: \"" + s.name +"\".")
       metrics += (s,t)
-      // change to ? to require acknowledgement
-      system.actorOf(SimulationActor.props(s)) ! SimulationActor.Run(self,e) // TODO need to escape actor name
+      s.run(e).onComplete({
+        case Success(res) => {
+          stopSimulation(s.name, res.toString)
+          println("*** Result of " + s.name + ": " + res)
+        }
+        case Failure(ex) => {
+          stopSimulation(s.name, ex.getLocalizedMessage)
+          println("*** Exception in " + s.name + ": ")
+          ex.printStackTrace()
+        }
+      })
+
       simulations += (s.name -> e)
       true
     } else false
   }
-  
+
+  protected def stopSimulation(name:String, result:String) = {
+    simulations -= name
+    (metrics^name) (_.done(result,time))
+    println("["+time+"] Simulation " + name + " reported done.")
+  }
+ 
   //  protected def updateSimulation(s:String, f:WorkflowMetricTracker=>WorkflowMetricTracker) = simulations = simulations map {
   //    case (n,m,e) if n.equals(s) => (n,f(m),e)
   //    case x => x
@@ -189,6 +219,7 @@ class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(im
     
     // We finish if there are no events, no tasks, and all workflows have reduced
     // Actually all workflows must have reduced at this stage, but we check anyway
+    println(s"!TOCK! Events:${events.size} Tasks:${tasks.size} Workflows:$workflowsReady Simulations:${simulations.size} ")
     if (events.isEmpty && tasks.isEmpty && workflowsReady && simulations.isEmpty) { //&& resources.forall(_.isIdle)
       println("["+time+"] All events done. All tasks done. All workflows idle. All simulations done..")
       // Tell whoever started us that we are done
@@ -209,13 +240,7 @@ class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(im
       
     case Coordinator.AddResource(r) => addResource(r)
     case Coordinator.AddResources(r) => r foreach addResource
-      
-    case Coordinator.SimDone(name,result) => {
-      simulations -= name
-      (metrics^name) (_.done(result,time))
-      println("["+time+"] Simulation " + name + " reported done.")
-    }
-      
+           
     case Coordinator.AddTask(gen,promise,resources) => {
       val creation = if (gen.createTime >= 0) gen.createTime else time
       // Create the task
@@ -242,8 +267,6 @@ class Coordinator(scheduler :Scheduler, startingTime:Long, timeoutMillis:Int)(im
     case Coordinator.Tack => tack
     case Coordinator.Tock => tock
     case Coordinator.Ping => sender() ! Coordinator.Time(time)
-      
-    case SimulationActor.AckRun => Unit
-    
+
   }
 }
