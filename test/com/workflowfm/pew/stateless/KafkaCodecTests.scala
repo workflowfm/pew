@@ -19,18 +19,6 @@ import scala.reflect.ClassTag
 @RunWith(classOf[JUnitRunner])
 class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
 
-  lazy val registry: KafkaCodecRegistry = new KafkaCodecRegistry( completeProcess.store )
-
-  it should "expose itself via the AnyCodec" in {
-    val anyc: AnyCodec = new AnyCodec( registry )
-    anyc.registry shouldBe registry
-
-    val codecs: Seq[Codec[_]] = registry.registeredCodecs.values.toSeq
-    val codecs2 = codecs.map( c => anyc.codec( c.getEncoderClass ) )
-
-    codecs2 should not contain null
-  }
-
   case class TestObject( arg1: String, arg2: Int )
 
   class TestObjectCodec extends ClassCodec[TestObject] {
@@ -57,12 +45,6 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
     val testCodec: Codec[TestObject] = new TestObjectCodec with AutoCodec
   }
 
-  it should "correctly expose additional Codecs" in {
-    ExtendedCodecRegistry.registeredCodecs.values should contain( ExtendedCodecRegistry.testCodec )
-    ExtendedCodecRegistry.registeredCodecs.keys should contain( classOf[TestObject] )
-    ExtendedCodecRegistry.testCodec.asInstanceOf[Codec[TestObject]] shouldNot be (null)
-  }
-
   def testCodec[T]( tOriginal: T )
     ( implicit ct: ClassTag[T], testRegistry: CodecRegistry )
     : scalatest.Assertion = {
@@ -76,46 +58,92 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
     tReserialized shouldEqual tOriginal
   }
 
-  it should "correctly (de)serialise additional Codecs" in {
-    implicit val reg: CodecRegistry = ExtendedCodecRegistry
+  implicit lazy val registry: CodecRegistry = ExtendedCodecRegistry
 
-    testCodec( TestObject( "easy", 1 ) )
-    testCodec( TestObject( "H4rD!!``", -1 ) )
-    testCodec( TestObject( "", 0 ) )
+
+  //---------------------//
+  //--- Sanity Checks ---//
+  //---------------------//
+
+  it should "expose itself via the AnyCodec" in {
+    val anyc: AnyCodec = new AnyCodec( ExtendedCodecRegistry )
+
+    val codecs: Seq[Codec[_]]
+      = ExtendedCodecRegistry
+        .registeredCodecs.values
+        .map( c => anyc.codec( c.getEncoderClass ) )
+        .toSeq
+
+    codecs should not contain null
+  }
+
+  it should "correctly expose additional Codecs" in {
+    ExtendedCodecRegistry.registeredCodecs.values should contain( ExtendedCodecRegistry.testCodec )
+    ExtendedCodecRegistry.registeredCodecs.keys should contain( classOf[TestObject] )
+    ExtendedCodecRegistry.testCodec.asInstanceOf[Codec[TestObject]] shouldNot be (null)
+  }
+
+
+  //----------------------//
+  //--- External Types ---//
+  //----------------------//
+
+  lazy val easyTestObj = TestObject( "easy", 1 )
+  lazy val hardTestObj = TestObject( "H4rD!!``", -1 )
+  lazy val emptyTestObj = TestObject( "", 0 )
+
+  it should "correctly (de)serialise additional Codecs" in {
+    testCodec( easyTestObj )
+    testCodec( hardTestObj )
+    testCodec( emptyTestObj )
   }
 
   it should "expose itself via to AnyCodec to PiObjects" in {
-    implicit val reg: CodecRegistry = ExtendedCodecRegistry
-
     testCodec( PiItem( TestObject( "easy", 1 ) ) )
     testCodec( PiItem( TestObject( "H4rD!!``", -1 ) ) )
     testCodec( PiItem( TestObject( "", 0 ) ) )
   }
 
-  it should "correctly (de)serialise KeyPiiIds" in {
-    implicit val reg: CodecRegistry = registry
+  it should "correctly (de)serialise Tuples" in {
+    testCodec[(Int, String)]( ( 1, "Hello, World!" ) )
+    testCodec[(TestObject, TestObject)]( ( easyTestObj, hardTestObj ) )
+  }
 
+  it should "correctly (de)serialise Options" in {
+    type ValueT = Option[String]
+
+    testCodec[ValueT]( None )
+    testCodec[ValueT]( Some( "Hello, World!" ) )
+  }
+
+  it should "correctly (de)serialise Eithers" in {
+    type ValueT = Either[String, Int]
+
+    testCodec[ValueT]( Left( "hi" ) )
+    testCodec[ValueT]( Right( 1 ) )
+  }
+
+
+  //-------------------//
+  //--- Kafka Types ---//
+  //-------------------//
+
+  it should "correctly (de)serialise KeyPiiIds" in {
     testCodec( KeyPiiId( ObjectId.get ) )
   }
 
   it should "correctly (de)serialise KeyPiiIdCall" in {
-    implicit val reg: CodecRegistry = registry
-
     testCodec( KeyPiiIdCall( ObjectId.get, CallRef(0) ) )
     testCodec( KeyPiiIdCall( ObjectId.get, CallRef(1) ) )
   }
 
   it should "correctly (de)serialise AnyKeys" in {
-    implicit val reg: CodecRegistry = registry
-
     testCodec[AnyKey]( KeyPiiId( ObjectId.get ) )
     testCodec[AnyKey]( KeyPiiIdCall( ObjectId.get, CallRef(0) ) )
     testCodec[AnyKey]( KeyPiiIdCall( ObjectId.get, CallRef(1) ) )
   }
 
   it should "correctly (de)serialise ReduceRequests" in {
-    implicit val reg: CodecRegistry = registry
-
     testCodec( eg1.rrNew )
     testCodec( eg1.rrInProgress )
     testCodec( eg1.rrFinishing2 )
@@ -124,16 +152,12 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
   }
 
   it should "correctly (de)serialise SequenceRequests" in {
-    implicit val reg: CodecRegistry = registry
-
     testCodec( eg1.srInProgress )
     testCodec( eg1.srFinishing2 )
     testCodec( eg1.srFinishing3 )
   }
 
   it should "correctly (de)serialise PiExceptionEvents" in {
-    implicit val reg: CodecRegistry = registry
-
     testCodec( NoResultException( eg1.pInProgress ).event )
     testCodec( UnknownProcessException( eg1.pInProgress, "ProcessName" ).event )
     testCodec( AtomicProcessIsCompositeException( eg1.pInProgress, "ProcessName" ).event )
@@ -144,8 +168,6 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
   }
 
   it should "correctly (de)serialise SequenceFailures" in {
-    implicit val reg: CodecRegistry = registry
-
     testCodec( eg1.sfInProgress )
     testCodec( eg1.sfFinishing21 )
     testCodec( eg1.sfFinishing22 )
@@ -156,8 +178,6 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
   }
 
   it should "correctly (de)serialise PiiUpdates" in {
-    implicit val reg: CodecRegistry = registry
-
     testCodec( PiiUpdate( eg1.pNew ) )
     testCodec( PiiUpdate( eg1.pInProgress ) )
     testCodec( PiiUpdate( eg1.pFinishing ) )
@@ -165,8 +185,6 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
   }
 
   it should "correctly (de)serialise mixed PiiHistory types" in {
-    implicit val reg: CodecRegistry = registry
-
     testCodec[PiiHistory]( PiiUpdate( eg1.pNew ) )
     testCodec[PiiHistory]( PiiUpdate( eg1.pInProgress ) )
     testCodec[PiiHistory]( PiiUpdate( eg1.pFinishing ) )
@@ -183,16 +201,12 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
   }
 
   it should "correctly (de)serialise Assignments" in {
-    implicit val reg: CodecRegistry = registry
-
     testCodec( eg1.assgnInProgress )
     testCodec( eg1.assgnFinishing2 )
     testCodec( eg1.assgnFinishing3 )
   }
 
   it should "correctly (de)serialise PiiLogs" in {
-    implicit val reg: CodecRegistry = registry
-
     testCodec( PiiLog( PiEventStart( eg1.pNew ) ) )
 
     testCodec( PiiLog( PiEventResult( eg1.pCompleted, callRes0._2 ) ) )
@@ -215,8 +229,6 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
   }
 
   it should "correctly (de)serialise mixed AnyMsgs" in {
-    implicit val reg: CodecRegistry = registry
-
     testCodec[AnyMsg]( eg1.rrNew )
     testCodec[AnyMsg]( eg1.rrInProgress )
     testCodec[AnyMsg]( eg1.rrFinishing2 )

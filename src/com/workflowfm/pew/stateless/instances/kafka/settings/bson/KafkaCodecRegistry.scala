@@ -4,7 +4,7 @@ import com.workflowfm.pew._
 import com.workflowfm.pew.mongodb.bson._
 import com.workflowfm.pew.mongodb.bson.auto.{AutoCodecRegistryExt, SuperclassCodec}
 import com.workflowfm.pew.mongodb.bson.events._
-import com.workflowfm.pew.mongodb.bson.helper.{ObjectIdCodec, Tuple2Codec}
+import com.workflowfm.pew.mongodb.bson.helper.{EitherCodec, ObjectIdCodec, OptionCodec, Tuple2Codec}
 import com.workflowfm.pew.mongodb.bson.pitypes._
 import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, PiiHistory}
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.AnyKey
@@ -28,6 +28,8 @@ class KafkaCodecRegistry(
   private val anyc: Codec[Any] = registerCodec( new AnyCodec( this ) )
 
   registerCodec( new Tuple2Codec( anyc ) )
+  registerCodec( new EitherCodec( anyc ) )
+  registerCodec( new OptionCodec( anyc ) )
 
   // Keep explicit references to these PEW codec instances,
   // We don't have a registry that includes them.
