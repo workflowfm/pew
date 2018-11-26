@@ -100,13 +100,15 @@ case class SimpleInstanceStore[T](m: Map[T,PiInstance[T]]) extends PiInstanceSto
   override def get(id: T): Option[PiInstance[T]] = m.get(id)
   override def put(i: PiInstance[T]): SimpleInstanceStore[T] = copy(m = m + (i.id->i))
   override def del(id: T): SimpleInstanceStore[T] = copy(m = m - id)
-  override def simulationReady: Boolean = {
+  
+  override def simulationReady: Boolean = m.values.forall(_.simulationReady)
+  /*{
     m.values.foreach { i => {
       val procs = i.state.threads.values.map(_.fun).mkString(", ")
       println(s"**> [${i.id}] is waiting for procs: $procs")
     } } 
-    m.values.forall(_.simulationReady)
-  }
+    
+  }*/
 }
 
 object SimpleInstanceStore {

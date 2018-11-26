@@ -203,7 +203,7 @@ trait SimplePiObservable[T] extends PiObservable[T] {
   val handlers:Map[String,PiEventHandler[T]] = Map[String,PiEventHandler[T]]()
   
   override def subscribe(handler:PiEventHandler[T]):Future[Boolean] = Future {
-    System.err.println("Subscribed: " + handler.name)
+    //System.err.println("Subscribed: " + handler.name)
     handlers += (handler.name -> handler)
     true
   }
@@ -213,7 +213,7 @@ trait SimplePiObservable[T] extends PiObservable[T] {
   }
   
   def publish(evt:PiEvent[T]) = {
-    handlers.retain((k,v) => v(evt))
+    handlers.retain((k,v) => !v(evt))
   }
 }
 

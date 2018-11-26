@@ -79,7 +79,7 @@ class Coordinator(
   //implicit val timeout = Timeout(timeoutMillis.millis)
   
   def addResource(r:TaskResource) = if (!resourceMap.contains(r.name)) {
-    println("["+time+"] Adding resource " + r.name)
+    println(s"[$time] Adding resource ${r.name}")
     resourceMap += r.name -> r
     metrics += r
   }
@@ -124,7 +124,7 @@ class Coordinator(
   protected def stopSimulation(name:String, result:String) = {
     simulations -= name
     (metrics^name) (_.done(result,time))
-    println("["+time+"] Simulation " + name + " reported done.")
+    println(s"[$time] Simulation $name reported done.")
   }
  
   //  protected def updateSimulation(s:String, f:WorkflowMetricTracker=>WorkflowMetricTracker) = simulations = simulations map {
@@ -178,12 +178,13 @@ class Coordinator(
       val event = events.dequeue()
       // Did we somehow go past the event time? This should never happen.
       if (event.time < time) {
-        println("["+time+"] *** Unable to handle past event for time: ["+event.time+"]")
+        println(s"[$time] *** Unable to handle past event for time: [${event.time}]")
       } else {
         // Jump ahead to the event time. This is a priority queue so we shouldn't skip any events
     	time = event.time
         handleEvent(event)
 
+        // Handle all events that are supposed to happen now, so that we free resources for the Scheduler
         while (events.headOption.map(_.time == time).getOrElse(false))
           handleEvent(events.dequeue)
       }
@@ -196,17 +197,20 @@ class Coordinator(
   }
 
 
-  protected def tack :Unit = if (!workflowsReady) {
-    println("["+time+"] Waiting for workflow progress...")
+  protected def tack :Unit = {
+    println(s"[$time] Waiting for workflow progress...")
     Thread.sleep(timeoutMillis)
-    self ! Coordinator.Tack
-    //    val simActors = simulations map (_._2.executor)
-    //    for (a <- simActors)
-    //      a ? AkkaExecutor.Ping}
 
-  } else {
-    println("################### pass!!! #######################")
-    self ! Coordinator.Tock
+    if (!workflowsReady) {
+      self ! Coordinator.Tack
+      //    val simActors = simulations map (_._2.executor)
+      //    for (a <- simActors)
+      //      a ? AkkaExecutor.Ping}
+
+    } else {
+      //println("################### pass!!! #######################")
+      self ! Coordinator.Tock
+    }
   }
    
 
@@ -219,9 +223,9 @@ class Coordinator(
     
     // We finish if there are no events, no tasks, and all workflows have reduced
     // Actually all workflows must have reduced at this stage, but we check anyway
-    println(s"!TOCK! Events:${events.size} Tasks:${tasks.size} Workflows:$workflowsReady Simulations:${simulations.size} ")
-    if (events.isEmpty && tasks.isEmpty && workflowsReady && simulations.isEmpty) { //&& resources.forall(_.isIdle)
-      println("["+time+"] All events done. All tasks done. All workflows idle. All simulations done..")
+    //println(s"!TOCK! Events:${events.size} Tasks:${tasks.size} Workflows:$workflowsReady Simulations:${simulations.size} ")
+    if (events.isEmpty && tasks.isEmpty && workflowsReady) { // && simulations.isEmpty) { //&& resources.forall(_.isIdle)
+      println("["+time+"] All events done. All tasks done. All workflows idle.") // All simulations done..")
       // Tell whoever started us that we are done
       starter map { a => a ! Coordinator.Done(time,metrics) }
       
