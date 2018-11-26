@@ -106,7 +106,7 @@ object KafkaWrapperFlows {
   def flowWaitFuture[T[X] <: Tracked[X], Msg]( parallelism: Int )( implicit s: KafkaExecutorSettings )
     : Flow[ T[Future[Msg]], T[Msg], NotUsed ] = {
 
-    Flow[ T[Future[Msg]] ].mapAsync( parallelism )( Tracked.exposeFuture(_)(s.execCtx) )
+    Flow[ T[Future[Msg]] ].mapAsync( parallelism )( Tracked.exposeFuture(_)(s.executionContext) )
   }
 
   def flowCheck[T]: Flow[Tracked[T], T, NotUsed]

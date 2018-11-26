@@ -5,8 +5,9 @@ import com.workflowfm.pew._
 import org.bson.types.ObjectId
 
 import scala.language.implicitConversions
+import scala.concurrent.ExecutionContext
 
-class ResultListener
+class ResultListener (implicit val executionContext:ExecutionContext = ExecutionContext.global)
   extends StatelessComponent[PiiLog, Unit]
   with PiObservable[ObjectId] with SimplePiObservable[ObjectId] {
 

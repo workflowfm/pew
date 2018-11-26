@@ -34,7 +34,7 @@ object KafkaExecutorSettings {
   */
 abstract class KafkaExecutorSettings(
     implicit val actorSys: ActorSystem,
-    val execCtx: ExecutionContext = ExecutionContext.global
+    implicit val executionContext: ExecutionContext = ExecutionContext.global
   ) {
 
   import KafkaExecutorSettings._

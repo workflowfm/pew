@@ -30,35 +30,6 @@ class MockExecutor extends Actor {
   }
 }
 
-object SimulationActor {
-  case class Run(coordinator:ActorRef,executor:SimulatorExecutor[_])
-  case object AckRun
-  
-  def props(s:Simulation)(implicit ec: ExecutionContext = ExecutionContext.global): Props = Props(new SimulationActor(s)(ec))//.withDispatcher("akka.my-dispatcher")
-  def mockExecProps:Props = Props(new MockExecutor) // TODO do this properly with props.of ?
-}
-class SimulationActor(s:Simulation)(implicit ec: ExecutionContext) extends Actor {
-  def receive = {
-    case SimulationActor.Run(coordinator,executor) => { 
-      //val coordinator = sender()
-      s.run(executor).onComplete({
-        case Success(res) => {
-          coordinator ! Coordinator.SimDone(s.name,res.toString)
-          println("*** Result of " + s.name + ": " + res)
-          context.stop(self) 
-        }
-        case Failure(ex) => {
-          coordinator ! Coordinator.SimDone(s.name,ex.getLocalizedMessage)
-          println("*** Exception in " + s.name + ": ")
-          ex.printStackTrace()
-          context.stop(self)  
-        }
-      })
-      coordinator ! SimulationActor.AckRun
-    }
-  }
-}
-
 trait SimulatedProcess { this:PiProcess =>
    def simulationName:String
    override def isSimulatedProcess = true

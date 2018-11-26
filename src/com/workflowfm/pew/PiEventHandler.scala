@@ -3,7 +3,7 @@ package com.workflowfm.pew
 import java.text.SimpleDateFormat
 
 import scala.collection.immutable.Queue
-import scala.concurrent.Promise
+import scala.concurrent.{ Promise, Future, ExecutionContext }
 
 sealed trait PiEvent[KeyT] {
   def id:KeyT
@@ -191,30 +191,35 @@ object MultiPiEventHandler {
 
 
 trait PiObservable[T] {
-  def subscribe(handler:PiEventHandler[T]):Unit
-  def unsubscribe(handlerName:String):Unit
+  def subscribe(handler:PiEventHandler[T]):Future[Boolean]
+  def unsubscribe(handlerName:String):Future[Boolean]
 }
 
 trait SimplePiObservable[T] extends PiObservable[T] {
-  var handlers:Queue[PiEventHandler[T]] = Queue()
+  import collection.mutable.Map
+
+  implicit val executionContext:ExecutionContext
+
+  val handlers:Map[String,PiEventHandler[T]] = Map[String,PiEventHandler[T]]()
   
-  override def subscribe(handler:PiEventHandler[T]):Unit = {
-    System.err.println("Subscribed: " + handler.name)
-    handlers = handlers :+ handler
+  override def subscribe(handler:PiEventHandler[T]):Future[Boolean] = Future {
+    //System.err.println("Subscribed: " + handler.name)
+    handlers += (handler.name -> handler)
+    true
   }
   
-  override def unsubscribe(handlerName:String):Unit = {
-    handlers = handlers filter (_.name!=handlerName)  
+  override def unsubscribe(handlerName:String):Future[Boolean] = Future {
+    handlers.remove(handlerName).isDefined
   }
   
   def publish(evt:PiEvent[T]) = {
-    handlers = handlers filterNot (_(evt))
+    handlers.retain((k,v) => !v(evt))
   }
 }
 
 trait DelegatedPiObservable[T] extends PiObservable[T] {
   val worker: PiObservable[T]
 
-  override def subscribe( handler: PiEventHandler[T] ): Unit = worker.subscribe( handler )
-  override def unsubscribe( handlerName: String ): Unit = worker.unsubscribe( handlerName )
+  override def subscribe( handler: PiEventHandler[T] ): Future[Boolean] = worker.subscribe( handler )
+  override def unsubscribe( handlerName: String ): Future[Boolean] = worker.unsubscribe( handlerName )
 }

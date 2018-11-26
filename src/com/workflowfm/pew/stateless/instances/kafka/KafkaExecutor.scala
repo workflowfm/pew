@@ -31,7 +31,7 @@ object CompleteKafkaExecutor {
   def apply[ResultT]( implicit settings: KafkaExecutorSettings )
     : CustomKafkaExecutor = {
 
-    implicit val execCtx: ExecutionContext = settings.execCtx
+    implicit val executionContext: ExecutionContext = settings.executionContext
 
     new CustomKafkaExecutor(
       indySequencer,
