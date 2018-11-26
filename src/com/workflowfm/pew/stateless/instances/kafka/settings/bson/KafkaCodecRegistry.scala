@@ -28,8 +28,8 @@ class KafkaCodecRegistry(
   private val anyc: Codec[Any] = registerCodec( new AnyCodec( this ) )
 
   registerCodec( new Tuple2Codec( anyc ) )
-  registerCodec( new EitherCodec( anyc ) )
-  registerCodec( new OptionCodec( anyc ) )
+  registerCodec( EitherCodec( anyc ) )
+  registerCodec( OptionCodec( anyc ) )
 
   // Keep explicit references to these PEW codec instances,
   // We don't have a registry that includes them.

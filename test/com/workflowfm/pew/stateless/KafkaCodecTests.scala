@@ -116,11 +116,21 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
     testCodec[ValueT]( Some( "Hello, World!" ) )
   }
 
+  it should "correctly (de)serialise raw Optons" in {
+    testCodec( None )
+    testCodec( Some( "Hello, World!" ) )
+  }
+
   it should "correctly (de)serialise Eithers" in {
     type ValueT = Either[String, Int]
 
-    testCodec[ValueT]( Left( "hi" ) )
-    testCodec[ValueT]( Right( 1 ) )
+    testCodec[ValueT](Left("hi"))
+    testCodec[ValueT](Right(1))
+  }
+
+  it should "correctly (de)serialise raw Eithers" in {
+    testCodec( Left("hi") )
+    testCodec( Right( 1 ) )
   }
 
 

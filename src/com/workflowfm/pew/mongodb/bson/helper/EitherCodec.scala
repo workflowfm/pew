@@ -1,33 +1,46 @@
 package com.workflowfm.pew.mongodb.bson.helper
 
-import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
+import com.workflowfm.pew.mongodb.bson.auto.{ClassCodec, SuperclassCodec}
 import org.bson.{BsonReader, BsonWriter}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 
-class EitherCodec( anyCodec: Codec[Any] )
-  extends ClassCodec[Either[Any,Any]] {
+class LeftCodec( anyCodec: Codec[Any] )
+  extends ClassCodec[Left[Any, Any]] {
 
-  val leftN: String = "l"
-  val rightN: String = "r"
+  val valueN: String = "value"
 
-  override def decodeBody(reader: BsonReader, ctx: DecoderContext): Either[Any,Any] = {
-    val name: String = reader.readName()
-    val value: Any = ctx.decodeWithChildContext( anyCodec, reader )
-
-    if (name == leftN) Left( value )
-    else if (name == rightN) Right( value )
-    else throw new Exception(s"Unrecognised fieldname '$name'.")
+  override def decodeBody(reader: BsonReader, ctx: DecoderContext): Left[Any,Any] = {
+    reader.readName( valueN )
+    Left( ctx.decodeWithChildContext( anyCodec, reader ) )
   }
 
-  override def encodeBody(writer: BsonWriter, value: Either[Any,Any], ctx: EncoderContext): Unit = {
-    value match {
-      case Left( v ) =>
-        writer.writeName(leftN)
-        ctx.encodeWithChildContext( anyCodec, writer, v )
+  override def encodeBody(writer: BsonWriter, value: Left[Any,Any], ctx: EncoderContext): Unit = {
+    writer.writeName( valueN )
+    ctx.encodeWithChildContext( anyCodec, writer, value.value )
+  }
+}
 
-      case Right( v ) =>
-        writer.writeName(rightN)
-        ctx.encodeWithChildContext( anyCodec, writer, v )
-    }
+class RightCodec( anyCodec: Codec[Any] )
+  extends ClassCodec[Right[Any, Any]] {
+
+  val valueN: String = "value"
+
+  override def decodeBody(reader: BsonReader, ctx: DecoderContext): Right[Any,Any] = {
+    reader.readName( valueN )
+    Right( ctx.decodeWithChildContext( anyCodec, reader ) )
+  }
+
+  override def encodeBody(writer: BsonWriter, value: Right[Any,Any], ctx: EncoderContext): Unit = {
+    writer.writeName( valueN )
+    ctx.encodeWithChildContext( anyCodec, writer, value.value )
+  }
+}
+
+object EitherCodec {
+  def apply( anyCodec: Codec[Any] ): Codec[Either[Any, Any]] = {
+    val codec = new SuperclassCodec[Either[Any, Any]]
+    codec.updateWith( new LeftCodec( anyCodec ) )
+    codec.updateWith( new RightCodec( anyCodec ) )
+    codec
   }
 }
