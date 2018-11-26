@@ -43,7 +43,7 @@ trait ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
     */
   protected def start(id:KeyT):Unit
 
-  implicit val context: ExecutionContext
+  implicit val executionContext: ExecutionContext
 
   /**
     * A simple {@code init ; start} sequence when we do not need any even listeners.

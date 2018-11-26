@@ -1,7 +1,7 @@
 package com.workflowfm.pew.execution
 
 import akka.actor._
-import akka.pattern.ask
+import akka.pattern.{ask, pipe}
 import akka.util.Timeout
 import com.workflowfm.pew._
 
@@ -15,7 +15,7 @@ class AkkaExecutor (
   processes:PiProcessStore
 )(
   implicit val system: ActorSystem,
-  override implicit val context: ExecutionContext = ExecutionContext.global,
+  override implicit val executionContext: ExecutionContext = ExecutionContext.global,
   implicit val timeout:FiniteDuration = 10.seconds
 ) extends SimulatorExecutor[Int] with PiObservable[Int] {
 
@@ -40,9 +40,9 @@ class AkkaExecutor (
     
   override protected def start(id:Int) = execActor ! AkkaExecutor.Start(id)
 
-  override def subscribe(handler:PiEventHandler[Int]):Unit = execActor ? AkkaExecutor.Subscribe(handler)
+  override def subscribe(handler:PiEventHandler[Int]):Future[Boolean] = (execActor ? AkkaExecutor.Subscribe(handler)).mapTo[Boolean]
 
-  override def unsubscribe(name:String):Unit = execActor ? AkkaExecutor.Unsubscribe(name)
+  override def unsubscribe(name:String):Future[Boolean] = (execActor ? AkkaExecutor.Unsubscribe(name)).mapTo[Boolean]
 }
 
 object AkkaExecutor {
@@ -71,7 +71,7 @@ class AkkaExecActor(
   processes:PiProcessStore
 )(
   implicit system: ActorSystem,
-  implicit val exc: ExecutionContext = ExecutionContext.global
+  override implicit val executionContext: ExecutionContext = ExecutionContext.global
 ) extends Actor with SimplePiObservable[Int] {
 
   var ctr:Int = 0
@@ -191,8 +191,8 @@ class AkkaExecActor(
     case AkkaExecutor.Ping => sender() ! AkkaExecutor.Ping
     case AkkaExecutor.AckCall => Unit
     case AkkaExecutor.SimReady => sender() ! simulationReady()
-    case AkkaExecutor.Subscribe(h) => sender() ! subscribe(h)
-    case AkkaExecutor.Unsubscribe(name) => sender() ! unsubscribe(name)
+    case AkkaExecutor.Subscribe(h) => subscribe(h) pipeTo sender()
+    case AkkaExecutor.Unsubscribe(name) => unsubscribe(name) pipeTo sender()
     case m => System.err.println("!!! Received unknown message: " + m)
   }
 

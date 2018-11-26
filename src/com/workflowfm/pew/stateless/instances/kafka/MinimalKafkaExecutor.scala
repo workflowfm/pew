@@ -28,7 +28,7 @@ class MinimalKafkaExecutor( implicit settings: KafkaExecutorSettings )
   import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors._
 
   // Implicit settings.
-  override implicit val context: ExecutionContext = settings.execCtx
+  override implicit val executionContext: ExecutionContext = settings.executionContext
 
   implicit val actorSystem: ActorSystem = settings.actorSys
   implicit val materializer: Materializer = settings.mat
