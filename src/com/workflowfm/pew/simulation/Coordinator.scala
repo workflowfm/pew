@@ -169,8 +169,6 @@ class Coordinator(
     * through messages between now and the Tack message.  
     */
   protected def tick :Unit = {
-    // Make sure we run tasks that need no resources
-    runNoResourceTasks()
 
     // Are events pending?
     if (!events.isEmpty) {
@@ -215,6 +213,9 @@ class Coordinator(
    
 
   protected def tock :Unit = {
+    // Make sure we run tasks that need no resources
+    runNoResourceTasks()
+
     // Assign the next tasks
     scheduler.getNextTasks(tasks, time, resourceMap).foreach(startTask)
     // Update idle resources
