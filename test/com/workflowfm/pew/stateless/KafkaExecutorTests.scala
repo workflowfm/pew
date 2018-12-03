@@ -30,7 +30,8 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
     mainClassLoader shouldBe kafkaClassLoader
   }
 
-  it should "use the same ClassLoader for the ExecutionContext threads as the Main thread" in {
+  // Instead unset the class loader when creating KafkaProducers.
+  ignore should "use the same ClassLoader for the ExecutionContext threads as the Main thread" in {
     mainClassLoader shouldBe threadClassLoader
   }
 
