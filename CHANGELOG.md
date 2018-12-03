@@ -10,6 +10,17 @@ Includes feature updates, bug fixes, and open issues.
 * [MultiStateExecutor race condition problems #9](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/9) - since v0.1
 * [AkkaExecutor.Call may timeout #4](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/4) - since v0.1
 
+
+## [v1.2.2](https://github.com/PetrosPapapa/WorkflowFM-PEW/releases/tag/v1.2.2) - 2018-12-03
+
+### Features
+
+* Fixed `AkkaPiObservable` registering handlers globally (see also [#7](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/7)). 
+* Improved simulation `Coordinator`. Processes can now interact with the `Coordinator` and its clock cycle is a bit more robust (see also [#28](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/28)).  
+* Fixed/improved Codecs for custom data types, which includes `AnyCodec` and associated parts (see also [#29](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/29)).  
+* Fixed issues with the `ClassLoader` crashing in Kafka (see also [#30](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/30)).
+
+
 ## [v1.2.1](https://github.com/PetrosPapapa/WorkflowFM-PEW/releases/tag/v1.2.1) - 2018-11-21
 
 ### Features
