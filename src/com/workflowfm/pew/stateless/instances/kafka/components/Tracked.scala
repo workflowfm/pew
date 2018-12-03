@@ -8,6 +8,7 @@ import akka.stream.scaladsl.{Sink, Source}
 import akka.{Done, NotUsed}
 import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
+import org.apache.kafka.clients.producer.KafkaProducer
 import org.bson.types.ObjectId
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -136,6 +137,33 @@ object Tracked {
 
     consuming.tail.foldLeft[T[Seq[Msg]]]( foldStart )( combine )
   }
+
+  /** Execute a function on the current thread whilst using a specific ClassLoader.
+    * Restores the previous ClassLoader before returning.
+    *
+    * @param tmpClassLoader ClassLoader to use during the function execution.
+    * @param fnWrapped Function to execute with a different ClassLoader.
+    * @tparam T The return type of `fnWrapped`
+    * @return The returned value of `fnWrapped`
+    */
+  def withClassLoader[T]( tmpClassLoader: ClassLoader )( fnWrapped: => T ): T = {
+    val pushedClassLoader = Thread.currentThread().getContextClassLoader
+    try{
+      Thread.currentThread().setContextClassLoader( tmpClassLoader )
+      fnWrapped
+    } finally {
+      Thread.currentThread().setContextClassLoader( pushedClassLoader )
+    }
+  }
+
+  /** Create a KafkaProducer from settings whilst explicitly un-setting the ClassLoader.
+    * This by-passes errors encountered in the KafkaProducer constructor where Threads
+    * within an ExecutionContext do not list the necessary key or value serialiser classes.
+    * Explicitly setting `null` causes the constructor to use the Kafka ClassLoader
+    * which should contain these values.
+    */
+  def createProducer[K, V]( settings: ProducerSettings[K, V] ): KafkaProducer[K, V]
+    = withClassLoader( null ) { settings.createKafkaProducer() }
 }
 
 /** A Tracked type which uses a `Committable` as tracking information.
@@ -155,7 +183,7 @@ trait HasCommittableSinks[T[X] <: HasCommittable[X]]
   with TrackedMultiSink[T] {
 
   override def sink[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[HasCommittable[V], Future[Done]]
-    = Producer.commitableSink( s.psAllMessages )
+    = Producer.commitableSink( s.psAllMessages, Tracked.createProducer( s.psAllMessages ) )
       .contramap( msg =>
         ProducerMessage.Message(
           s.record( msg.value ),
@@ -164,7 +192,7 @@ trait HasCommittableSinks[T[X] <: HasCommittable[X]]
       )
 
   override def sinkMulti[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[HasCommittable[Seq[V]], Future[Done]]
-    = Producer.commitableSink( s.psAllMessages )
+    = Producer.commitableSink( s.psAllMessages, Tracked.createProducer( s.psAllMessages ) )
       .contramap( msgs =>
         ProducerMessage.MultiMessage(
           msgs.value.map(s.record).to,
@@ -215,7 +243,6 @@ object CommitTracked
           msg.committableOffset
         )
       )
-
 }
 
 /** A Tracked wrapper superclass for Tracked types which know the partition of their inputs.
@@ -330,6 +357,7 @@ object Transaction
       .map( msg => Transaction( msg.record.value(), msg.partitionOffset ) )
 
   override def sink[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[Transaction[V], Future[Done]] = {
+    // TODO: Construct the KafkaProducer with the correct ClassLoader
     val id = ObjectId.get.toString
     Transactional.sink( s.psAllMessages, id )
     .contramap( msg =>
@@ -341,6 +369,7 @@ object Transaction
   }
 
   override def sinkMulti[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[Transaction[Seq[V]], Future[Done]] = {
+    // TODO: Construct the KafkaProducer with the correct ClassLoader
     val id = ObjectId.get.toString
     Transactional.sink( s.psAllMessages, id )
     .contramap( msgs =>
@@ -385,7 +414,7 @@ object Untracked
       )
 
   override def sink[Value <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[Untracked[Value], Future[Done]]
-    = Producer.plainSink( s.psAllMessages )
+    = Producer.plainSink( s.psAllMessages, Tracked.createProducer( s.psAllMessages ) )
       .contramap( (msg: Untracked[Value]) => s.record( msg.value ) )
 
 }
