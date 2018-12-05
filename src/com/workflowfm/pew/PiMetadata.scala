@@ -22,9 +22,9 @@ object PiMetadata {
     * @param id The String key of the type of meta-data.
     * @tparam T The Scala-type of the type of meta-data.
     */
-  class Key[T]( val id: String ) extends (PiMetadataMap => T) {
+  case class Key[T]( val id: String ) extends (PiMetadataMap => T) {
     override def apply( meta: PiMetadataMap ): T
-      = meta(id).asInstanceOf[T]
+    = meta(id).asInstanceOf[T]
   }
 
   /** The system time (in milliseconds) when a PiEvent

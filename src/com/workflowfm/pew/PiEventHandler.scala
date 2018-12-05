@@ -80,7 +80,7 @@ case class PiEventResult[KeyT](
 case class PiEventCall[KeyT](
     override val id: KeyT,
     ref: Int,
-    p: AtomicProcess,
+    p: MetadataAtomicProcess,
     args: Seq[PiObject],
     override val metadata: PiMetadataMap = PiMetadata()
   ) extends PiAtomicProcessEvent[KeyT] {
