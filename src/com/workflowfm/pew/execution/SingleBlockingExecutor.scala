@@ -37,10 +37,10 @@ case class SingleBlockingExecutor(processes:Map[String,PiProcess])(implicit val 
         System.err.println("*** ERROR *** Unable to find process: " + name)
         Some(s removeThread ref)
       }
-      case Some(p:AtomicProcess) => {
-        val f = p.run(args map (_.obj))
+      case Some(p:MetadataAtomicProcess) => {
+        val f = p.runMeta(args map (_.obj))
         val res = Await.result(f,Duration.Inf)
-        s.result(ref,res)
+        s.result(ref,res._1)
       }
       case Some(p:CompositeProcess) => { System.err.println("*** Executor encountered composite process thread: " + name); None } // TODO this should never happen!
     }

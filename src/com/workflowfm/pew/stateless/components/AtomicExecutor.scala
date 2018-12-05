@@ -10,32 +10,29 @@ import scala.concurrent._
   *
   */
 class AtomicExecutor( implicit exec: ExecutionContext )
-  extends StatelessComponent[Assignment, Future[Seq[AnyMsg]]] {
-
-  import AtomicExecutor._
+    extends StatelessComponent[Assignment, Future[Seq[AnyMsg]]] {
 
   override def respond: Assignment => Future[Seq[AnyMsg]] = {
     case Assignment( pii, ref, name, args ) =>
 
       def fail( piEx: PiException[ObjectId]): Future[SequenceFailure]
-        = Future.successful( SequenceFailure( pii.id, ref, piEx ) )
+      = Future.successful( SequenceFailure( pii.id, ref, piEx ) )
 
       def failOther( t: Throwable ): Future[SequenceFailure]
-        = fail( RemoteProcessException[ObjectId]( pii.id, ref.id, t ) )
+      = fail( RemoteProcessException[ObjectId]( pii.id, ref.id, t ) )
 
       try {
-        val proc: AtomicProcess = pii.getAtomicProc( name )
+        val proc: MetadataAtomicProcess = pii.getAtomicProc( name )
 
         try {
-          MetadataAtomicProcess.from( proc )
-          .runMeta( args.map(_.obj) )
-          .map({
-            case (res, meta) => Seq(
-              SequenceRequest( pii.id, (ref, res) ),
-              PiiLog( PiEventReturn( pii.id, ref.id, res, meta ) )
-            )
-          })
-          .recoverWith({ case t: Throwable => failOther(t).map(Seq(_)) })
+          proc.runMeta( args.map(_.obj) )
+            .map({
+              case (res, meta) => Seq(
+                SequenceRequest( pii.id, (ref, res) ),
+                PiiLog( PiEventReturn( pii.id, ref.id, res, meta ) )
+              )
+            })
+            .recoverWith({ case t: Throwable => failOther(t).map(Seq(_)) })
 
         } catch {
           case t: Throwable =>
@@ -54,11 +51,4 @@ class AtomicExecutor( implicit exec: ExecutionContext )
   }
 }
 
-object AtomicExecutor {
-
-  def apply()( implicit exec: ExecutionContext ): AtomicExecutor
-    = new AtomicExecutor()
-
-  case class PreExecutionException( t: Throwable ) extends Throwable
-
-}
+case class PreExecutionException( t: Throwable ) extends Throwable

@@ -96,10 +96,10 @@ class MongoExecutor
     i.reduce
   }
   
-  final def postResult(id:ObjectId, ref:Int, res:PiObject):Unit = {
-    publish(PiEventReturn(id,ref,PiObject.get(res)))
+  final def postResult(id:ObjectId, ref:Int, res:MetadataAtomicProcess.MetadataAtomicResult):Unit = {
+    publish(PiEventReturn(id,ref,PiObject.get(res._1),res._2))
     val promise=Promise[PiInstance[ObjectId]]()
-		update(id,postResultUpdate(ref,res),0,promise)
+		update(id,postResultUpdate(ref,res._1),0,promise)
 		promise.future.recover({
       case PiException => Unit
       case t:Throwable => publish(PiEventException(id,t))
@@ -204,7 +204,7 @@ class MongoExecutor
         publish(PiFailureUnknownProcess(i,name))
         throw PiException
       }
-      case Some(p:AtomicProcess) => true
+      case Some(p:MetadataAtomicProcess) => true
       case Some(p:CompositeProcess) => { 
         System.err.println("*** [" + i.id + "] Executor encountered composite process thread: " + name)
         publish(PiFailureAtomicProcessIsComposite(i,name))
@@ -223,9 +223,9 @@ class MongoExecutor
         System.err.println("*** [" + i.id + "] ERROR *** Unable to find process: " + name + " even though we checked already")
         publish(PiFailureUnknownProcess(i, name))
       }
-      case Some(p:AtomicProcess) => {
+      case Some(p:MetadataAtomicProcess) => {
         val objs = args map (_.obj)
-        p.run(objs).onComplete{ 
+        p.runMeta(objs).onComplete{ 
           case Success(res) => {
 
             postResult(i.id,ref,res)
