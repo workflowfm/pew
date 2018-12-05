@@ -5,7 +5,7 @@ import java.text.SimpleDateFormat
 import com.workflowfm.pew.PiMetadata.{PiMetadataMap, SimulatedTime, SystemTime}
 
 import scala.collection.immutable.Queue
-import scala.concurrent.Promise
+import scala.concurrent.{ Promise, Future, ExecutionContext }
 
 /** Super-class for any PiProcess events which take place during
   * workflow execution or simulation.
@@ -210,6 +210,7 @@ class PrintEventHandler[T](override val name:String) extends PiEventHandler[T] {
   }
 }
 
+
 class PromiseHandler[T](override val name:String, val id:T) extends PiEventHandler[T] {   
   val promise = Promise[Any]()
   def future = promise.future
@@ -224,8 +225,30 @@ class PromiseHandler[T](override val name:String, val id:T) extends PiEventHandl
 }
 
 class PromiseHandlerFactory[T](name:T=>String) extends PiEventHandlerFactory[T,PromiseHandler[T]] {
+  def this(name:String) = this { _:T => name }
   override def build(id:T) = new PromiseHandler[T](name(id),id)
 }
+
+
+
+class CounterHandler[T](override val name:String, val id:T) extends PiEventHandler[T] {   
+  private var counter:Int = 0
+  def count = counter
+  val promise = Promise[Int]()
+  def future = promise.future
+  
+  override def apply(e:PiEvent[T]) = if (e.id == this.id) e match {  
+    case PiEventResult(i,res,_) => counter += 1 ; promise.success(counter) ; true
+    case ex: PiExceptionEvent[T] => counter += 1; promise.success(counter) ; true
+    case _ => counter += 1 ; false
+  } else false 
+}
+
+class CounterHandlerFactory[T](name:T=>String) extends PiEventHandlerFactory[T,CounterHandler[T]] {
+  def this(name:String) = this { _:T => name }
+  override def build(id:T) = new CounterHandler[T](name(id),id)
+}
+
 
 case class MultiPiEventHandler[T](handlers:Queue[PiEventHandler[T]]) extends PiEventHandler[T] {
   override def name = handlers map (_.name) mkString(",")
@@ -239,30 +262,35 @@ object MultiPiEventHandler {
 
 
 trait PiObservable[T] {
-  def subscribe(handler:PiEventHandler[T]):Unit
-  def unsubscribe(handlerName:String):Unit
+  def subscribe(handler:PiEventHandler[T]):Future[Boolean]
+  def unsubscribe(handlerName:String):Future[Boolean]
 }
 
 trait SimplePiObservable[T] extends PiObservable[T] {
-  var handlers:Queue[PiEventHandler[T]] = Queue()
+  import collection.mutable.Map
+
+  implicit val executionContext:ExecutionContext
+
+  val handlers:Map[String,PiEventHandler[T]] = Map[String,PiEventHandler[T]]()
   
-  override def subscribe(handler:PiEventHandler[T]):Unit = {
-    System.err.println("Subscribed: " + handler.name)
-    handlers = handlers :+ handler
+  override def subscribe(handler:PiEventHandler[T]):Future[Boolean] = Future {
+    //System.err.println("Subscribed: " + handler.name)
+    handlers += (handler.name -> handler)
+    true
   }
   
-  override def unsubscribe(handlerName:String):Unit = {
-    handlers = handlers filter (_.name!=handlerName)  
+  override def unsubscribe(handlerName:String):Future[Boolean] = Future {
+    handlers.remove(handlerName).isDefined
   }
   
   def publish(evt:PiEvent[T]) = {
-    handlers = handlers filterNot (_(evt))
+    handlers.retain((k,v) => !v(evt))
   }
 }
 
 trait DelegatedPiObservable[T] extends PiObservable[T] {
   val worker: PiObservable[T]
 
-  override def subscribe( handler: PiEventHandler[T] ): Unit = worker.subscribe( handler )
-  override def unsubscribe( handlerName: String ): Unit = worker.unsubscribe( handlerName )
+  override def subscribe( handler: PiEventHandler[T] ): Future[Boolean] = worker.subscribe( handler )
+  override def unsubscribe( handlerName: String ): Future[Boolean] = worker.unsubscribe( handlerName )
 }

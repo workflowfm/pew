@@ -46,7 +46,7 @@ trait ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
     */
   protected def start(id:KeyT):Unit
 
-  implicit val context: ExecutionContext
+  implicit val executionContext: ExecutionContext
 
   /**
     * A simple {@code init ; start} sequence when we do not need any even listeners.
@@ -67,11 +67,12 @@ trait ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
     * @return A Future with the PiEventHandler that was generated
     */
   def call[H <: PiEventHandler[KeyT]](process:PiProcess,args:Seq[Any],factory:PiEventHandlerFactory[KeyT,H]):Future[H] = {
-    init(process,args map PiObject.apply) map { id =>
+    init(process,args map PiObject.apply) flatMap { id =>
       val handler = factory.build(id)
-      subscribe(handler)
-      start(id)
-      handler
+      subscribe(handler).map {  _ =>
+        start(id)
+        handler
+      }
     }
   }
 
@@ -82,7 +83,7 @@ trait ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
     * @return A Future with the result of the executed process
     */
   def execute(process:PiProcess,args:Seq[Any]):Future[Any] =
-    call(process,args,new PromiseHandlerFactory[KeyT]({ id => "["+id+"]"})) flatMap (_.future)
+    call(process,args,new PromiseHandlerFactory[KeyT]({ id => s"[$id]"})) flatMap (_.future)
 }
 
 object ProcessExecutor {
@@ -111,29 +112,18 @@ trait SimulatorExecutor[KeyT] extends ProcessExecutor[KeyT] { this:PiObservable[
     *  @return true if all PiInstances are simulationReady
     */
   def simulationReady:Boolean
-}
 
-/**
-  * Shortcut methods for unit testing
-  */
-trait ProcessExecutorTester {
-  def exe(e:ProcessExecutor[_],p:PiProcess,args:Any*) = await(e.execute(p,args:Seq[Any]))
-  def await[A](f:Future[A]):A = try {
-    Await.result(f,15.seconds)
-  } catch {
-    case e:Throwable => {
-      System.out.println("=== RESULT FAILED! ===: " + e.getLocalizedMessage)
-      throw e
-    }
+  /**
+    * Executes a process with a PromiseHandler
+    * Same as ProcessExecutor.execute but blocks until call has been initiated.
+    * The simulator needs to ensure this has happened before continuing.
+    * @param process The (atomic or composite) PiProcess to be executed
+    * @param args The (real) arguments to be passed to the process
+    * @return A Future with the result of the executed process
+    */
+  def simulate(process:PiProcess,args:Seq[Any],timeout:FiniteDuration=10.seconds):Future[Any] = {
+    val f = call(process,args,new PromiseHandlerFactory[KeyT]({ id => s"[$id]"}))
+    val handler = Await.result(f, timeout)
+    handler.future
   }
-
-//  def awaitf[A](f:Future[Future[A]]):A = try {
-//    Await.result(Await.result(f,15.seconds),15.seconds)
-//  } catch {
-//    case e:Throwable => {
-//      System.out.println("=== RESULT FAILED! ===")
-//      throw e
-//    }
-//  }
-
 }

@@ -13,7 +13,7 @@ import RexampleTypes._
 @RunWith(classOf[JUnitRunner])
 class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll with ProcessExecutorTester {
   implicit val system: ActorSystem = ActorSystem("AkkaExecutorTests")
-  implicit val executionContext = ExecutionContext.global //system.dispatchers.lookup("akka.my-dispatcher")  
+  implicit val executionContext = ExecutionContext.global //system.dispatchers.lookup("akka.my-dispatcher")
   implicit val timeout:FiniteDuration = 10.seconds
   
   val pai = new PaI
@@ -32,41 +32,40 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   it should "execute atomic PbI once" in {
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
     val f1 = ex.execute(pbi,Seq(1))
-   
+    
     val r1 = await(f1)
     r1 should be ("PbISleptFor1s")
-	}
+  }
 
   it should "execute atomic PbI twice concurrently" in {
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
     val f1 = ex.execute(pbi,Seq(2))
     val f2 = ex.execute(pbi,Seq(1))
-   
+    
     val r1 = await(f1)
     r1 should be ("PbISleptFor2s")
     val r2 = await(f2)
     r2 should be ("PbISleptFor1s")
-	}
+  }
   
   it should "execute Rexample once" in {
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
     val f1 = ex.execute(ri,Seq(21))
-   
+    
     val r1 = await(f1)
     r1 should be (("PbISleptFor2s","PcISleptFor1s"))
-	}
+  }
 
   it should "execute Rexample once with same timings" in {
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
     val f1 = ex.execute(ri,Seq(11))
-   
+    
     val r1 = await(f1)
     r1 should be (("PbISleptFor1s","PcISleptFor1s"))
-	}
- 
+  }
+  
   it should "execute Rexample twice concurrently" in {
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
-    ex.subscribe(new PrintEventHandler("printer"))
     val f1 = ex.execute(ri,Seq(31))
     val f2 = ex.execute(ri,Seq(12))
     
@@ -74,8 +73,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     r1 should be (("PbISleptFor3s","PcISleptFor1s"))
     val r2 = await(f2)
     r2 should be (("PbISleptFor1s","PcISleptFor2s"))
-    ex.unsubscribe("printer")
-	}
+  }
 
   it should "execute Rexample twice with same timings concurrently" in {
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
@@ -86,7 +84,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     r1 should be (("PbISleptFor1s","PcISleptFor1s"))
     val r2 = await(f2)
     r2 should be (("PbISleptFor1s","PcISleptFor1s"))
-	}
+  }
   
   it should "execute Rexample thrice concurrently" in {
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
@@ -100,7 +98,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     r2 should be (("PbISleptFor1s","PcISleptFor1s"))
     val r3 = await(f3)
     r3 should be (("PbISleptFor1s","PcISleptFor1s"))
-	}
+  }
   
   it should "execute Rexample twice, each with a differnt component" in {
     val ex = new AkkaExecutor(pai,pbi,pci,pci2,ri,ri2)
@@ -111,7 +109,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     r1 should be (("PbISleptFor1s","PcISleptFor1s"))
     val r2 = await(f2)
     r2 should be (("PbISleptFor1s","PcXSleptFor1s"))
-	}
+  }
   
   it should "handle a failing atomic process" in {
     val p = new FailP
@@ -126,12 +124,12 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
         e.getMessage should be ("FailP")
       }
     }
-	}
+  }
   
   it should "handle a failing composite process" in {
     val ex = new AkkaExecutor(pai,pbi,pcif,rif)
-    val f1 = rif(21)(ex)//ex.execute(rif,Seq(21)) 
-   
+    val f1 = rif(21)(ex)//ex.execute(rif,Seq(21))
+      
     try {
       await(f1)
     } catch {
@@ -142,6 +140,73 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
         
       }
     }
-	}
+  }
+
+  it should "execute Rexample with a CounterHandler" in {
+    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val factory = new CounterHandlerFactory[Int]("counter")
+    ex.subscribe(new PrintEventHandler("printer"))
+
+    val f1 = ex.call(ri,Seq(21),factory) flatMap(_.future)
+    
+    val r1 = await(f1)
+    r1 should be (8)
+    ex.unsubscribe("printer")
+  }
+
+  it should "allow separate handlers per executor" in {
+    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val ex2 = new AkkaExecutor(pai,pbi,pci,ri)
+    val factory = new CounterHandlerFactory[Int]("counter")
+    ex.subscribe(new PrintEventHandler("printer"))
+    ex2.subscribe(new PrintEventHandler("printer"))
+
+    val f1 = ex.call(ri,Seq(99),factory) flatMap(_.future)
+    val f2 = ex2.execute(ri,Seq(11))
+
+    //    val r2 = await(f2)
+    //    r2 should be (("PbISleptFor2s","PcISleptFor1s"))
+
+    val r1 = await(f1)
+    r1 should be (8)
+    
+    ex.unsubscribe("printer")
+    ex2.unsubscribe("printer")
+  }
+
+  it should "allow separate handlers for separate workflows" in {
+    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val factory = new CounterHandlerFactory[Int]("counter" + _)
+
+    val f1 = ex.call(ri,Seq(55),factory) flatMap(_.future)
+    val f2 = ex.call(ri,Seq(11),factory) flatMap(_.future)
+
+    //    val r2 = await(f2)
+    //    r2 should be (("PbISleptFor2s","PcISleptFor1s"))
+
+    val r1 = await(f1)
+    r1 should be (8)
+    val r2 = await(f2)
+    r2 should be (8)
+    
+  }
+
+  it should "unsubscribe handlers successfully" in {
+    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val factory = new CounterHandlerFactory[Int]("counter" + _)
+    ex.subscribe(new PrintEventHandler("printerX"))
+    ex.unsubscribe("printerX")
+
+    val f1 = ex.call(ri,Seq(55),factory) flatMap(_.future)
+    val f2 = ex.call(ri,Seq(11),factory) flatMap(_.future)
+
+    //    val r2 = await(f2)
+    //    r2 should be (("PbISleptFor2s","PcISleptFor1s"))
+
+    val r1 = await(f1)
+    r1 should be (8)
+    val r2 = await(f2)
+    r2 should be (8)
+  }
 }
 

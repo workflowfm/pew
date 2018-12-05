@@ -1,11 +1,11 @@
 name := "PEW"
 
-sbtVersion := "1.2.3"
+sbtVersion := "1.2.6"
 
 lazy val commonSettings = Seq (
-	version := "1.1.0-SNAPSHOT",
+	version := "1.2.2-SNAPSHOT",
 	organization := "com.workflowfm",
-	scalaVersion := "2.12.3"
+	scalaVersion := "2.12.6"
 )
 
 // The dependencies are in Maven format, with % separating the parts.  

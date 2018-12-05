@@ -5,12 +5,23 @@ import org.bson.codecs.configuration.{CodecProvider, CodecRegistry}
 
 import scala.collection.mutable
 
+/** AutoCodecStore:
+  * A mutable.Map which indexes Codecs by the type/class of object they serialise/deserialise.
+  * Used to help implement `CodecRegistry` and `CodecProvider` interfaces which having to
+  * manually implement the `get` functionality for each new `Codec`.
+  */
 trait AutoCodecStore {
 
+  /** Hold all the Codecs which have been registered with this `AutoCodecStore`.
+    */
   val registeredCodecs: mutable.Map[Class[_], Codec[_]] = mutable.Map()
 
-  protected def registerCodec(codec: Codec[_])
-    : Unit = this.synchronized {
+  /** Register a new Codec with this `AutoCodecStore`
+    *
+     * @param codec The new codec to register with this `AutoCodecStore`.
+    */
+  final def registerCodec[CodecT <: Codec[_]](codec: CodecT)
+    : CodecT = this.synchronized {
 
     val clazz: Class[_] = codec.getEncoderClass
 
@@ -44,17 +55,21 @@ trait AutoCodecStore {
 
       case _: Codec[_] => // No actions needed.
     }
+
+    codec
   }
 
-  trait AutoCodec {
-    this match {
-      case codec: Codec[_] =>
-        registerCodec( codec )
-    }
+  /** Dumb helper inner-trait to automatically register instances of this trait with
+    * the parent `AutoCodecStore`.
+    */
+  trait AutoCodec { this:Codec[_] =>
+      registerCodec( this )
   }
 
 }
 
+/** Implements the `CodecRegistry` interface using an `AutoCodecStore`.
+  */
 trait AutoCodecRegistry extends AutoCodecStore with CodecRegistry {
 
   override def get[T](clazz: Class[T]): Codec[T]
@@ -64,6 +79,8 @@ trait AutoCodecRegistry extends AutoCodecStore with CodecRegistry {
       .orNull
 }
 
+/** Implements the `CodecProvider` interface using an `AutoCodecStore`.
+  */
 trait AutoCodecProvider extends AutoCodecStore with CodecProvider {
 
   override def get[T]( clazz: Class[T], reg: CodecRegistry ): Codec[T]
@@ -74,9 +91,14 @@ trait AutoCodecProvider extends AutoCodecStore with CodecProvider {
 
 }
 
+/** Implements both `CodecRegistry` and `CodecProvider` interfaces using an `AutoCodecStore`.
+  */
 trait AutoCodecRegistryExt
   extends AutoCodecProvider with CodecRegistry {
 
+  /** Base or builtin `CodecRegistry` to fall back on if a Codec is requested for a class
+    * which hasn't been registered.
+    */
   val baseRegistry: CodecRegistry
 
   override def get[T](clazz: Class[T]): Codec[T]

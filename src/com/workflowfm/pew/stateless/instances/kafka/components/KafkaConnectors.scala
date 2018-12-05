@@ -139,7 +139,7 @@ object KafkaConnectors {
   def shutdown( controls: Control* )( implicit s: KafkaExecutorSettings ): Future[Done] = shutdownAll( controls )
 
   def shutdownAll( controls: Seq[Control] )( implicit s: KafkaExecutorSettings ): Future[Done] = {
-    implicit val ctx: ExecutionContext = s.execCtx
+    implicit val ctx: ExecutionContext = s.executionContext
     Future.sequence( controls.map( c => c.shutdown().flatMap( _ => c.isShutdown ) ) ).map( _ => Done )
   }
 }

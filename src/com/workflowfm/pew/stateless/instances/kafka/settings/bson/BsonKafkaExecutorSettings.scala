@@ -15,7 +15,7 @@ import scala.reflect.ClassTag
 class BsonKafkaExecutorSettings(
     val reg: CodecRegistry,
     implicit override val actorSys: ActorSystem,
-    override val execCtx: ExecutionContext = ExecutionContext.global
+    override val executionContext: ExecutionContext = ExecutionContext.global
 
   ) extends KafkaExecutorSettings {
 

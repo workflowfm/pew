@@ -4,7 +4,14 @@ import org.bson.{BsonReader, BsonWriter}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.codecs.configuration.CodecRegistry
 
-class AnyCodec( registry: CodecRegistry )
+/** AnyCodec: Capable of encoding/decoding values of `Any` type by fetching the
+  * correct type from a `CodecRegistry`.
+  *
+  * NOTE: Requested types must be available within the Regsitry specified.
+  *
+  * @param registry Registry to use to find `Codec`s.
+  */
+class AnyCodec( val registry: CodecRegistry )
   extends Codec[Any] {
 
   val classN: String = "class"

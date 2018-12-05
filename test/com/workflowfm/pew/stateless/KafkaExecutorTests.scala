@@ -1,8 +1,13 @@
 package com.workflowfm.pew.stateless
 
-import com.workflowfm.pew.stateless.StatelessMessages._
+import akka.Done
+import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, _}
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
-import com.workflowfm.pew._
+import com.workflowfm.pew.{PromiseHandler, _}
+import com.workflowfm.pew.stateless.components.{AtomicExecutor, Reducer, ResultListener}
+import com.workflowfm.pew.stateless.instances.kafka.MinimalKafkaExecutor
+import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors.{indyReducer, indySequencer, sendMessages}
+import org.apache.kafka.common.utils.Utils
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
@@ -16,6 +21,77 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
   // Ensure there are no outstanding messages before starting testing.
   new MessageDrain( true )
+
+  lazy val mainClassLoader: ClassLoader = Thread.currentThread().getContextClassLoader
+  lazy val kafkaClassLoader: ClassLoader = Utils.getContextOrKafkaClassLoader
+  lazy val threadClassLoader: ClassLoader = await( Future.unit.map(_ => Thread.currentThread().getContextClassLoader ) )
+
+  it should "use the same ClassLoader for Kafka as the Main thread" in {
+    mainClassLoader shouldBe kafkaClassLoader
+  }
+
+  // Instead unset the class loader when creating KafkaProducers.
+  ignore should "use the same ClassLoader for the ExecutionContext threads as the Main thread" in {
+    mainClassLoader shouldBe threadClassLoader
+  }
+
+  it should "start a producer from inside a ExecutionContext" in {
+    implicit val settings = completeProcess.settings
+
+    val future: Future[Done] = Future { Thread.sleep(100) } map { _ =>
+      val pii = PiInstance( ObjectId.get, pbi, PiObject(1) )
+      sendMessages( ReduceRequest( pii, Seq() ) )
+      Done
+    }
+
+    await( future ) shouldBe Done
+  }
+
+  it should "execute an atomic PbI using a DIY KafkaExecutor" in {
+    implicit val settings = completeProcess.settings
+    val listener = new ResultListener
+
+    val c1 = KafkaConnectors.indyReducer( new Reducer )
+    val c2 = KafkaConnectors.indySequencer
+    val c3 = KafkaConnectors.indyAtomicExecutor( AtomicExecutor() )
+    val c4 = KafkaConnectors.uniqueResultListener( listener )
+
+    val pii = PiInstance( ObjectId.get, pbi, PiObject(1) )
+    sendMessages( ReduceRequest( pii, Seq() ) )
+
+    val handler = new PromiseHandler( "test", pii.id )
+    listener.subscribe( handler )
+
+    await( handler.promise.future ) should be ("PbISleptFor1s")
+    await( KafkaConnectors.shutdown( c1, c2, c3, c4 ) )
+
+    val msgsOf = new MessageDrain( true )
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty
+  }
+
+  it should "execute an atomic PbI using the baremetal Executor interface" in {
+    val ex = makeExecutor( completeProcess.settings )
+
+    val piiId = await( ex.init( pbi, Seq( PiObject(1) ) ) )
+    val handler = new PromiseHandler( "test", piiId )
+    ex.subscribe( handler )
+
+    val f1 = handler.promise.future
+    ex.start( piiId )
+
+    await( f1 ) should be ("PbISleptFor1s")
+    ex.syncShutdown()
+
+    val msgsOf = new MessageDrain( true )
+    msgsOf[SequenceRequest] shouldBe empty
+    msgsOf[SequenceFailure] shouldBe empty
+    msgsOf[ReduceRequest] shouldBe empty
+    msgsOf[Assignment] shouldBe empty
+    msgsOf[PiiUpdate] shouldBe empty  }
 
   it should "execute atomic PbI once" in {
 

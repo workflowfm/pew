@@ -30,7 +30,11 @@ import org.mongodb.scala.Observer
 import org.mongodb.scala.ReadConcern
 import org.mongodb.scala.WriteConcern
 
-class MongoExecutor(client:MongoClient, db:String, collection:String, processes:PiProcessStore)(implicit val context: ExecutionContext = ExecutionContext.global) extends ProcessExecutor[ObjectId] with SimplePiObservable[ObjectId] { 
+class MongoExecutor
+  (client:MongoClient, db:String, collection:String, processes:PiProcessStore)
+  (implicit val executionContext: ExecutionContext = ExecutionContext.global)
+    extends ProcessExecutor[ObjectId] with SimplePiObservable[ObjectId] {
+
   def this(client:MongoClient, db:String, collection:String, l:PiProcess*) = this(client,db,collection,SimpleProcessStore(l :_*))
   
   final val CAS_MAX_ATTEMPTS = 10

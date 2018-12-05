@@ -4,7 +4,7 @@ import com.workflowfm.pew._
 import com.workflowfm.pew.mongodb.bson._
 import com.workflowfm.pew.mongodb.bson.auto.{AutoCodecRegistryExt, SuperclassCodec}
 import com.workflowfm.pew.mongodb.bson.events._
-import com.workflowfm.pew.mongodb.bson.helper.{ObjectIdCodec, Tuple2Codec}
+import com.workflowfm.pew.mongodb.bson.helper.{EitherCodec, ObjectIdCodec, OptionCodec, Tuple2Codec}
 import com.workflowfm.pew.mongodb.bson.pitypes._
 import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, PiiHistory}
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.AnyKey
@@ -25,56 +25,55 @@ class KafkaCodecRegistry(
   // AnyCodec for encoding arbitrary objects
   // (Note: All types must have codecs present in this object
   // when it is actually time to encode/decode them at runtime)
-  private val anyc: Codec[Any] = new AnyCodec( this )
+  private val anyc: Codec[Any] = registerCodec( new AnyCodec( this ) )
 
-  new Tuple2Codec( anyc ) with AutoCodec
-
-  new PiObjectCodec() with AutoCodec
+  registerCodec( new Tuple2Codec( anyc ) )
+  registerCodec( EitherCodec( anyc ) )
+  registerCodec( OptionCodec( anyc ) )
 
   // Keep explicit references to these PEW codec instances,
   // We don't have a registry that includes them.
-  private val idc = new ObjectIdCodec() with AutoCodec
-  private val procc = new PiProcessCodec( processes ) with AutoCodec
-  private val obj = new PiObjectCodec( this ) with AutoCodec
-  private val term = new TermCodec(this) with AutoCodec
-  private val chan = new ChanCodec with AutoCodec
-  private val chanMap = new ChanMapCodec(this) with AutoCodec
-  private val piRes = new PiResourceCodec(this) with AutoCodec
-  private val fut =  new PiFutureCodec(this) with AutoCodec
-  private val piState = new PiStateCodec(this, processes) with AutoCodec
-  private val piInst = new PiInstanceCodec(this, processes) with AutoCodec
-  private val meta = new PiMetadataMapCodec(anyc) with AutoCodec
+  private val idc = registerCodec( new ObjectIdCodec() )
+  private val procc = registerCodec( new PiProcessCodec( processes ) )
+  private val obj = registerCodec( new PiObjectCodec( this ) )
+  private val term = registerCodec( new TermCodec(this) )
+  private val chan = registerCodec( new ChanCodec )
+  private val chanMap = registerCodec( new ChanMapCodec(this) )
+  private val piRes = registerCodec( new PiResourceCodec(this) )
+  private val fut =  registerCodec( new PiFutureCodec(this) )
+  private val piState = registerCodec( new PiStateCodec(this, processes) )
+  private val piInst = registerCodec( new PiInstanceCodec(this, processes) )
 
-  new PiEventCallCodec[ObjectId]( idc, obj, procc, meta ) with AutoCodec
-  new PiEventExceptionCodec[ObjectId]( idc, meta ) with AutoCodec
-  new PiEventProcessExceptionCodec[ObjectId]( idc, meta ) with AutoCodec
-  new PiEventResultCodec[ObjectId]( piInst, anyc, meta ) with AutoCodec
-  new PiEventReturnCodec[ObjectId]( idc, anyc, meta ) with AutoCodec
-  new PiEventStartCodec[ObjectId]( piInst, meta ) with AutoCodec
-  new PiFailureAtomicProcessIsCompositeCodec[ObjectId]( piInst, meta ) with AutoCodec
-  new PiFailureNoResultCodec[ObjectId]( piInst, meta ) with AutoCodec
-  new PiFailureNoSuchInstanceCodec[ObjectId]( idc, meta ) with AutoCodec
-  new PiFailureUnknownProcessCodec[ObjectId]( piInst, meta ) with AutoCodec
-  private val peExEvent = new SuperclassCodec[PiExceptionEvent[ObjectId]] with AutoCodec
-  private val peEvent = new SuperclassCodec[PiEvent[ObjectId]] with AutoCodec
+  registerCodec( new PiEventCallCodec[ObjectId]( idc, obj, procc ) )
+  registerCodec( new PiEventExceptionCodec[ObjectId]( idc ) )
+  registerCodec( new PiEventProcessExceptionCodec[ObjectId]( idc ) )
+  registerCodec( new PiEventResultCodec[ObjectId]( piInst, anyc ) )
+  registerCodec( new PiEventReturnCodec[ObjectId]( idc, anyc ) )
+  registerCodec( new PiEventStartCodec[ObjectId]( piInst ) )
+  registerCodec( new PiFailureAtomicProcessIsCompositeCodec[ObjectId]( piInst ) )
+  registerCodec( new PiFailureNoResultCodec[ObjectId]( piInst ) )
+  registerCodec( new PiFailureNoSuchInstanceCodec[ObjectId]( idc ) )
+  registerCodec( new PiFailureUnknownProcessCodec[ObjectId]( piInst ) )
+  private val peExEvent = registerCodec( new SuperclassCodec[PiExceptionEvent[ObjectId]] )
+  private val peEvent = registerCodec( new SuperclassCodec[PiEvent[ObjectId]] )
 
   // These use the PEW-REST Key codecs, need to be initialised after PEW
-  private val callRef = new CallRefCodec with AutoCodec
-  private val keyPiiId = new KeyPiiIdCodec with AutoCodec
-  private val keyPiiIdCall = new KeyPiiIdCallCodec( callRef ) with AutoCodec
+  private val callRef = registerCodec( new CallRefCodec )
+  private val keyPiiId = registerCodec( new KeyPiiIdCodec )
+  private val keyPiiIdCall = registerCodec( new KeyPiiIdCallCodec( callRef ) )
 
   // These use the PEW-REST Msg codecs, need to be initialised after PEW
-  private val update = new PiiUpdateCodec( piInst ) with AutoCodec
-  private val assgn = new AssignmentCodec( piInst, callRef, piRes ) with AutoCodec
-  private val seqReq = new SequenceRequestCodec( callRef, obj ) with AutoCodec
-  private val seqfail = new SequenceFailureCodec( piInst, callRef, obj, peExEvent ) with AutoCodec
-  private val redReq = new ReduceRequestCodec( piInst, callRef, obj ) with AutoCodec
-  private val res = new PiiLogCodec( peEvent ) with AutoCodec
+  private val update = registerCodec( new PiiUpdateCodec( piInst ) )
+  private val assgn = registerCodec( new AssignmentCodec( piInst, callRef, piRes ) )
+  private val seqReq = registerCodec( new SequenceRequestCodec( callRef, obj ) )
+  private val seqfail = registerCodec( new SequenceFailureCodec( piInst, callRef, obj, peExEvent ) )
+  private val redReq = registerCodec( new ReduceRequestCodec( piInst, callRef, obj ) )
+  private val res = registerCodec( new PiiLogCodec( peEvent ) )
 
-  private val piiHistory = new SuperclassCodec[PiiHistory] with AutoCodec
+  private val piiHistory = registerCodec( new SuperclassCodec[PiiHistory] )
 
 
   // Initialised after both Keys & Msgs as it depends on them all.
-  private val anykey = new SuperclassCodec[AnyKey] with AutoCodec
-  val anymsg: Codec[AnyMsg] = new SuperclassCodec[AnyMsg] with AutoCodec
+  private val anykey = registerCodec( new SuperclassCodec[AnyKey] )
+  val anymsg: Codec[AnyMsg] = registerCodec( new SuperclassCodec[AnyMsg] )
 }
