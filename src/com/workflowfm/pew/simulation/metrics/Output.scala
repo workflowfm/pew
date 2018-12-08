@@ -1,13 +1,10 @@
 package com.workflowfm.pew.simulation.metrics
 
 import scala.collection.immutable.Queue
-import com.workflowfm.pew.metrics.FileOutput
+import com.workflowfm.pew.metrics.{ FileOutput, MetricsOutput }
 
 trait SimMetricsOutput extends ((Long,SimMetricsAggregator) => Unit) {
   def and(h:SimMetricsOutput) = SimMetricsOutputs(this,h) 
-}
-object SimMetricsOutput {
-  def formatOption[T](v:Option[T], nullValue: String, format:T=>String={ x:T => x.toString }) = v.map(format).getOrElse(nullValue)
 }
 
 case class SimMetricsOutputs(handlers:Queue[SimMetricsOutput]) extends SimMetricsOutput {
@@ -16,6 +13,7 @@ case class SimMetricsOutputs(handlers:Queue[SimMetricsOutput]) extends SimMetric
 }
 object SimMetricsOutputs {
   def apply(handlers:SimMetricsOutput*):SimMetricsOutputs = SimMetricsOutputs(Queue[SimMetricsOutput]() ++ handlers)
+  def none = SimMetricsOutputs()
 }
 
 
@@ -25,7 +23,7 @@ trait SimMetricsStringOutput extends SimMetricsOutput {
   def taskHeader(separator:String) = Seq("ID","Task","Simulation","Created","Start","Delay","Duration","Cost","Resources").mkString(separator)
   def taskCSV(separator:String, resSeparator:String)(m:TaskMetrics) = m match {
     case TaskMetrics(id,task,sim,ct,st,dur,cost,res) => 
-      Seq(id,task,sim,ct,SimMetricsOutput.formatOption(st,nullValue),m.delay,dur,cost,res.mkString(resSeparator)).mkString(separator)
+      Seq(id,task,sim,ct,MetricsOutput.formatOption(st,nullValue),m.delay,dur,cost,res.mkString(resSeparator)).mkString(separator)
   }
   
   def simHeader(separator:String) = Seq("Name","Start","Duration","Delay","Tasks","Cost","Result").mkString(separator)
@@ -54,6 +52,9 @@ class SimMetricsPrinter extends SimMetricsStringOutput {
   def apply(totalTicks:Long,aggregator:SimMetricsAggregator) = {
     val sep = "\t| "
     val lineSep = "\n"
+    val timeFormat = "YYYY-MM-dd HH:mm:ss.SSS"
+    val durFormat = "HH:mm:ss.SSS"
+    val nullTime = "NONE"
     println(
 s"""
 Tasks
@@ -70,6 +71,11 @@ Resources
 ---------
 ${resHeader(sep)}
 ${resources(aggregator,sep,lineSep)}
+---------
+
+Started: ${MetricsOutput.formatTimeOption(aggregator.start, timeFormat, nullTime)}
+Ended: ${MetricsOutput.formatTimeOption(aggregator.end, timeFormat, nullTime)}
+Duration: ${MetricsOutput.formatDuration(aggregator.start, aggregator.end, durFormat, nullTime)}
 """
         )
   }
