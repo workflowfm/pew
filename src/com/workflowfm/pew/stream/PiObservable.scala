@@ -8,9 +8,12 @@ trait PiPublisher[T] {
   protected def publish(evt:PiEvent[T]):Unit
 }
 
+trait PiSwitch {
+  def stop:Unit
+}
+
 trait PiObservable[T] {
-  def subscribe(handler:PiEventHandler[T]):Future[Boolean]
-  def unsubscribe(handlerName:String):Future[Boolean]
+  def subscribe(handler:PiEventHandler[T]):Future[PiSwitch]
 }
 
 
@@ -19,26 +22,29 @@ trait SimplePiObservable[T] extends PiObservable[T] with PiPublisher[T] {
 
   implicit val executionContext:ExecutionContext
 
-  val handlers:Map[String,PiEventHandler[T]] = Map[String,PiEventHandler[T]]()
+  protected val handlers:Map[String,PiEventHandler[T]] = Map[String,PiEventHandler[T]]()
   
-  override def subscribe(handler:PiEventHandler[T]):Future[Boolean] = Future {
+  override def subscribe(handler:PiEventHandler[T]):Future[PiSwitch] = Future {
     //System.err.println("Subscribed: " + handler.name)
     handlers += (handler.name -> handler)
-    true
+    Switch(handler.name)
   }
   
-  override def unsubscribe(handlerName:String):Future[Boolean] = Future {
+  def unsubscribe(handlerName:String):Future[Boolean] = Future {
     handlers.remove(handlerName).isDefined
   }
   
   override def publish(evt:PiEvent[T]) = {
     handlers.retain((k,v) => !v(evt))
   }
+
+  case class Switch(name:String) extends PiSwitch {
+    override def stop:Unit = unsubscribe(name)
+  }
 }
 
 trait DelegatedPiObservable[T] extends PiObservable[T] {
   val worker: PiObservable[T]
 
-  override def subscribe( handler: PiEventHandler[T] ): Future[Boolean] = worker.subscribe( handler )
-  override def unsubscribe( handlerName: String ): Future[Boolean] = worker.unsubscribe( handlerName )
+  override def subscribe( handler: PiEventHandler[T] ): Future[PiSwitch] = worker.subscribe( handler )
 }

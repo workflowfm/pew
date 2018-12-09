@@ -7,7 +7,13 @@ import akka.stream._
 import akka.stream.scaladsl._
 import akka.{ NotUsed, Done }
 
-trait PiSource[T] extends PiPublisher[T] {
+import scala.concurrent.{ Future, ExecutionContext }
+
+trait PiSource[T] extends PiObservable[T] {
+  def getSource:Source[PiEvent[T], NotUsed]
+}
+
+trait PiStream[T] extends PiSource[T] with PiPublisher[T] {
   implicit val system:ActorSystem
   implicit val materializer = ActorMaterializer()
 
@@ -23,25 +29,25 @@ trait PiSource[T] extends PiPublisher[T] {
     (q,s)
   }
 
-  protected def publish(evt:PiEvent[T]) = queue.offer(evt)
+  override def publish(evt:PiEvent[T]) = queue.offer(evt)
 
-  def subscribe[R](sink:PiEvent[T]=>R):Unit = {
-    val x = source
-      .map(sink(_))
-  }
-  def subscribe(handler:PiEventHandler[T]):Unit = {
+  override def getSource = source
+  //def subscribe(sink:PiEvent[T]=>Unit):Future[Done] = source.runForeach(sink(_))
+  
+  override def subscribe(handler:PiEventHandler[T]):Future[PiSwitch] = {
     // Using a shared kill switch even though we only want to shutdown one stream, because
     // the shared switch is available immediately (pre-materialization) so we can use it
     // as a sink.
     val killSwitch = KillSwitches.shared(s"kill:${handler.name}")
     val x = source
       .via(killSwitch.flow)
-      .map { e => println(s">>> ${handler.name}: ${e.id} ${e.time- 1542976910000L}") ; e }
+      //.map { e => println(s">>> ${handler.name}: ${e.id} ${e.time- 1542976910000L}") ; e }
       .map(handler(_))
       .runForeach { r => if (r) {
-        println(s"===KILLING IN THE NAME OF: ${handler.name}")
+        //println(s"===KILLING IN THE NAME OF: ${handler.name}")
         killSwitch.shutdown() }
       }
+    Future.successful(PiKillSwitch(killSwitch))
   }
 }
 
@@ -51,6 +57,6 @@ object PiSource {
 }
 
 
-case class PiSink(name:String, switch:KillSwitch) {
-  def shutdown = switch.shutdown()
+case class PiKillSwitch(switch:KillSwitch) extends PiSwitch {
+  override def stop = switch.shutdown()
 }
