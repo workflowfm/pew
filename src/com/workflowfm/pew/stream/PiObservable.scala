@@ -4,13 +4,17 @@ import com.workflowfm.pew.PiEvent
 
 import scala.concurrent.{ Promise, Future, ExecutionContext }
 
+trait PiPublisher[T] {
+  protected def publish(evt:PiEvent[T]):Unit
+}
 
 trait PiObservable[T] {
   def subscribe(handler:PiEventHandler[T]):Future[Boolean]
   def unsubscribe(handlerName:String):Future[Boolean]
 }
 
-trait SimplePiObservable[T] extends PiObservable[T] {
+
+trait SimplePiObservable[T] extends PiObservable[T] with PiPublisher[T] {
   import collection.mutable.Map
 
   implicit val executionContext:ExecutionContext
@@ -27,7 +31,7 @@ trait SimplePiObservable[T] extends PiObservable[T] {
     handlers.remove(handlerName).isDefined
   }
   
-  def publish(evt:PiEvent[T]) = {
+  override def publish(evt:PiEvent[T]) = {
     handlers.retain((k,v) => !v(evt))
   }
 }

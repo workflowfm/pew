@@ -85,21 +85,8 @@ trait ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
 }
 
 object ProcessExecutor {
-  // def default = SingleBlockingExecutor(Map[String,PiProcess]())
-  
   final case class AlreadyExecutingException(private val cause: Throwable = None.orNull)
                     extends Exception("Unable to execute more than one process at a time", cause)
-
-  /*
-  final case class UnknownProcessException(val process:String, private val cause: Throwable = None.orNull)
-                    extends Exception("Unknown process: " + process, cause) 
-  final case class AtomicProcessIsCompositeException(val process:String, private val cause: Throwable = None.orNull)
-                    extends Exception("Executor encountered composite process thread: " + process + " (this should never happen!)", cause)
-  final case class NoResultException(val id:String, private val cause: Throwable = None.orNull)
-                    extends Exception("Failed to get result for: " + id, cause) 
-  final case class NoSuchInstanceException(val id:String, private val cause: Throwable = None.orNull)
-                    extends Exception("Failed to find instance with id: " + id, cause)
-  */
 }
 
 trait SimulatorExecutor[KeyT] extends ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
@@ -112,7 +99,7 @@ trait SimulatorExecutor[KeyT] extends ProcessExecutor[KeyT] { this:PiObservable[
   def simulationReady:Boolean
 
   /**
-    * Executes a process with a PromiseHandler
+    * Executes a process with a ResultHandler
     * Same as ProcessExecutor.execute but blocks until call has been initiated.
     * The simulator needs to ensure this has happened before continuing.
     * @param process The (atomic or composite) PiProcess to be executed
