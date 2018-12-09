@@ -1,6 +1,7 @@
 package com.workflowfm.pew.metrics
 
 import com.workflowfm.pew._
+import com.workflowfm.pew.stream.PiEventHandler
 
 case class ProcessMetrics[KeyT] (piID:KeyT, ref:Int, process:String, start:Long=System.currentTimeMillis(), finish:Option[Long]=None, result:Option[String]=None) {
   def complete(time:Long,result:Any) = copy(finish=Some(time),result=Some(result.toString))

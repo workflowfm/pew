@@ -4,6 +4,7 @@ import akka.actor._
 import akka.pattern.{ask, pipe}
 import akka.util.Timeout
 import com.workflowfm.pew._
+import com.workflowfm.pew.stream.{ PiObservable, SimplePiObservable, PiEventHandler }
 
 import scala.concurrent._
 import scala.concurrent.duration._

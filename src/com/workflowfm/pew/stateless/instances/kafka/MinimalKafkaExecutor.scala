@@ -5,6 +5,7 @@ import akka.actor.ActorSystem
 import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.Materializer
 import com.workflowfm.pew._
+import com.workflowfm.pew.stream.{ PiObservable, DelegatedPiObservable }
 import com.workflowfm.pew.stateless._
 import com.workflowfm.pew.stateless.components.ResultListener
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors

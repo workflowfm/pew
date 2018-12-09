@@ -1,7 +1,7 @@
 package com.workflowfm.pew.stateless
 
 import akka.Done
-import com.workflowfm.pew.PiObservable
+import com.workflowfm.pew.stream.PiObservable
 import com.workflowfm.pew.execution._
 
 import scala.concurrent.duration.Duration

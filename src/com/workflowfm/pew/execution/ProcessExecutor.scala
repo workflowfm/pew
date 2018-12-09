@@ -1,6 +1,7 @@
 package com.workflowfm.pew.execution
 
 import com.workflowfm.pew._
+import com.workflowfm.pew.stream.{ PiObservable, PiEventHandler, PiEventHandlerFactory, PromiseHandlerFactory }
 import scala.concurrent._
 import scala.concurrent.duration._
 
