@@ -1,41 +1,73 @@
 package com.workflowfm.pew.stream
 
-import com.workflowfm.pew.{ PiEvent, PiExceptionEvent, PiEventResult }
+import com.workflowfm.pew.{ PiEvent, PiException, PiExceptionEvent, PiEventResult }
 
 import scala.concurrent.{ Promise, Future, ExecutionContext }
 
 
-class PromiseHandler[T](override val name:String, val id:T) extends PiEventHandler[T] {   
-  val promise = Promise[Any]()
+trait PromiseHandler[T,R] extends PiEventHandler[T] {   
+  val id:T
+
+  protected val promise = Promise[R]()
   def future = promise.future
   
   // class PromiseException(message:String) extends Exception(message)
   
-  override def apply(e:PiEvent[T]) = if (e.id == this.id) e match {  
-    case PiEventResult(i,res,_) => promise.success(res); true
-    case ex: PiExceptionEvent[T] => promise.failure( ex.exception ); true
+  override def apply(e:PiEvent[T]) = if (e.id == this.id) update(e) match {
+    case PiEventResult(i,res,_) => promise.success(succeed(res)); true
+    case ex: PiExceptionEvent[T] => fail(ex.exception) match {
+      case Left(r) => promise.success(r); true
+      case Right(x) => promise.failure(x); true
+    }
     case _ => false
-  } else false 
+  } else false
+
+  /**
+    * This should handle the event (if needed) and return it, potentially updated.
+    * (Default does nothing.)
+    */
+  def update(event:PiEvent[T]) :PiEvent[T] = event
+
+  /**
+    * This will be executed when the workflow completes successfully.
+    * @param result the result of the workflow
+    * @return an object of type R that will complete the promise
+    */
+  def succeed(result:Any) :R
+
+  /**
+    * This will be executed when the workflow fails due to an exception.
+    * @param exception the exception that occurred
+    * @return either an object to complete the promise successfully or an exception to fail the promise with
+    */
+  def fail(exception:PiException[T]) :Either[R,Exception]
 }
 
-class PromiseHandlerFactory[T](name:T=>String) extends PiEventHandlerFactory[T,PromiseHandler[T]] {
+class ResultHandler[T](override val name:String, override val id:T) extends PromiseHandler[T,Any] {
+
+  override def succeed(result:Any) = result
+  override def fail(exception:PiException[T]) = Right(exception)
+}
+
+class ResultHandlerFactory[T](name:T=>String) extends PiEventHandlerFactory[T,ResultHandler[T]] {
   def this(name:String) = this { _:T => name }
-  override def build(id:T) = new PromiseHandler[T](name(id),id)
+  override def build(id:T) = new ResultHandler[T](name(id),id)
 }
 
 
 
-class CounterHandler[T](override val name:String, val id:T) extends PiEventHandler[T] {   
+class CounterHandler[T](override val name:String, override val id:T) extends PromiseHandler[T,Int] {   
   private var counter:Int = 0
   def count = counter
-  val promise = Promise[Int]()
-  def future = promise.future
-  
-  override def apply(e:PiEvent[T]) = if (e.id == this.id) e match {  
-    case PiEventResult(i,res,_) => counter += 1 ; promise.success(counter) ; true
-    case ex: PiExceptionEvent[T] => counter += 1; promise.success(counter) ; true
-    case _ => counter += 1 ; false
-  } else false 
+
+  override def update(event:PiEvent[T]) = {
+    counter += 1
+    // TODO add metadata for the counter here, because why not?
+    event
+  }
+
+  override def succeed(result:Any) = counter
+  override def fail(exception:PiException[T]) = Left(counter)
 }
 
 class CounterHandlerFactory[T](name:T=>String) extends PiEventHandlerFactory[T,CounterHandler[T]] {
