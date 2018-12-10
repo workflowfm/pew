@@ -10,12 +10,25 @@ import akka.{ NotUsed, Done }
 import scala.concurrent.{ Future, ExecutionContext }
 
 trait PiSource[T] extends PiObservable[T] {
+  implicit val materializer:Materializer
+
   def getSource:Source[PiEvent[T], NotUsed]
+
+  def subscribeAndForget(f:PiEvent[T]=>Unit):Unit = getSource.runForeach(f)
+
+  def subscribe(f:PiEvent[T]=>Unit):PiSwitch = {
+    val kill = getSource
+      .viaMat(KillSwitches.single)(Keep.right)
+      .to(Sink.foreach(f))
+      .run()
+    PiKillSwitch(kill)
+  }
+
 }
 
 trait PiStream[T] extends PiSource[T] with PiPublisher[T] {
   implicit val system:ActorSystem
-  implicit val materializer = ActorMaterializer()
+  override implicit val materializer = ActorMaterializer()
 
   private val sourceQueue = Source.queue[PiEvent[T]](PiSource.bufferSize, PiSource.overflowStrategy)
 
