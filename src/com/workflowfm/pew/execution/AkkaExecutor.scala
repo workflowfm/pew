@@ -48,10 +48,10 @@ class AkkaExecutor (
 object AkkaExecutor {
   case class Init(p:PiProcess,args:Seq[PiObject])
   case class Start(id:Int)
-  case class Result(id:Int,ref:Int,res:PiObject)
+  case class Result(id:Int,ref:Int,res:MetadataAtomicProcess.MetadataAtomicResult)
   case class Error(id:Int,ref:Int,ex:Throwable)
   
-  case class ACall(id:Int,ref:Int,p:AtomicProcess,args:Seq[PiObject],actor:ActorRef)
+  case class ACall(id:Int,ref:Int,p:MetadataAtomicProcess,args:Seq[PiObject],actor:ActorRef)
   case object AckCall
   
   case class AFuture(f:Future[Any])
@@ -107,15 +107,15 @@ class AkkaExecActor(
     }
   }
   
-  final def postResult(id:Int,ref:Int, res:PiObject):Unit = {
-    publish(PiEventReturn(id,ref,PiObject.get(res)))
+  final def postResult(id:Int,ref:Int, res:MetadataAtomicProcess.MetadataAtomicResult):Unit = {
+    publish(PiEventReturn(id,ref,PiObject.get(res._1),res._2))
     store.get(id) match {
       case None => publish(PiFailureNoSuchInstance(id))
       case Some(i) => 
         if (i.id != id) System.err.println("*** [" + id + "] Different instance ID encountered: " + i.id) // This should never happen. We trust the Instance Store!
         else {
           //System.err.println("*** [" + id + "] Running!")
-          val ni = i.postResult(ref, res).reduce
+          val ni = i.postResult(ref, res._1).reduce
     		  if (ni.completed) ni.result match {
       		  case None => {
       			  publish(PiFailureNoResult(ni))
@@ -144,7 +144,7 @@ class AkkaExecActor(
         publish(PiFailureUnknownProcess(i, name))
         false
       }
-      case Some(p:AtomicProcess) => true
+      case Some(p:MetadataAtomicProcess) => true
       case Some(p:CompositeProcess) => {  // TODO this should never happen!
         publish(PiFailureAtomicProcessIsComposite(i, name))
         false 
@@ -161,7 +161,7 @@ class AkkaExecActor(
         // This should never happen! We already checked!
         System.err.println("*** [" + i.id + "] ERROR *** Unable to find process: " + name + " even though we checked already")
       }
-      case Some(p:AtomicProcess) => {
+      case Some(p:MetadataAtomicProcess) => {
         implicit val tOut = Timeout(1.second)
         val objs = args map (_.obj)
         try {
@@ -202,7 +202,7 @@ class AkkaAtomicProcessExecutor(implicit val exc: ExecutionContext = ExecutionCo
    def receive = {
     case AkkaExecutor.ACall(id,ref,p,args,actor) => {
       //System.err.println("*** [" + id + "] Calling atomic process: " + p.name + " ref:" + ref)
-      p.run(args).onComplete{ 
+      p.runMeta(args).onComplete{ 
         case Success(res) => actor ! AkkaExecutor.Result(id,ref,res) 
         case Failure(ex) => actor ! AkkaExecutor.Error(id,ref,ex)  
       }

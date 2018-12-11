@@ -127,7 +127,7 @@ case class PiState(inputs:Map[Chan,Input], outputs:Map[Chan,Output], calls:List[
         System.err.println("Failed to find process: " + c.name)
         this
       }
-      case Some(p:AtomicProcess) => {
+      case Some(p:MetadataAtomicProcess) => {
         //System.err.println("*** Handling atomic call: " + c.name)
         val m = p.mapFreshArgs(freshCtr,c.args:_*)
         copy(calls = p.getFuture(freshCtr,m) +: calls) withTerms p.getInputs(freshCtr,m) incFCtr()
