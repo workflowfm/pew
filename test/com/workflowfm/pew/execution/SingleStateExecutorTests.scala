@@ -12,7 +12,7 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import com.workflowfm.pew._
-
+import com.workflowfm.pew.stream._
 
 
 @RunWith(classOf[JUnitRunner])

@@ -3,7 +3,8 @@ package com.workflowfm.pew.stateless
 import akka.Done
 import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, _}
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
-import com.workflowfm.pew.{PromiseHandler, _}
+import com.workflowfm.pew._
+import com.workflowfm.pew.stream._
 import com.workflowfm.pew.stateless.components.{AtomicExecutor, Reducer, ResultListener}
 import com.workflowfm.pew.stateless.instances.kafka.MinimalKafkaExecutor
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors.{indyReducer, indySequencer, sendMessages}
@@ -59,10 +60,10 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
     val pii = PiInstance( ObjectId.get, pbi, PiObject(1) )
     sendMessages( ReduceRequest( pii, Seq() ) )
 
-    val handler = new PromiseHandler( "test", pii.id )
+    val handler = new ResultHandler( "test", pii.id )
     listener.subscribe( handler )
 
-    await( handler.promise.future ) should be ("PbISleptFor1s")
+    await( handler.future ) should be ("PbISleptFor1s")
     await( KafkaConnectors.shutdown( c1, c2, c3, c4 ) )
 
     val msgsOf = new MessageDrain( true )
@@ -77,10 +78,10 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
     val ex = makeExecutor( completeProcess.settings )
 
     val piiId = await( ex.init( pbi, Seq( PiObject(1) ) ) )
-    val handler = new PromiseHandler( "test", piiId )
+    val handler = new ResultHandler( "test", piiId )
     ex.subscribe( handler )
 
-    val f1 = handler.promise.future
+    val f1 = handler.future
     ex.start( piiId )
 
     await( f1 ) should be ("PbISleptFor1s")
@@ -300,7 +301,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
       futId.value.get.get
     }
 
-    val handler = new PromiseHandler[ObjectId]( "testhandler", ourPiiId )
+    val handler = new ResultHandler[ObjectId]( "testhandler", ourPiiId )
 
     // Dont consume, we need the outstanding messages to resume.
     val fstMsgs: MessageMap = new MessageDrain( false )
