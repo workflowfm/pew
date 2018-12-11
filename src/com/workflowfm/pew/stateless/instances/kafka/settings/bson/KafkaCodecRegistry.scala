@@ -4,7 +4,7 @@ import com.workflowfm.pew._
 import com.workflowfm.pew.mongodb.bson._
 import com.workflowfm.pew.mongodb.bson.auto.{AutoCodecRegistryExt, SuperclassCodec}
 import com.workflowfm.pew.mongodb.bson.events._
-import com.workflowfm.pew.mongodb.bson.helper.{EitherCodec, ObjectIdCodec, OptionCodec, Tuple2Codec}
+import com.workflowfm.pew.mongodb.bson.helper._
 import com.workflowfm.pew.mongodb.bson.pitypes._
 import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, PiiHistory}
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.AnyKey
@@ -27,6 +27,7 @@ class KafkaCodecRegistry(
   // when it is actually time to encode/decode them at runtime)
   private val anyc: Codec[Any] = registerCodec( new AnyCodec( this ) )
 
+  registerCodec( new BoxedUnitCodec )
   registerCodec( new Tuple2Codec( anyc ) )
   registerCodec( EitherCodec( anyc ) )
   registerCodec( OptionCodec( anyc ) )

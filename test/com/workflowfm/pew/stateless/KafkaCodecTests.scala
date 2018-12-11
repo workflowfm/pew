@@ -15,6 +15,7 @@ import org.scalatest
 import org.scalatest.junit.JUnitRunner
 
 import scala.reflect.ClassTag
+import scala.runtime.BoxedUnit
 
 @RunWith(classOf[JUnitRunner])
 class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
@@ -133,6 +134,9 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
     testCodec( Right( 1 ) )
   }
 
+  it should "correctly (de)serialise BoxUnits" in {
+    testCodec( BoxedUnit.UNIT )
+  }
 
   //-------------------//
   //--- Kafka Types ---//
