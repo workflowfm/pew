@@ -36,7 +36,7 @@ object CompleteKafkaExecutor {
     new CustomKafkaExecutor(
       indySequencer,
       indyReducer( new Reducer ),
-      indyAtomicExecutor( AtomicExecutor() )
+      indyAtomicExecutor( new AtomicExecutor() )
     )
   }
 

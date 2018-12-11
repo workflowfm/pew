@@ -4,7 +4,7 @@ import com.workflowfm.pew._
 import com.workflowfm.pew.mongodb.bson._
 import com.workflowfm.pew.mongodb.bson.auto.{AutoCodecRegistryExt, SuperclassCodec}
 import com.workflowfm.pew.mongodb.bson.events._
-import com.workflowfm.pew.mongodb.bson.helper.{EitherCodec, ObjectIdCodec, OptionCodec, Tuple2Codec}
+import com.workflowfm.pew.mongodb.bson.helper._
 import com.workflowfm.pew.mongodb.bson.pitypes._
 import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, PiiHistory}
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.AnyKey
@@ -27,6 +27,7 @@ class KafkaCodecRegistry(
   // when it is actually time to encode/decode them at runtime)
   private val anyc: Codec[Any] = registerCodec( new AnyCodec( this ) )
 
+  registerCodec( new BoxedUnitCodec )
   registerCodec( new Tuple2Codec( anyc ) )
   registerCodec( EitherCodec( anyc ) )
   registerCodec( OptionCodec( anyc ) )
@@ -43,17 +44,19 @@ class KafkaCodecRegistry(
   private val fut =  registerCodec( new PiFutureCodec(this) )
   private val piState = registerCodec( new PiStateCodec(this, processes) )
   private val piInst = registerCodec( new PiInstanceCodec(this, processes) )
+  private val meta = registerCodec( new PiMetadataMapCodec(anyc) )
 
-  registerCodec( new PiEventCallCodec[ObjectId]( idc, obj, procc ) )
-  registerCodec( new PiEventExceptionCodec[ObjectId]( idc ) )
-  registerCodec( new PiEventProcessExceptionCodec[ObjectId]( idc ) )
-  registerCodec( new PiEventResultCodec[ObjectId]( piInst, anyc ) )
-  registerCodec( new PiEventReturnCodec[ObjectId]( idc, anyc ) )
-  registerCodec( new PiEventStartCodec[ObjectId]( piInst ) )
-  registerCodec( new PiFailureAtomicProcessIsCompositeCodec[ObjectId]( piInst ) )
-  registerCodec( new PiFailureNoResultCodec[ObjectId]( piInst ) )
-  registerCodec( new PiFailureNoSuchInstanceCodec[ObjectId]( idc ) )
-  registerCodec( new PiFailureUnknownProcessCodec[ObjectId]( piInst ) )
+
+  registerCodec( new PiEventCallCodec[ObjectId]( idc, obj, procc, meta ) )
+  registerCodec( new PiEventExceptionCodec[ObjectId]( idc, meta ) )
+  registerCodec( new PiEventProcessExceptionCodec[ObjectId]( idc, meta ) )
+  registerCodec( new PiEventResultCodec[ObjectId]( piInst, anyc, meta ) )
+  registerCodec( new PiEventReturnCodec[ObjectId]( idc, anyc, meta ) )
+  registerCodec( new PiEventStartCodec[ObjectId]( piInst, meta ) )
+  registerCodec( new PiFailureAtomicProcessIsCompositeCodec[ObjectId]( piInst, meta ) )
+  registerCodec( new PiFailureNoResultCodec[ObjectId]( piInst, meta ) )
+  registerCodec( new PiFailureNoSuchInstanceCodec[ObjectId]( idc, meta ) )
+  registerCodec( new PiFailureUnknownProcessCodec[ObjectId]( piInst, meta ) )
   private val peExEvent = registerCodec( new SuperclassCodec[PiExceptionEvent[ObjectId]] )
   private val peEvent = registerCodec( new SuperclassCodec[PiEvent[ObjectId]] )
 

@@ -1,9 +1,9 @@
 package com.workflowfm.pew.execution
 
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.concurrent.duration._
 import com.workflowfm.pew._
-import RexampleTypes._
+
+import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 
 /**
@@ -86,7 +86,8 @@ package object RexampleTypes
     override val body = PiCut("z16","z15","z5",ParInI("z15","buf13","cPc_B_1",ParOut("z13","b13","oPc_Z_",PiId("buf13","b13","m14"),PiCall<("Pc","cPc_B_1","oPc_Z_"))),PiCut("z8","z7","oPa_lB_A_x_B_rB_",ParInI("z7","cPb_A_1","buf5",ParOut("z5","oPb_Y_","b5",PiCall<("Pb","cPb_A_1","oPb_Y_"),PiId("buf5","b5","m6"))),PiCall<("Pa","cPa_X_1","oPa_lB_A_x_B_rB_")))
     
     def apply(x:X)(implicit executor:ProcessExecutor[_]): Future[(Y,Z)] = {
-	  implicit val context:ExecutionContext = executor.context
+	  implicit val context:ExecutionContext = executor.executionContext
+
 	  executor.execute(this,Seq(x)).map(_.asInstanceOf[(Y,Z)])
     }
   }
@@ -102,7 +103,8 @@ package object RexampleTypes
     override val body = PiCut("z16","z15","z5",ParInI("z15","buf13","cPc_B_1",ParOut("z13","b13","oPc_Z_",PiId("buf13","b13","m14"),PiCall<("Pc","cPc_B_1","oPc_Z_"))),PiCut("z8","z7","oPa_lB_A_x_B_rB_",ParInI("z7","cPb_A_1","buf5",ParOut("z5","oPb_Y_","b5",PiCall<("Pb","cPb_A_1","oPb_Y_"),PiId("buf5","b5","m6"))),PiCall<("Pa","cPa_X_1","oPa_lB_A_x_B_rB_")))
     
     def apply(x:X)(implicit executor:ProcessExecutor[_]): Future[Option[(Y,Z)]] = {
-  	  implicit val context:ExecutionContext = executor.context
+  	  implicit val context:ExecutionContext = executor.executionContext 
+
   	  executor.execute(this,Seq(x)).map(_.asInstanceOf[Option[(Y,Z)]])
     }
   }

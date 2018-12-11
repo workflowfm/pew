@@ -53,7 +53,7 @@ class KafkaExecutorTests extends PewTestSuite with KafkaTests {
 
     val c1 = KafkaConnectors.indyReducer( new Reducer )
     val c2 = KafkaConnectors.indySequencer
-    val c3 = KafkaConnectors.indyAtomicExecutor( AtomicExecutor() )
+    val c3 = KafkaConnectors.indyAtomicExecutor( new AtomicExecutor() )
     val c4 = KafkaConnectors.uniqueResultListener( listener )
 
     val pii = PiInstance( ObjectId.get, pbi, PiObject(1) )

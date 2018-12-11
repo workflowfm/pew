@@ -20,7 +20,7 @@ trait PiEventHandlerFactory[T,H <: PiEventHandler[T]] {
 class PrintEventHandler[T](override val name:String) extends PiEventHandler[T] {   
   val formatter = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss.SSS")
   override def apply(e:PiEvent[T]) = {
-    val time = formatter.format(e.time)
+    val time = formatter.format(e.rawTime)
     System.err.println(s"[$time] ${e.asString}")
     false
   }
