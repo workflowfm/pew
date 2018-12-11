@@ -110,7 +110,7 @@ object KafkaConnectors {
       via flowWaitFuture( threadsPerPart )
       via flowLogOut
       mergeSubstreams,
-      Tracked.sink[Transaction, AnyMsg]
+      Tracked.sinkMulti[Transaction, AnyMsg]
     )
 
   /** Restart a terminated ResultListener group, join an existing group, or start a ResultListener with a specific

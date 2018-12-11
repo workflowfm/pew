@@ -82,13 +82,13 @@ class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStor
         System.err.println("*** [" + i.id + "] ERROR *** Unable to find process: " + name)
         false
       }
-      case Some(p:AtomicProcess) => {
+      case Some(p:MetadataAtomicProcess) => {
         val objs = args map (_.obj)
         publish(PiEventCall(i.id,ref,p,objs))
-        p.run(args map (_.obj)).onComplete{ 
+        p.runMeta(args map (_.obj)).onComplete{ 
           case Success(res) => {
-            publish(PiEventReturn(i.id,ref,PiObject.get(res)))
-            postResult(i.id,ref,res)
+            publish(PiEventReturn(i.id,ref,PiObject.get(res._1),res._2))
+            postResult(i.id,ref,res._1)
           }
           case Failure (ex) => publish(PiEventProcessException(i.id,ref,ex))
         }

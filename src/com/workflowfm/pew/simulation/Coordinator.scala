@@ -227,15 +227,20 @@ class Coordinator(
     //println(s"!TOCK! Events:${events.size} Tasks:${tasks.size} Workflows:$workflowsReady Simulations:${simulations.size} ")
     if (events.isEmpty && tasks.isEmpty && workflowsReady) { // && simulations.isEmpty) { //&& resources.forall(_.isIdle)
       println("["+time+"] All events done. All tasks done. All workflows idle.") // All simulations done..")
+      metrics.ended
       // Tell whoever started us that we are done
       starter map { a => a ! Coordinator.Done(time,metrics) }
-      
+
     } else {
       self ! Coordinator.Tick
     }
   }
 
-  def start(a:ActorRef) = if (starter.isEmpty) { starter = Some(a) ; tick }
+  def start(a:ActorRef) = if (starter.isEmpty) {
+    starter = Some(a)
+    metrics.started
+    tick
+  }
 
   def receive = {
     case Coordinator.AddSim(t,s,e) => events += StartingSim(t,s,e)

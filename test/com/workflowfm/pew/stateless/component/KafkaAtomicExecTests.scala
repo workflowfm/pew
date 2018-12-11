@@ -39,7 +39,7 @@ class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
     )
 
   it should "respond to Assignments with a correct SequenceRequest" in {
-    val atomExec: AtomicExecutor = AtomicExecutor()
+    val atomExec: AtomicExecutor = new AtomicExecutor()
 
     val (threads, pii)
     = PiInstance( ObjectId.get, pbi, PiObject(1) )
@@ -55,21 +55,22 @@ class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
 
     val response = SequenceRequest( pii.id, ( CallRef(t), PiItem("PbISleptFor1s") ) )
 
-    await( atomExec.respond( task ) ) shouldBe response
+    await( atomExec.respond( task ) ) should contain( response )
   }
 
   def runAEx( history: (Assignment, Int)* ): MockTracked[MessageMap] = {
-    val fut: Future[ Seq[MockTracked[AnyMsg]]]
+    val fut: Future[ Seq[MockTracked[Seq[AnyMsg]]]]
       = MockTracked
         .source( history )
         .groupBy( Int.MaxValue, _.part )
-        .via( flowRespond( AtomicExecutor() ) )
+        .via( flowRespond( new AtomicExecutor() ) )
         .via( flowWaitFuture( 1 )( completeProcess.settings ) )
         .mergeSubstreams
         .runWith(Sink.seq)(ActorMaterializer())
 
     Await.result(
       fut.map( Tracked.flatten )
+      .map( Tracked.fmap( _.flatten ) )
       .map( Tracked.fmap( new MessageMap(_) ) ),
 
       1.minute

@@ -1,6 +1,7 @@
 package com.workflowfm.pew.metrics
 
 import scala.collection.immutable.Queue
+import org.apache.commons.lang3.time.DurationFormatUtils
 import java.text.SimpleDateFormat
 
 trait MetricsOutput[KeyT] extends (MetricsAggregator[KeyT] => Unit) {
@@ -10,7 +11,15 @@ object MetricsOutput {
   def formatOption[T](v:Option[T], nullValue: String, format:T=>String={ x:T => x.toString }) = v.map(format).getOrElse(nullValue)
   def formatTime(format:String)(time:Long) = new SimpleDateFormat(format).format(time)
   def formatTimeOption(time:Option[Long], format:String, nullValue:String) =
-    formatOption(time, nullValue, formatTime(format))  
+    formatOption(time, nullValue, formatTime(format))
+  def formatDuration(from:Long, to:Long, format:String) =
+    DurationFormatUtils.formatDuration(to-from,format)
+  def formatDuration(from:Option[Long], to:Long, format:String, nullValue:String) =
+    from.map { f => DurationFormatUtils.formatDuration(to-f,format).toString } getOrElse(nullValue)
+  def formatDuration(from:Option[Long], to:Option[Long], format:String, nullValue:String) =
+    from.map { f => to.map {
+      t => DurationFormatUtils.formatDuration(t-f,format).toString } getOrElse(nullValue)
+    } getOrElse(nullValue)
 }
 
 case class MetricsOutputs[KeyT](handlers:Queue[MetricsOutput[KeyT]]) extends MetricsOutput[KeyT] {

@@ -117,7 +117,7 @@ class MongoExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
     val id = new ObjectId()
     val handler = new PromiseHandler("unitHandler",id)
     ex.subscribe(handler)
-    ex.postResult(id, 0, PiItem(0))
+    ex.postResult(id, 0, MetadataAtomicProcess.result(PiItem(0)))
       
     a [NoSuchInstanceException[ObjectId]] should be thrownBy await(handler.future)
 	}

@@ -47,11 +47,11 @@ case class PiInstance[T](final val id:T, called:Seq[Int], process:PiProcess, sta
   
   def getProc(p:String):Option[PiProcess] = state.processes.get(p)
 
-  def getAtomicProc( name: String ): AtomicProcess = {
+  def getAtomicProc( name: String ): MetadataAtomicProcess = {
     getProc( name ) match {
       case None => throw UnknownProcessException( this, name )
       case Some( proc ) => proc match {
-        case atomic: AtomicProcess => atomic
+        case atomic: MetadataAtomicProcess => atomic
         case _: PiProcess => throw AtomicProcessIsCompositeException( this, name )
       }
     }

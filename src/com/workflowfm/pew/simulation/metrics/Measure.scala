@@ -88,7 +88,17 @@ object ResourceMetrics {
 
 class SimMetricsAggregator {
   import scala.collection.immutable.Map
-  
+
+  var start:Option[Long] = None
+  var end:Option[Long] = None
+
+  def started = start match {
+    case None => start = Some(System.currentTimeMillis())
+    case _ => ()
+  }
+
+  def ended = end = Some(System.currentTimeMillis())
+
   val taskMap = scala.collection.mutable.Map[Long,TaskMetrics]()
   val simMap = scala.collection.mutable.Map[String,SimulationMetrics]()
   val resourceMap = scala.collection.mutable.Map[String,ResourceMetrics]()

@@ -310,6 +310,7 @@ class GetSki(cM2Inch : CM2Inch,selectLength : SelectLength,selectModel : SelectM
 	
 	def apply(heightCM : HeightCM,priceLimit : PriceLimit,skillLevel : SkillLevel,weightKG : WeightKG)(implicit executor:ProcessExecutor[_]): Future[Either[PriceNOK,Exception]] = {
 	  implicit val context:ExecutionContext = executor.executionContext
+
 		executor.execute(this,Seq(heightCM,priceLimit,skillLevel,weightKG)).map(_.asInstanceOf[Either[PriceNOK,Exception]])
 	}
 }
