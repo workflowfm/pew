@@ -48,7 +48,7 @@ class Reducer(
     f match {
       case PiFuture(name, _, _) => i.getProc(name) match {
 
-        case Some(_: AtomicProcess) => true
+        case Some(_: MetadataAtomicProcess) => true
 
         case None => throw UnknownProcessException( i, name )
         case Some(_) => throw AtomicProcessIsCompositeException( i, name )
@@ -63,7 +63,7 @@ class Reducer(
         piReduced.getProc(name) match {
 
           // Request that the process be executed.
-          case Some(p: AtomicProcess) => Seq(
+          case Some(p: MetadataAtomicProcess) => Seq(
             Assignment( piReduced, ref, p.name, args ),
             PiiLog( PiEventCall( piiId, ref.id, p, args map (_.obj) ) )
           )
