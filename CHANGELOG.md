@@ -11,6 +11,19 @@ Includes feature updates, bug fixes, and open issues.
 * [AkkaExecutor.Call may timeout #4](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/4) - since v0.1
 
 
+
+## [v1.3.0](https://github.com/PetrosPapapa/WorkflowFM-PEW/releases/tag/v1.3.0) - 2018-12-14
+
+### Features
+
+* All `PiEvents` now carry an array of `PiMetadata`. The default value contains the system time of the event. Atomic processes can expose additional metadata for `PiEventReturn` (see also [#21](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/21)). 
+* Improved `PiEventHandlers`. The `PromiseHandler` is now generalized to return a single object at the end of the workflow. The old `PromiseHandler` is an instance called `ResultHandler` (see also [#26](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/26)).
+* Implemented `PiStream` using Akka's `BroadcastHub` to enable more flexible event handling (see also [#34](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/34)). Executors can now be mixed in with (at least) either of the two default observables, namely `SimplePiObservable` and `PiStream`. 
+* Fixed some codec issues (see also [#31](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/31)).
+* The simulator now measures the simulation's real (system) duration.
+* Various improvements in Executor unit tests.
+
+
 ## [v1.2.2](https://github.com/PetrosPapapa/WorkflowFM-PEW/releases/tag/v1.2.2) - 2018-12-03
 
 ### Features
