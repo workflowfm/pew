@@ -1,5 +1,6 @@
 package com.workflowfm.pew.mongodb.bson
 
+import com.workflowfm.pew.util.ClassLoaderUtil
 import org.bson.{BsonReader, BsonWriter}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.codecs.configuration.CodecRegistry
@@ -20,6 +21,10 @@ class AnyCodec( val registry: CodecRegistry )
   def codec( clazz: Class[_] ): Codec[Any]
     = registry.get( clazz.asInstanceOf[Class[Any]] )
 
+  // Jev, unset the `ClassLoader` to ensure the default is used.
+  def classForName( name: String ): Class[_]
+    = ClassLoaderUtil.withClassLoader(null) { Class.forName(name) }
+
   override def encode(writer: BsonWriter, value: Any, ctx: EncoderContext): Unit = {
 
     writer.writeStartDocument()
@@ -27,8 +32,8 @@ class AnyCodec( val registry: CodecRegistry )
     // Jev, `getCanonicalName` produces incorrect results for packaged or inner classes.
     // We need the `fully qualified` names for `Class.forName`, eg, "some.package.Object$Innerclass"
     val className: String = value.getClass.getName // .getCanonicalName)
-    Class.forName( className ) // throw a ClassNotFound error if we won't be able to decode this.
-    writer.writeString( classN, className )
+    classForName( className ) // throw a ClassNotFound error if we won't be able to decode this.
+    writer.writeString(classN, className)
 
     writer.writeName( childN )
     ctx.encodeWithChildContext( codec( value.getClass ), writer, value )
@@ -40,7 +45,7 @@ class AnyCodec( val registry: CodecRegistry )
 
     reader.readStartDocument()
 
-    val anyClass: Class[_] = Class.forName( reader.readString( classN ) )
+    val anyClass: Class[_] = classForName( reader.readString( classN ) )
 
     reader.readName( childN )
     val anyValue: Any = ctx.decodeWithChildContext[Any]( codec( anyClass ), reader )
