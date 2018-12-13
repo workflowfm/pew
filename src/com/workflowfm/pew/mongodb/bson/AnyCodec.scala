@@ -12,7 +12,7 @@ import org.bson.codecs.configuration.CodecRegistry
   *
   * @param registry Registry to use to find `Codec`s.
   */
-class AnyCodec( val registry: CodecRegistry )
+class AnyCodec( val registry: CodecRegistry, val classLoader: ClassLoader = null )
   extends Codec[Any] {
 
   val classN: String = "class"
@@ -23,7 +23,7 @@ class AnyCodec( val registry: CodecRegistry )
 
   // Jev, unset the `ClassLoader` to ensure the default is used.
   def classForName( name: String ): Class[_]
-    = ClassLoaderUtil.withClassLoader(null) { Class.forName(name) }
+    = ClassLoaderUtil.withClassLoader( classLoader ) { Class.forName(name) }
 
   override def encode(writer: BsonWriter, value: Any, ctx: EncoderContext): Unit = {
 

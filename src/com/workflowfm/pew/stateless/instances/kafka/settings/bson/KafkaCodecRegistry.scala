@@ -22,10 +22,12 @@ class KafkaCodecRegistry(
 
   ) extends CodecProvider with AutoCodecRegistryExt {
 
-  // AnyCodec for encoding arbitrary objects
-  // (Note: All types must have codecs present in this object
-  // when it is actually time to encode/decode them at runtime)
-  private val anyc: Codec[Any] = registerCodec( new AnyCodec( this ) )
+  /** AnyCodec for encoding arbitrary objects. Uses lazy value
+    * to support being fully overridden by subclasses.
+    * (Note: All types must have codecs present in this object
+    * when it is actually time to encode/decode them at runtime)
+    */
+  protected lazy val anyc: Codec[Any] = registerCodec( new AnyCodec( this ) )
 
   registerCodec( new BoxedUnitCodec )
   registerCodec( new Tuple2Codec( anyc ) )
