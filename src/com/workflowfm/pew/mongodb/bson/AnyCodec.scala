@@ -12,11 +12,13 @@ import org.bson.codecs.configuration.CodecRegistry
   *
   * @param registry Registry to use to find `Codec`s.
   */
-class AnyCodec( val registry: CodecRegistry, val classLoader: ClassLoader = null )
+class AnyCodec( val registry: CodecRegistry )
   extends Codec[Any] {
 
   val classN: String = "class"
   val childN: String = "child"
+
+  def classLoader: ClassLoader = null
 
   def codec( clazz: Class[_] ): Codec[Any]
     = registry.get( clazz.asInstanceOf[Class[Any]] )
