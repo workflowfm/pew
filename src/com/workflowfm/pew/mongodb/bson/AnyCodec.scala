@@ -18,14 +18,22 @@ class AnyCodec( val registry: CodecRegistry )
   val classN: String = "class"
   val childN: String = "child"
 
-  def classLoader: ClassLoader = null
-
   def codec( clazz: Class[_] ): Codec[Any]
     = registry.get( clazz.asInstanceOf[Class[Any]] )
 
   // Jev, unset the `ClassLoader` to ensure the default is used.
-  def classForName( name: String ): Class[_]
-    = ClassLoaderUtil.withClassLoader( classLoader ) { Class.forName(name) }
+  def classForName( name: String ): Class[_] = {
+    try {
+      ClassLoaderUtil.withClassLoader(null) {
+        Class.forName(name)
+      }
+    } catch {
+      case ex: ClassNotFoundException =>
+        println(s"AnyCodec could not establish the name of a class '$name'.")
+        ex.printStackTrace()
+        throw ex
+    }
+  }
 
   override def encode(writer: BsonWriter, value: Any, ctx: EncoderContext): Unit = {
 
