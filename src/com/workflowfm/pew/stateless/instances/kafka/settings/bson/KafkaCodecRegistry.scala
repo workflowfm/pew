@@ -34,11 +34,18 @@ class KafkaCodecRegistry(
   registerCodec( EitherCodec( anyc ) )
   registerCodec( OptionCodec( anyc ) )
 
+  /** A local type of PiObjectCodec to ensure the `anyCodec` used
+    * matches the one overridden here.
+    */
+  class LocalPiObjectCodec extends PiObjectCodec( this ) {
+    override lazy val anyCodec: Codec[Any] = anyc
+  }
+
   // Keep explicit references to these PEW codec instances,
   // We don't have a registry that includes them.
   private val idc = registerCodec( new ObjectIdCodec() )
   private val procc = registerCodec( new PiProcessCodec( processes ) )
-  private val obj = registerCodec( new PiObjectCodec( this ) )
+  private val obj = registerCodec( new LocalPiObjectCodec )
   private val term = registerCodec( new TermCodec(this) )
   private val chan = registerCodec( new ChanCodec )
   private val chanMap = registerCodec( new ChanMapCodec(this) )
