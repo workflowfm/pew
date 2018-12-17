@@ -24,7 +24,10 @@ object PiMetadata {
     */
   case class Key[T]( val id: String ) extends (PiMetadataMap => T) {
     override def apply( meta: PiMetadataMap ): T
-    = meta(id).asInstanceOf[T]
+      = meta(id).asInstanceOf[T]
+
+    def get( meta: PiMetadataMap ): Option[T]
+      = meta.get(id).map( _.asInstanceOf[T] )
   }
 
   /** The system time (in milliseconds) when a PiEvent
