@@ -35,6 +35,34 @@ sealed trait PiEvent[KeyT] {
   def asString: String
 }
 
+object PiEvent {
+
+
+  /** Update the metadata of this event whilst copying the rest of the
+    * members of this event. Provides a way of modifying the PiEvent
+    * metadata since otherwise that information is immutable.
+    *
+    * @param fn The function to use to update the metadata.
+    * @tparam KeyT The type used to identify PiInstances.
+    * @return A function to which returns events with modified metadata.
+    */
+  def liftMetaFn[KeyT]( fn: PiMetadataMap => PiMetadataMap )
+    : PiEvent[KeyT] => PiEvent[KeyT] = {
+
+    case e: PiEventStart[KeyT] => e.copy( metadata = fn( e.metadata ) )
+    case e: PiEventResult[KeyT] => e.copy( metadata = fn( e.metadata ) )
+    case e: PiEventCall[KeyT] => e.copy( metadata = fn( e.metadata ) )
+    case e: PiEventReturn[KeyT] => e.copy( metadata = fn( e.metadata ) )
+    case e: PiFailureNoResult[KeyT] => e.copy( metadata = fn( e.metadata ) )
+    case e: PiFailureUnknownProcess[KeyT] => e.copy( metadata = fn( e.metadata ) )
+    case e: PiFailureAtomicProcessIsComposite[KeyT] => e.copy( metadata = fn( e.metadata ) )
+    case e: PiFailureNoSuchInstance[KeyT] => e.copy( metadata = fn( e.metadata ) )
+    case e: PiEventException[KeyT] => e.copy( metadata = fn( e.metadata ) )
+    case e: PiEventProcessException[KeyT] => e.copy( metadata = fn( e.metadata ) )
+
+  }
+}
+
 /** PiEvents which are associated with a specific AtomicProcess call.
   */
 sealed trait PiAtomicProcessEvent[KeyT] extends PiEvent[KeyT] {
