@@ -87,11 +87,11 @@ object KafkaWrapperFlows {
 
   /// STREAM PROCESSING / AKKA FLOWS ///
 
-  def flowLogIn[T <: Tracked[_]]: Flow[ T, T, NotUsed ]
-    = Flow[T].wireTap( m => println(s"Received: $m.") )
+  def flowLogIn[T <: Tracked[_]]( implicit s: KafkaExecutorSettings ): Flow[ T, T, NotUsed ]
+    = Flow[T].wireTap( m => s.logMessageReceived( m ) )
 
-  def flowLogOut[T <: Tracked[_]]: Flow[ T, T, NotUsed ]
-    = Flow[T].wireTap( m => println( s"Sending: $m.") )
+  def flowLogOut[T <: Tracked[_]]( implicit s: KafkaExecutorSettings ): Flow[ T, T, NotUsed ]
+    = Flow[T].wireTap( m => s.logMessageSent( m ) )
 
   def flowRespond[T[X] <: Tracked[X], In, Out]( component: StatelessComponent[In, Out] )
     : Flow[ T[In], T[Out], NotUsed ]

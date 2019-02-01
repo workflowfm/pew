@@ -40,9 +40,12 @@ abstract class KafkaExecutorSettings(
   import KafkaExecutorSettings._
   import StatelessMessages._
 
-  type TopicN = String
+  // Kafka - Debug output
+  def logMessageReceived(msg: Any): Unit = println(s"Received: $msg.")
+  def logMessageSent(msg: Any): Unit = println(s"Sent: $msg.")
 
   // Kafka - Topic Names
+  type TopicN = String
   def tnReduceRequest: TopicN
   def tnPiiHistory: TopicN
   def tnAssignment: TopicN
