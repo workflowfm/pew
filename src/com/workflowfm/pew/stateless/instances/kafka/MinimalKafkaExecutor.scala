@@ -56,7 +56,10 @@ class MinimalKafkaExecutor( implicit settings: KafkaExecutorSettings )
 
       case Some( pii ) =>
         logger.info( "Seeding initial 'ReduceRequest'." )
-        sendMessages( ReduceRequest( pii, Seq() ) )
+        sendMessages(
+          ReduceRequest( pii, Seq() ),
+          PiiLog( PiEventStart( pii ) )
+        )
     }
   }
 
