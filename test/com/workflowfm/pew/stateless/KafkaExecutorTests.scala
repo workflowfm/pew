@@ -7,7 +7,6 @@ import com.workflowfm.pew.stateless.components.{AtomicExecutor, Reducer, ResultL
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors.sendMessages
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.BsonKafkaExecutorSettings
-import com.workflowfm.pew.util.ClassMap
 import com.workflowfm.pew.{PromiseHandler, _}
 import org.apache.kafka.common.utils.Utils
 import org.bson.types.ObjectId
@@ -61,14 +60,14 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
   }
 
   def checkForUnmatchedLogs(msgsOf: => MessageMap): Unit = {
-    lazy val logsOf: ClassMap[PiEvent[_]] = new ClassMap(msgsOf[PiiLog].map(_.event))
+    lazy val logsOf = toLogMap( msgsOf )
 
     lazy val nPiiStarts = logsOf[PiEventStart[_]].length
     lazy val nPiiCalls = logsOf[PiEventCall[_]].length
 
-    withClue("PiEventStarts need a corresponding PiEventResult or PiEventException:") {
+    withClue("PiEventStarts need a corresponding PiEventResult or PiExceptionEvent:") {
       val nPiiResult = logsOf[PiEventResult[_]].length
-      val nPiiErrs = logsOf[PiEventException[_]].length
+      val nPiiErrs = logsOf[PiExceptionEvent[_]].length
       nPiiStarts shouldBe (nPiiResult + nPiiErrs)
     }
 

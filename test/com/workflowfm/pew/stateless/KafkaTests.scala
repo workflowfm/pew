@@ -9,7 +9,7 @@ import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettin
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.{BsonKafkaExecutorSettings, KafkaCodecRegistry}
 import com.workflowfm.pew.stateless.instances.kafka.{CompleteKafkaExecutor, MinimalKafkaExecutor}
 import com.workflowfm.pew.util.ClassMap
-import com.workflowfm.pew.{PiProcessStore, SimpleProcessStore}
+import com.workflowfm.pew.{PiEvent, PiProcessStore, SimpleProcessStore}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, TimeoutException}
@@ -110,8 +110,12 @@ trait KafkaTests extends ProcessExecutorTester {
   }
 
   type MessageMap = ClassMap[AnyMsg]
+  type LogMap = ClassMap[PiEvent[_]]
 
   class MessageDrain( consume: Boolean = false )
     extends MessageMap( outstanding( consume ) )
+
+  def toLogMap( msgMap: MessageMap ): LogMap
+    = new ClassMap( msgMap[PiiLog] map (_.event) )
 
 }
