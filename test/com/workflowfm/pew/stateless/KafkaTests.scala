@@ -109,8 +109,7 @@ trait KafkaTests extends ProcessExecutorTester {
     Await.result( fOutstanding, Duration.Inf )
   }
 
-  class MessageMap( messages: Seq[AnyMsg] )
-    extends ClassMap[AnyMsg]( messages )
+  type MessageMap = ClassMap[AnyMsg]
 
   class MessageDrain( consume: Boolean = false )
     extends MessageMap( outstanding( consume ) )

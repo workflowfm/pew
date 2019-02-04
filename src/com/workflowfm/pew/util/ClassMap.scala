@@ -21,6 +21,9 @@ class ClassMap[CommonT]( elements: Seq[CommonT] ) {
 
   def byName( name: String ): Seq[CommonT] = classMap( idMap( name ).head )
 
+  def filter( fn: CommonT => Boolean ): ClassMap[CommonT]
+    = new ClassMap[CommonT]( elements filter fn )
+
 }
 
 object ClassMap {
