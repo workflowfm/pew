@@ -382,14 +382,15 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
     val msgsOf = new MessageDrain(true)
 
     def shouldBeEmpty(m: AnyMsg): Boolean = !m.isInstanceOf[PiiUpdate]
+    checkForOutstandingMsgs(msgsOf filter shouldBeEmpty)
 
-    checkForOutstandingMsgs(msgsOf.filter(shouldBeEmpty))
+    withClue( "The irreducible PiUpdate shouldn't be processed:" ) {
+      msgsOf[PiiUpdate] should have size 1
 
-    msgsOf[PiiUpdate] should have size 1
-
-    // TODO: PiInstances don't equal one another as they have different container types after serialization.
-    // msgsOf[PiiUpdate].head shouldBe oldMsg
-    msgsOf[PiiUpdate].head.pii.id shouldBe oldMsg.pii.id
+      // TODO: PiInstances don't equal one another as they have different container types after serialization.
+      // msgsOf[PiiUpdate].head shouldBe oldMsg
+      msgsOf[PiiUpdate].head.pii.id shouldBe oldMsg.pii.id
+    }
   }
 
   it should "call Rexamples under heavy load." in {
