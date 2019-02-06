@@ -278,7 +278,7 @@ class KafkaExecutorTests
     val ex = makeExecutor(failureProcess.settings)
     val f1 = ex.execute(failp, Seq(1))
 
-    a[RemoteProcessException[ObjectId]] should be thrownBy awaitAndShutdown(ex, f1)
+    a[RemoteException[ObjectId]] should be thrownBy awaitAndShutdown(ex, f1)
 
     val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
@@ -289,7 +289,7 @@ class KafkaExecutorTests
     val ex = makeExecutor(failureProcess.settings)
     val f1 = ex.execute(rif, Seq(21))
 
-    a[RemoteProcessException[ObjectId]] should be thrownBy awaitAndShutdown(ex, f1)
+    a[RemoteException[ObjectId]] should be thrownBy awaitAndShutdown(ex, f1)
 
     val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
