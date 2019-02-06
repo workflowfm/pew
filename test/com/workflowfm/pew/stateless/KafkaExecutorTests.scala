@@ -296,6 +296,10 @@ class KafkaExecutorTests
     checkForUnmatchedLogs(msgsOf)
   }
 
+  it should "call an Rexample after calling a failed process" in {
+    pending
+  }
+
   it should "call 2 concurrent Rexamples on different executors with same timings" in {
     val ex1 = makeExecutor(completeProcess.settings)
     val ex2 = makeExecutor(completeProcess.settings)
