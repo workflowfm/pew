@@ -81,11 +81,11 @@ class KafkaExecutorTests
     lazy val nPiiStarts = logsOf[PiEventStart[_]].length
     lazy val nPiiCalls = logsOf[PiEventCall[_]].length
 
-    withClue("PiEventStarts need a corresponding PiEventResult or PiExceptionEvent:") {
+    withClue("PiEventStarts need a corresponding PiEventFinish:") {
       nPiiStarts shouldBe logsOf[PiEventFinish[_]].length
     }
 
-    withClue("PiEventCalls need a corresponding PiEventReturn or PiEventProcessExceptions:") {
+    withClue("PiEventCalls need a corresponding PiEventCallEnd:") {
       nPiiCalls shouldBe logsOf[PiEventCallEnd[_]].length
     }
 
@@ -268,6 +268,7 @@ class KafkaExecutorTests
     } catch {
       case ex: Exception =>
         checkShutdown( exec )
+        new MessageDrain(true)
         throw ex
     }
 
@@ -428,7 +429,6 @@ class KafkaExecutorTests
   it should "call Rexamples under heavy load." in {
 
     val ex = makeExecutor(completeProcess.settings)
-    var errors: List[Exception] = List()
 
     try {
       for (i <- 0 to 240) {
@@ -447,18 +447,18 @@ class KafkaExecutorTests
         await(f2) shouldBe(s"PbISleptFor${b(4)}s", s"PcISleptFor${b(5)}s")
       }
 
-      checkShutdown(ex)
-
     } catch {
       case e: Exception =>
         e.printStackTrace()
-        errors = e :: errors
+        checkShutdown(ex)
+        new MessageDrain(true)
+        assert( false, "Errors encountered during execution." )
     }
+
+    checkShutdown(ex)
 
     val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
-
-    errors shouldBe empty
   }
 }
