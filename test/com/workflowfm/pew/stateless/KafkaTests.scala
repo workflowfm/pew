@@ -116,6 +116,6 @@ trait KafkaTests extends ProcessExecutorTester {
     extends MessageMap( outstanding( consume ) )
 
   def toLogMap( msgMap: MessageMap ): LogMap
-    = new ClassMap( msgMap[PiiLog] map (_.event) )
+    = new ClassMap[PiEvent[_]]( msgMap[PiiLog] map (_.event) )
 
 }

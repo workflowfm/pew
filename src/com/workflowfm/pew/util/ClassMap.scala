@@ -16,8 +16,22 @@ class ClassMap[CommonT]( elements: Seq[CommonT] ) {
       .groupBy[ClassKey]( _.getClass )
       .withDefaultValue( Seq[CommonT]() )
 
-  def apply[SubT <: CommonT]( implicit ct: ClassTag[SubT] ): Seq[SubT]
-    = classMap( ct.runtimeClass.asInstanceOf[ClassKey] ).asInstanceOf[Seq[SubT]]
+  /** Retrieve all elements in the ClassMap which are assignable from `SubT`.
+    *
+    * @return A sequence of elements of type `SubT`.
+    */
+  def apply[SubT <: CommonT]( implicit ct: ClassTag[SubT] ): Seq[SubT] = {
+    val rtClass: ClassKey = ct.runtimeClass.asInstanceOf[ClassKey]
+
+    def getMembers(key: ClassKey, instances: Seq[CommonT]): Seq[SubT] = {
+      if ( rtClass isAssignableFrom key )
+        instances map (_.asInstanceOf[SubT])
+      else
+        Seq()
+    }
+
+    classMap.flatMap((getMembers _).tupled).toSeq
+  }
 
   def byName( name: String ): Seq[CommonT] = classMap( idMap( name ).head )
 
