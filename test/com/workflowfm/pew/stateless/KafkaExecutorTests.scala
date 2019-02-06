@@ -106,7 +106,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
       )
 
     val pii = PiInstance(ObjectId.get, pbi, PiObject(1))
-    sendMessages(ReduceRequest(pii, Seq()))
+    sendMessages(ReduceRequest(pii, Seq()), PiiLog(PiEventStart(pii)))
 
     val handler = new PromiseHandler("test", pii.id)
     listener.subscribe(handler)
