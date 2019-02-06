@@ -2,7 +2,6 @@ package com.workflowfm.pew.stateless.instances.kafka
 
 import akka.Done
 import akka.actor.ActorSystem
-import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.Materializer
 import com.workflowfm.pew._
 import com.workflowfm.pew.stateless._
@@ -66,7 +65,8 @@ class MinimalKafkaExecutor( implicit settings: KafkaExecutorSettings )
   // Necessary local KafkaComponent instance.
   val eventHandler: ResultListener = new ResultListener
   override val worker: PiObservable[ObjectId] = eventHandler
-  val eventHandlerControl: Control = uniqueResultListener( eventHandler )
 
-  override def shutdown: Future[Done] = KafkaConnectors.shutdown( eventHandlerControl )
+  val eventHandlerControl: DrainControl = uniqueResultListener( eventHandler )
+  override def shutdown: Future[Done] = KafkaConnectors.drainAndShutdown( eventHandlerControl )
+  override def forceShutdown: Future[Done] = KafkaConnectors.shutdown( eventHandlerControl )
 }

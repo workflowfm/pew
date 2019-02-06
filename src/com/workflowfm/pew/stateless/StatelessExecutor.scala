@@ -14,6 +14,7 @@ abstract class StatelessExecutor[KeyT]
   extends ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
 
   def shutdown: Future[Done]
+  def forceShutdown: Future[Done] = shutdown
 
   final def syncShutdown( timeout: Duration = Duration.Inf ): Done
     = Await.result( shutdown, timeout )

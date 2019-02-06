@@ -1,11 +1,13 @@
 package com.workflowfm.pew.stateless
 
+import java.util.concurrent.TimeoutException
+
 import akka.Done
-import akka.kafka.scaladsl.Consumer.Control
 import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, _}
 import com.workflowfm.pew.stateless.components.{AtomicExecutor, Reducer, ResultListener}
+import com.workflowfm.pew.stateless.instances.kafka.CustomKafkaExecutor
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
-import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors.sendMessages
+import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors.{DrainControl, sendMessages}
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.BsonKafkaExecutorSettings
 import com.workflowfm.pew.{PromiseHandler, _}
 import org.apache.kafka.common.utils.Utils
@@ -52,6 +54,19 @@ class KafkaExecutorTests
     await(future) shouldBe Done
   }
 
+  def checkShutdown( exec: CustomKafkaExecutor ): Unit = {
+    try {
+      exec.syncShutdown(20.seconds)
+    } catch {
+      case _: TimeoutException =>
+        assert( false, "Shutdown should not timeout." )
+    }
+
+    for (control <- exec.allControls) {
+      assert( control.isShutdown.isCompleted, s"All controls ($control) should be shutdown." )
+    }
+  }
+
   def checkForOutstandingMsgs(msgsOf: => MessageMap): Unit = {
     assert(msgsOf[SequenceRequest].isEmpty, "it shouldn't have outstanding SequenceRequests." )
     assert(msgsOf[SequenceFailure].isEmpty, "it shouldn't have outstanding SequenceFailures." )
@@ -94,7 +109,7 @@ class KafkaExecutorTests
     implicit val settings: BsonKafkaExecutorSettings = completeProcess.settings
     val listener = new ResultListener
 
-    val controls: Seq[Control]
+    val controls: Seq[DrainControl]
       = Seq(
         KafkaConnectors.indyReducer(new Reducer),
         KafkaConnectors.indySequencer,
@@ -125,7 +140,7 @@ class KafkaExecutorTests
 
     ex.start(piiId)
     await(handler.promise.future) should be("PbISleptFor1s")
-    ex.syncShutdown()
+    checkShutdown(ex)
 
     val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs( msgsOf )
@@ -135,7 +150,7 @@ class KafkaExecutorTests
   it should "call an atomic PbI" in {
     val ex = makeExecutor(completeProcess.settings)
     await( ex.execute(pbi, Seq(1)) ) should be("PbISleptFor1s")
-    ex.syncShutdown()
+    checkShutdown(ex)
 
     val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
@@ -151,7 +166,7 @@ class KafkaExecutorTests
     await(f1) should be("PbISleptFor2s")
     await(f2) should be("PbISleptFor1s")
 
-    ex.syncShutdown()
+    checkShutdown(ex)
 
     val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
@@ -161,7 +176,7 @@ class KafkaExecutorTests
   it should "call an Rexample" in {
     val ex = makeExecutor(completeProcess.settings)
     await(ex.execute(ri, Seq(21))) should be(("PbISleptFor2s", "PcISleptFor1s"))
-    ex.syncShutdown()
+    checkShutdown(ex)
 
     val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
@@ -171,7 +186,7 @@ class KafkaExecutorTests
   it should "call an Rexample with same timings" in {
     val ex = makeExecutor(completeProcess.settings)
     await( ex.execute(ri, Seq(11)) ) should be(("PbISleptFor1s", "PcISleptFor1s"))
-    ex.syncShutdown()
+    checkShutdown(ex)
 
     val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
@@ -187,7 +202,7 @@ class KafkaExecutorTests
     await(f1) should be(("PbISleptFor3s", "PcISleptFor1s"))
     await(f2) should be(("PbISleptFor1s", "PcISleptFor2s"))
 
-    ex.syncShutdown()
+    checkShutdown(ex)
 
     val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
@@ -203,7 +218,7 @@ class KafkaExecutorTests
     await(f1) should be(("PbISleptFor1s", "PcISleptFor1s"))
     await(f2) should be(("PbISleptFor1s", "PcISleptFor1s"))
 
-    ex.syncShutdown()
+    checkShutdown(ex)
 
     val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
@@ -221,7 +236,7 @@ class KafkaExecutorTests
     await(f2) should be(("PbISleptFor1s", "PcISleptFor1s"))
     await(f3) should be(("PbISleptFor1s", "PcISleptFor1s"))
 
-    ex.syncShutdown()
+    checkShutdown(ex)
 
     val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
@@ -237,7 +252,7 @@ class KafkaExecutorTests
     await(f1) should be(("PbISleptFor1s", "PcISleptFor1s"))
     await(f2) should be(("PbISleptFor1s", "PcXSleptFor1s"))
 
-    ex.syncShutdown()
+    checkShutdown(ex)
 
     val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
@@ -249,7 +264,7 @@ class KafkaExecutorTests
     val f1 = ex.execute(failp, Seq(1))
 
     a[RemoteProcessException[ObjectId]] should be thrownBy await(f1)
-    ex.syncShutdown()
+    checkShutdown(ex)
 
     val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
@@ -261,7 +276,7 @@ class KafkaExecutorTests
     val f1 = ex.execute(rif, Seq(21))
 
     a[RemoteProcessException[ObjectId]] should be thrownBy await(f1)
-    ex.syncShutdown()
+    checkShutdown(ex)
 
     val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
@@ -278,8 +293,8 @@ class KafkaExecutorTests
     await(f1) should be(("PbISleptFor1s", "PcISleptFor1s"))
     await(f2) should be(("PbISleptFor1s", "PcISleptFor1s"))
 
-    ex1.syncShutdown()
-    ex2.syncShutdown()
+    checkShutdown(ex1)
+    checkShutdown(ex2)
 
     val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
@@ -293,7 +308,7 @@ class KafkaExecutorTests
       val futId: Future[ObjectId] = ex.call(ri, Seq(21))
 
       Thread.sleep(10.seconds.toMillis)
-      ex.syncShutdown()
+      await( ex.forceShutdown ) // This won't drain so use forced shutdown.
 
       // The future is created with Future.success.
       futId.value.get.get
@@ -309,6 +324,9 @@ class KafkaExecutorTests
     pciw.continue()
 
     await(handler.future) should be(("PbISleptFor2s", "PcISleptFor1s"))
+
+    checkShutdown(ex2)
+
     val sndMsgs: MessageMap = new MessageDrain(true)
 
     // We should only be waiting on PiiUpdates or Assignments.
@@ -344,7 +362,7 @@ class KafkaExecutorTests
     val f1 = ex.execute(ri, Seq(21))
 
     await(f1) should be(("PbISleptFor2s", "PcISleptFor1s"))
-    ex.syncShutdown()
+    checkShutdown(ex)
 
     // We don't care what state we leave the outstanding message in, provided we clean our own state.
     val ourMsg: AnyMsg => Boolean = _.piiId != oldPii.id
@@ -374,7 +392,7 @@ class KafkaExecutorTests
     val f1 = ex.execute(ri, Seq(21))
 
     await(f1) should be(("PbISleptFor2s", "PcISleptFor1s"))
-    ex.syncShutdown()
+    checkShutdown(ex)
 
     val msgsOf = new MessageDrain(true)
 
@@ -412,7 +430,7 @@ class KafkaExecutorTests
         await(f2) shouldBe(s"PbISleptFor${b(4)}s", s"PcISleptFor${b(5)}s")
       }
 
-      ex.syncShutdown()
+      checkShutdown(ex)
 
     } catch {
       case e: Exception =>

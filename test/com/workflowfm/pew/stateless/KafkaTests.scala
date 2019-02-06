@@ -7,7 +7,7 @@ import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.{BsonKafkaExecutorSettings, KafkaCodecRegistry}
-import com.workflowfm.pew.stateless.instances.kafka.{CompleteKafkaExecutor, MinimalKafkaExecutor}
+import com.workflowfm.pew.stateless.instances.kafka.{CompleteKafkaExecutor, CustomKafkaExecutor}
 import com.workflowfm.pew.util.ClassMap
 import com.workflowfm.pew.{PiEvent, PiProcessStore, SimpleProcessStore}
 
@@ -81,7 +81,7 @@ trait KafkaTests extends ProcessExecutorTester {
     ))
 
 
-  def makeExecutor( settings: KafkaExecutorSettings ): MinimalKafkaExecutor = {
+  def makeExecutor( settings: KafkaExecutorSettings ): CustomKafkaExecutor = {
     CompleteKafkaExecutor[(Y, Z)]( settings )
   }
 

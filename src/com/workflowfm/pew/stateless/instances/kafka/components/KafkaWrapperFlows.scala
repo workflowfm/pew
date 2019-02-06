@@ -128,7 +128,7 @@ object KafkaWrapperFlows {
 
   /// OTHER FUNCTIONALITY ///
 
-  def run[T]( source: Source[T, Control], sink: Sink[T, Future[Done]] )( implicit s: KafkaExecutorSettings ): Control
+  def run[T]( source: Source[T, Control], sink: Sink[T, Future[Done]] )( implicit s: KafkaExecutorSettings ): DrainingControl[Done]
     = source
       .toMat( sink )( Keep.both )
       .mapMaterializedValue( DrainingControl.apply )  // Add shutdown control object.

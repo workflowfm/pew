@@ -1,7 +1,7 @@
 package com.workflowfm.pew.stateless.instances.kafka.components
 
 import akka.Done
-import akka.kafka.scaladsl.Consumer.Control
+import akka.kafka.scaladsl.Consumer.{Control, DrainingControl}
 import akka.stream.scaladsl.Sink
 import com.workflowfm.pew.stateless.StatelessMessages
 import com.workflowfm.pew.stateless.components._
@@ -30,6 +30,8 @@ object KafkaConnectors {
   import KafkaWrapperFlows._
   import StatelessMessages._
 
+  type DrainControl = DrainingControl[Done]
+
   /** Creates a temporary Kafka Producer capable of sending a single message.
     *
     * @param msgs Messages to send.
@@ -49,7 +51,7 @@ object KafkaConnectors {
     * @param s KafkaExecutorSettings controlling the interface with the Kafka Driver.
     * @return Control object for the running process.
     */
-  def indyReducer( red: Reducer )(implicit s: KafkaExecutorSettings ): Control
+  def indyReducer( red: Reducer )(implicit s: KafkaExecutorSettings ): DrainControl
     = run(
       srcReduceRequest[Transaction]
       via flowLogIn
@@ -64,7 +66,7 @@ object KafkaConnectors {
     * @param s KafkaExecutorSettings controlling the interface with the Kafka Driver.
     * @return Control object for the running process.
     */
-  def indySequencer( implicit s: KafkaExecutorSettings ): Control
+  def indySequencer( implicit s: KafkaExecutorSettings ): DrainControl
     = run(
       srcPiiHistory[PartTracked]
       via flowLogIn
@@ -101,7 +103,7 @@ object KafkaConnectors {
     * @param s KafkaExecutorSettings controlling the interface with the Kafka Driver.
     * @return Control object for the running process.
     */
-  def indyAtomicExecutor( exec: AtomicExecutor, threadsPerPart: Int = 1 )( implicit s: KafkaExecutorSettings ): Control
+  def indyAtomicExecutor( exec: AtomicExecutor, threadsPerPart: Int = 1 )( implicit s: KafkaExecutorSettings ): DrainControl
     = run(
       srcAssignment[Transaction]
       via flowLogIn
@@ -119,7 +121,7 @@ object KafkaConnectors {
     * @param s KafkaExecutorSettings controlling the interface with the Kafka Driver.
     * @return Control object for the running process.
     */
-  def specificResultListener( groupId: String )( resl: ResultListener )(implicit s: KafkaExecutorSettings ): Control
+  def specificResultListener( groupId: String )( resl: ResultListener )(implicit s: KafkaExecutorSettings ): DrainControl
     = run(
       srcResult[Untracked]( groupId )
       via flowRespond( resl ),
@@ -133,13 +135,22 @@ object KafkaConnectors {
     * @param s KafkaExecutorSettings controlling the interface with the Kafka Driver.
     * @return Control object for the running process.
     */
-  def uniqueResultListener( resl: ResultListener )( implicit s: KafkaExecutorSettings ): Control
+  def uniqueResultListener( resl: ResultListener )( implicit s: KafkaExecutorSettings ): DrainControl
     = specificResultListener( "Event-Group-" + ObjectId.get.toHexString )( resl )( s )
 
-  def shutdown( controls: Control* )( implicit s: KafkaExecutorSettings ): Future[Done] = shutdownAll( controls )
+  def shutdown( controls: Control* )( implicit s: KafkaExecutorSettings ): Future[Done]
+    = shutdownAll( controls )
 
   def shutdownAll( controls: Seq[Control] )( implicit s: KafkaExecutorSettings ): Future[Done] = {
     implicit val ctx: ExecutionContext = s.executionContext
-    Future.sequence( controls.map( c => c.shutdown().flatMap( _ => c.isShutdown ) ) ).map( _ => Done )
+    Future.sequence( controls map (_.shutdown()) ).map( _ => Done )
+  }
+
+  def drainAndShutdown( controls: DrainControl* )( implicit s: KafkaExecutorSettings ): Future[Done]
+    = drainAndShutdownAll( controls )
+
+  def drainAndShutdownAll( controls: Seq[DrainControl] )( implicit s: KafkaExecutorSettings ): Future[Done] = {
+    implicit val ctx: ExecutionContext = s.executionContext
+    Future.sequence( controls map (_.drainAndShutdown()) ).map( _ => Done )
   }
 }
