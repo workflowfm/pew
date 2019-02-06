@@ -259,12 +259,26 @@ class KafkaExecutorTests
     checkForUnmatchedLogs(msgsOf)
   }
 
+  /** Allows `await` to throw an exception but still ensures `exec` is correctly shutdown.
+    */
+  def awaitAndShutdown[T]( exec: CustomKafkaExecutor, fut: Future[T] ): Unit = {
+    try {
+      await( fut )
+
+    } catch {
+      case ex: Exception =>
+        checkShutdown( exec )
+        throw ex
+    }
+
+    checkShutdown( exec )
+  }
+
   it should "call a failed atomic process" in {
     val ex = makeExecutor(failureProcess.settings)
     val f1 = ex.execute(failp, Seq(1))
 
-    a[RemoteProcessException[ObjectId]] should be thrownBy await(f1)
-    checkShutdown(ex)
+    a[RemoteProcessException[ObjectId]] should be thrownBy awaitAndShutdown(ex, f1)
 
     val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
@@ -275,8 +289,7 @@ class KafkaExecutorTests
     val ex = makeExecutor(failureProcess.settings)
     val f1 = ex.execute(rif, Seq(21))
 
-    a[RemoteProcessException[ObjectId]] should be thrownBy await(f1)
-    checkShutdown(ex)
+    a[RemoteProcessException[ObjectId]] should be thrownBy awaitAndShutdown(ex, f1)
 
     val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
