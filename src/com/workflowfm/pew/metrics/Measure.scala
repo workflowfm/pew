@@ -74,9 +74,9 @@ class MetricsHandler[KeyT](override val name: String, timeFn: PiMetadata.Key[Lon
       case PiEventResult(i,r,t)   => workflowResult( i.id, r, timeFn(t) )
       case PiEventCall(i,r,p,_,t) => procCall( i, r, p.iname, timeFn(t) )
       case PiEventReturn(i,r,s,t) => procReturn( i, r, s, timeFn(t) )
-      case PiEventProcessException(i,r,m,_,t) => processFailure( i, r, m, timeFn(t) )
+      case PiFailureAtomicProcessException(i,r,m,_,t) => processFailure( i, r, m, timeFn(t) )
 
-      case ev: PiExceptionEvent[KeyT] =>
+      case ev: PiFailure[KeyT] =>
         workflowException( ev.id, ev.exception, timeFn(ev.metadata) )
     }
     false

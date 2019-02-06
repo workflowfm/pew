@@ -19,7 +19,8 @@ import scala.concurrent.duration._
 
 //noinspection ZeroIndexToHead
 @RunWith(classOf[JUnitRunner])
-class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
+class KafkaExecutorTests
+  extends FlatSpec with Matchers with KafkaTests {
 
   // Ensure there are no outstanding messages before starting testing.
   new MessageDrain( true )
@@ -66,15 +67,11 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
     lazy val nPiiCalls = logsOf[PiEventCall[_]].length
 
     withClue("PiEventStarts need a corresponding PiEventResult or PiExceptionEvent:") {
-      val nPiiResult = logsOf[PiEventResult[_]].length
-      val nPiiErrs = logsOf[PiExceptionEvent[_]].length
-      nPiiStarts shouldBe (nPiiResult + nPiiErrs)
+      nPiiStarts shouldBe logsOf[PiEventFinish[_]].length
     }
 
     withClue("PiEventCalls need a corresponding PiEventReturn or PiEventProcessExceptions:") {
-      val nPiiReturns = logsOf[PiEventReturn[_]].length
-      val nPiiProcErrs = logsOf[PiEventProcessException[_]].length
-      nPiiCalls shouldBe (nPiiReturns + nPiiProcErrs)
+      nPiiCalls shouldBe logsOf[PiEventCallEnd[_]].length
     }
 
     withClue("There should have at least 1 subcall for each start:") {

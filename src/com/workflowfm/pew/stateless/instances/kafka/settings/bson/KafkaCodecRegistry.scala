@@ -66,7 +66,7 @@ class KafkaCodecRegistry(
   registerCodec( new PiFailureNoResultCodec[ObjectId]( piInst, meta ) )
   registerCodec( new PiFailureNoSuchInstanceCodec[ObjectId]( idc, meta ) )
   registerCodec( new PiFailureUnknownProcessCodec[ObjectId]( piInst, meta ) )
-  private val peExEvent = registerCodec( new SuperclassCodec[PiExceptionEvent[ObjectId]] )
+  private val peExEvent = registerCodec( new SuperclassCodec[PiFailure[ObjectId]] )
   private val peEvent = registerCodec( new SuperclassCodec[PiEvent[ObjectId]] )
 
   // These use the PEW-REST Key codecs, need to be initialised after PEW

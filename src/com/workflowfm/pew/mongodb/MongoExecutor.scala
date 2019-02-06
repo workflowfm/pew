@@ -58,7 +58,7 @@ class MongoExecutor
     update(id,startUpdate,0,promise)
     promise.future.recover({
       case PiException => Unit
-      case t:Throwable => publish(PiEventException(id,t))
+      case t:Throwable => publish(PiFailureExceptions(id,t))
     })
   }
 //
@@ -102,7 +102,7 @@ class MongoExecutor
 		update(id,postResultUpdate(ref,res._1),0,promise)
 		promise.future.recover({
       case PiException => Unit
-      case t:Throwable => publish(PiEventException(id,t))
+      case t:Throwable => publish(PiFailureExceptions(id,t))
     })
   }
   
@@ -167,7 +167,7 @@ class MongoExecutor
     case (e:Exception) => { // this should never happen!
       System.err.println("*** [" + id + "] FATAL")
       e.printStackTrace()
-      publish(PiEventException(id,e))
+      publish(PiFailureExceptions(id,e))
       Future.failed(e)
     }
   }
@@ -230,7 +230,7 @@ class MongoExecutor
 
             postResult(i.id,ref,res)
           }
-          case Failure (ex) => publish(PiEventProcessException(i.id,ref,ex))
+          case Failure (ex) => publish(PiFailureAtomicProcessException(i.id,ref,ex))
         }
         System.err.println("*** [" + i.id + "] Called process: " + p.name + " ref:" + ref)
       }

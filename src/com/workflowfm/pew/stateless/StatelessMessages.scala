@@ -70,7 +70,7 @@ object StatelessMessages {
   case class SequenceFailure(
     pii:  Either[ObjectId, PiInstance[ObjectId]],
     returns: Seq[CallResult],
-    errors: Seq[PiExceptionEvent[ObjectId]]
+    errors: Seq[PiFailure[ObjectId]]
 
   ) extends PiiHistory {
 

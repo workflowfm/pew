@@ -1,10 +1,9 @@
 package com.workflowfm.pew.execution
 
 import com.workflowfm.pew._
+
 import scala.concurrent._
-import scala.concurrent.duration.Duration
-import scala.annotation.tailrec
-import scala.util.{Success, Failure}
+import scala.util.{Failure, Success}
 
 /**
  * Executes any PiProcess asynchronously.
@@ -87,7 +86,7 @@ class SingleStateExecutor(processes:PiProcessStore)
             postResult(i.id,ref,res._1)
           }
           case Failure(ex) => {
-            publish(PiEventProcessException(i.id,ref,ex))
+            publish(PiFailureAtomicProcessException(i.id,ref,ex))
             instance = None 
           }
         }

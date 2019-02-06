@@ -238,8 +238,8 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
     testCodec( PiiLog( PiFailureUnknownProcess( eg1.pInProgress, "SumPr0ssess" ) ) )
     testCodec( PiiLog( PiFailureAtomicProcessIsComposite( eg1.pFinishing, "SomeCompositeProc" ) ) )
     testCodec( PiiLog( PiFailureNoSuchInstance( eg1.piiId ) ) )
-    testCodec( PiiLog( PiEventException( eg1.piiId, testException ) ) )
-    testCodec( PiiLog( PiEventProcessException( eg1.piiId, eg1.r1._1.id, testException ) ) )
+    testCodec( PiiLog( PiFailureExceptions( eg1.piiId, testException ) ) )
+    testCodec( PiiLog( PiFailureAtomicProcessException( eg1.piiId, eg1.r1._1.id, testException ) ) )
   }
 
   it should "correctly (de)serialise mixed AnyMsgs" in {
@@ -280,7 +280,7 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
     testCodec[AnyMsg]( PiiLog( PiFailureUnknownProcess( eg1.pInProgress, "SumPr0ssess" ) ) )
     testCodec[AnyMsg]( PiiLog( PiFailureAtomicProcessIsComposite( eg1.pFinishing, "SomeCompositeProc" ) ) )
     testCodec[AnyMsg]( PiiLog( PiFailureNoSuchInstance( eg1.piiId ) ) )
-    testCodec[AnyMsg]( PiiLog( PiEventException( eg1.piiId, testException ) ) )
-    testCodec[AnyMsg]( PiiLog( PiEventProcessException( eg1.piiId, eg1.r1._1.id, testException ) ) )
+    testCodec[AnyMsg]( PiiLog( PiFailureExceptions( eg1.piiId, testException ) ) )
+    testCodec[AnyMsg]( PiiLog( PiFailureAtomicProcessException( eg1.piiId, eg1.r1._1.id, testException ) ) )
   }
 }
