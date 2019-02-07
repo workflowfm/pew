@@ -5,6 +5,7 @@ import akka.kafka.{ConsumerSettings, ProducerSettings}
 import akka.stream.{ActorMaterializer, Materializer}
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 import org.apache.kafka.clients.consumer.ConsumerConfig
+import org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_OFFSET_RESET_CONFIG
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.bson.codecs.configuration.CodecRegistry
 
@@ -58,7 +59,11 @@ class BsonKafkaExecutorSettings(
   override val csPiiHistory:       ConsumerSettings[KeyPiiId, PiiHistory]        = consSettings
   override val csSequenceRequest:  ConsumerSettings[KeyPiiId, SequenceRequest]   = consSettings
   override val csReduceRequest:    ConsumerSettings[KeyPiiId, ReduceRequest]     = consSettings
-  override val csResult:           ConsumerSettings[KeyPiiId, PiiLog]            = consSettings
+
+  // Jev, new results listeners only care about messages after their instantiation.
+  // Additionally, they cannot fall back on the old offset as they have a unique group-id.
+  override val csResult: ConsumerSettings[KeyPiiId, PiiLog]
+    = consSettings[KeyPiiId, PiiLog].withProperty( AUTO_OFFSET_RESET_CONFIG, "latest" )
 
   // Kafka - (PiiId, CallRef) keyed consumer topic settings
   override val csAssignment:       ConsumerSettings[KeyPiiIdCall, Assignment]    = consSettings
