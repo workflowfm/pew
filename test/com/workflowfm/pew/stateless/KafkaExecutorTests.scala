@@ -69,6 +69,10 @@ class KafkaExecutorTests
   // Helper functions for execution tests //
   //////////////////////////////////////////
 
+  implicit def enhanceWithContainsDuplicates[T]( s: Seq[T] ) = new {
+    def hasDuplicates: Boolean= s.distinct.size != s.size
+  }
+
   /** Jev, a `tryBut/always` control like a `try/finally`, but returns
     * with the output of the `always` block instead of the `try` block.
     *
@@ -165,21 +169,39 @@ class KafkaExecutorTests
         )
       }
 
-      withClue(s"PiEventStarts need a corresponding PiEventFinish:") {
-        nPiiStart shouldBe nPiiFinish
+      val allStartedPiis = logsOf[PiEventStart[_]].map(_.id)
+      val allFinishedPiis = logsOf[PiEventFinish[_]].map(_.id)
+
+      withClue( s"PiInstances should only start once:") {
+        assert( !allStartedPiis.hasDuplicates, "no duplicate PiEventStarts" )
       }
 
-      withClue("PiEventCalls need a corresponding PiEventCallEnd:") {
-        nPiiCall shouldBe nPiiCallEnd
+      withClue( s"PiInstances should only end once:") {
+        assert( !allFinishedPiis.hasDuplicates, "no duplicate PiEventFinishes" )
+      }
+
+      withClue(s"PiEventStarts need a corresponding PiEventFinish:") {
+        allStartedPiis should contain theSameElementsAs allFinishedPiis
       }
 
       withClue("There should have at least 1 subcall for each start:") {
         nPiiStart should be <= nPiiCall
+
       }
 
+      val allStartedCalls = logsOf[PiEventCall[_]].map(e => (e.id, e.ref))
+      val allFinishedCalls = logsOf[PiEventCallEnd[_]].map(e => (e.id, e.ref))
+
       withClue("Every PiEventCall should have a unique call reference:") {
-        val nUniqueCalls = logsOf[PiEventCall[_]].map(e => (e.id, e.ref)).toSet.size
-        nUniqueCalls shouldBe nPiiCall
+        assert( !allStartedCalls.hasDuplicates, "no duplicate PiEventCalls" )
+      }
+
+      withClue("Every PiEventCallEnd should have a unique call reference:") {
+        assert( !allFinishedCalls.hasDuplicates, "no duplicate PiEventCallEnds" )
+      }
+
+      withClue("PiEventCalls need a corresponding PiEventCallEnd:") {
+        allStartedCalls should contain theSameElementsAs allFinishedCalls
       }
 
       withClue("Every PiEventCall should belong to an executed PiInstance:") {
