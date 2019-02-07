@@ -9,7 +9,7 @@ import com.workflowfm.pew.stateless.instances.kafka.CustomKafkaExecutor
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors.{DrainControl, sendMessages}
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
-import com.workflowfm.pew.{PromiseHandler, _}
+import com.workflowfm.pew.{PiEventFinish, PromiseHandler, _}
 import org.apache.kafka.common.utils.Utils
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
@@ -116,30 +116,66 @@ class KafkaExecutorTests
   def checkForUnmatchedLogs(msgsOf: => MessageMap): Unit = {
     lazy val logsOf = toLogMap( msgsOf )
 
-    lazy val nPiiStarts = logsOf[PiEventStart[_]].length
-    lazy val nPiiCalls = logsOf[PiEventCall[_]].length
+    val nPiiEvent = logsOf[PiEvent[_]].length
+    val nPiiStart = logsOf[PiEventStart[_]].length
+    val nPiiFinish = logsOf[PiEventFinish[_]].length
+    val nPiiResult = logsOf[PiEventResult[_]].length
+    val nPiiNoRes = logsOf[PiFailureNoResult[_]].length
+    val nPiiUnkProc = logsOf[PiFailureUnknownProcess[_]].length
+    val nPiiIsComp = logsOf[PiFailureAtomicProcessIsComposite[_]].length
+    val nPiiNoInst = logsOf[PiFailureNoSuchInstance[_]].length
+    val nPiiExceps = logsOf[PiFailureExceptions[_]].length
+    val nPiiCall = logsOf[PiEventCall[_]].length
+    val nPiiCallEnd = logsOf[PiEventCall[_]].length
+    val nPiiReturn = logsOf[PiEventReturn[_]].length
+    val nPiiAPExceps = logsOf[PiFailureAtomicProcessException[_]].length
 
-    withClue("PiEventStarts need a corresponding PiEventFinish:") {
-      nPiiStarts shouldBe logsOf[PiEventFinish[_]].length
-    }
+    // Print PiiEvent breakdown when any of the match checks fails.
+    withClue( clue =
+      s"#Event:     $nPiiEvent\n" +
+      s"#Start*:    $nPiiStart\n" +
+      s"#Finish:    $nPiiFinish\n" +
+      s"#Result*:   $nPiiResult\n" +
+      s"#NoRes*:    $nPiiNoRes\n" +
+      s"#UnkProc*:  $nPiiUnkProc\n" +
+      s"#IsComp*:   $nPiiIsComp\n" +
+      s"#NoInst*:   $nPiiNoInst\n" +
+      s"#Exceps*:   $nPiiExceps\n" +
+      s"#Call*:     $nPiiCall\n" +
+      s"#CallEnd:   $nPiiCallEnd\n" +
+      s"#Return*:   $nPiiReturn\n" +
+      s"#ApExceps*: $nPiiAPExceps\n"
+    ) {
 
-    withClue("PiEventCalls need a corresponding PiEventCallEnd:") {
-      nPiiCalls shouldBe logsOf[PiEventCallEnd[_]].length
-    }
+      withClue( s"Test arithmatic includes all events:" ) {
+        nPiiEvent shouldBe (
+          nPiiStart + nPiiResult + nPiiNoRes + nPiiUnkProc + nPiiIsComp +
+          nPiiNoInst + nPiiExceps + nPiiCall + nPiiReturn + nPiiAPExceps
+        )
+      }
 
-    withClue("There should have at least 1 subcall for each start:") {
-      nPiiStarts should be <= nPiiCalls
-    }
+      withClue(s"PiEventStarts need a corresponding PiEventFinish:") {
+        nPiiStart shouldBe nPiiFinish
+      }
 
-    withClue("Every PiEventCall should have a unique call reference:") {
-      val nUniqueCalls = logsOf[PiEventCall[_]].map(e => (e.id, e.ref)).toSet.size
-      nUniqueCalls shouldBe nPiiCalls
-    }
+      withClue("PiEventCalls need a corresponding PiEventCallEnd:") {
+        nPiiCall shouldBe nPiiCallEnd
+      }
 
-    withClue("Every PiEventCall should belong to an executed PiInstance:") {
-      val allCalls = logsOf[PiEventCall[_]].map(_.id).toSet
-      val allStarts = logsOf[PiEventCall[_]].map(_.id).toSet
-      allStarts should contain allElementsOf allCalls
+      withClue("There should have at least 1 subcall for each start:") {
+        nPiiStart should be <= nPiiCall
+      }
+
+      withClue("Every PiEventCall should have a unique call reference:") {
+        val nUniqueCalls = logsOf[PiEventCall[_]].map(e => (e.id, e.ref)).toSet.size
+        nUniqueCalls shouldBe nPiiCall
+      }
+
+      withClue("Every PiEventCall should belong to an executed PiInstance:") {
+        val allCalls = logsOf[PiEventCall[_]].map(_.id).toSet
+        val allStarts = logsOf[PiEventCall[_]].map(_.id).toSet
+        allStarts should contain allElementsOf allCalls
+      }
     }
   }
 
