@@ -733,16 +733,17 @@ class KafkaExecutorTests
 
           // Jev, intersperse some timeconsuming tasks.
           val b: Seq[Int]
-          = Seq(41, 43, 47, 53, 59, 61)
-            .map(j => if ((i % j) == 0) 1 else 0)
+            = Seq(41, 43, 47, 53, 59, 61)
+              .map(j => if ((i % j) == 0) 1 else 0)
 
           val f0 = ex.execute(ri, Seq(b(0) * 10 + b(1)))
           val f1 = ex.execute(ri, Seq(b(2) * 10 + b(3)))
           val f2 = ex.execute(ri, Seq(b(4) * 10 + b(5)))
 
-          await(f0) shouldBe(s"PbISleptFor${b(0)}s", s"PcISleptFor${b(1)}s")
-          await(f1) shouldBe(s"PbISleptFor${b(2)}s", s"PcISleptFor${b(3)}s")
-          await(f2) shouldBe(s"PbISleptFor${b(4)}s", s"PcISleptFor${b(5)}s")
+          // Allow more time initially as 3 are running at once.
+          await(f0, 45.seconds) shouldBe (s"PbISleptFor${b(0)}s", s"PcISleptFor${b(1)}s")
+          await(f1, 30.seconds) shouldBe (s"PbISleptFor${b(2)}s", s"PcISleptFor${b(3)}s")
+          await(f2, 15.seconds) shouldBe (s"PbISleptFor${b(4)}s", s"PcISleptFor${b(5)}s")
         }
 
       } always {
@@ -752,7 +753,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
+    checkForOutstandingMsgs(msgsOf)
   }
 }
