@@ -621,15 +621,21 @@ class KafkaExecutorTests
   it should "call an Rexample interupted with shutdown." in {
 
     val ourPiiId: ObjectId = {
+      try {
+        val ex = makeExecutor(shutdownProcess.settings)
+        val futId: Future[ObjectId] = ex.call(ri, Seq(21))
 
-      val ex = makeExecutor(shutdownProcess.settings)
-      val futId: Future[ObjectId] = ex.call(ri, Seq(21))
+        Thread.sleep(10.seconds.toMillis)
+        await(ex.forceShutdown) // This won't drain so use forced shutdown.
 
-      Thread.sleep(10.seconds.toMillis)
-      await( ex.forceShutdown ) // This won't drain so use forced shutdown.
+        // The future is created with Future.success.
+        futId.value.get.get
 
-      // The future is created with Future.success.
-      futId.value.get.get
+      } catch {
+        case ex: Throwable =>
+          new MessageDrain(true)
+          throw ex
+      }
     }
 
     // Dont consume, we need the outstanding messages to resume.
@@ -653,9 +659,15 @@ class KafkaExecutorTests
       }
     }
 
-    // We should only be waiting on PiiUpdates or Assignments.
-    def shouldBeEmpty(m: AnyMsg): Boolean = !(m.isInstanceOf[PiiUpdate] || m.isInstanceOf[Assignment])
-    checkForOutstandingMsgs(fstMsgs.filter(shouldBeEmpty))
+    withClue("Unexpected messages after the shutdown:\n") {
+
+      // We should only be waiting on PiiUpdates or Assignments.
+      def notExpectedMsg(m: AnyMsg): Boolean = {
+        m.piiId != ourPiiId || !(m.isInstanceOf[PiiUpdate] || m.isInstanceOf[Assignment])
+      }
+
+      checkForOutstandingMsgs(fstMsgs filter notExpectedMsg)
+    }
 
     withClue("produces exactly one outstanding PiiUpdate") {
       fstMsgs[PiiUpdate] should (have size 1)
@@ -672,8 +684,10 @@ class KafkaExecutorTests
       calledIds should contain theSameElementsAs assignedIds
     }
 
-    checkForOutstandingMsgs(sndMsgs)
-    checkForUnmatchedLogs(sndMsgs)
+    withClue("After completing PiInstance execution:") {
+      checkForOutstandingMsgs(sndMsgs)
+      checkForUnmatchedLogs(sndMsgs)
+    }
   }
 
   it should "call an Rexample (with an outstanding PiiUpdate)" in {
