@@ -462,7 +462,7 @@ class KafkaExecutorTests
     checkForUnmatchedLogs(msgsOf)
   }
 
-  it should "call 2 Rexamples each with a different component" in {
+  it should "call 2 Rexamples each with different processes" in {
     val msgsOf: MessageMap  = {
       val ex = makeExecutor(completeProcess.settings)
 
@@ -476,6 +476,32 @@ class KafkaExecutorTests
       } always {
         ensureShutdownThen(ex) {
           new MessageDrain(true)
+        }
+      }
+    }
+
+    checkForOutstandingMsgs(msgsOf)
+    checkForUnmatchedLogs(msgsOf)
+  }
+
+  it should "call 2 concurrent Rexamples on different executors with same timings" in {
+
+    val msgsOf: MessageMap = {
+      val ex1 = makeExecutor(completeProcess.settings)
+      val ex2 = makeExecutor(completeProcess.settings)
+
+      tryBut {
+        val f1 = ex1.execute(ri, Seq(11))
+        val f2 = ex2.execute(ri, Seq(11))
+
+        await(f1) should be(("PbISleptFor1s", "PcISleptFor1s"))
+        await(f2) should be(("PbISleptFor1s", "PcISleptFor1s"))
+
+      } always {
+        ensureShutdownThen(ex1) {
+          ensureShutdownThen(ex2) {
+            new MessageDrain(true)
+          }
         }
       }
     }
@@ -547,30 +573,21 @@ class KafkaExecutorTests
     checkForUnmatchedLogs(msgsOf)
   }
 
-  it should "call 2 concurrent Rexamples on different executors with same timings" in {
-
+  it should "throw an exception when used after being shutdown" in {
     val msgsOf: MessageMap = {
-      val ex1 = makeExecutor(completeProcess.settings)
-      val ex2 = makeExecutor(completeProcess.settings)
-
       tryBut {
-        val f1 = ex1.execute(ri, Seq(11))
-        val f2 = ex2.execute(ri, Seq(11))
-
-        await(f1) should be(("PbISleptFor1s", "PcISleptFor1s"))
-        await(f2) should be(("PbISleptFor1s", "PcISleptFor1s"))
+        val ex = makeExecutor(completeProcess.settings)
+        ensureShutdownThen( ex ) {}
+        an[Exception] should be thrownBy ex.execute(rif, Seq(21))
 
       } always {
-        ensureShutdownThen(ex1) {
-          ensureShutdownThen(ex2) {
-            new MessageDrain(true)
-          }
-        }
+        new MessageDrain(true)
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
-    checkForUnmatchedLogs(msgsOf)
+    withClue( "No execution should've been performed." ) {
+      msgsOf[AnyMsg] shouldBe empty
+    }
   }
 
   it should "call an Rexample interupted with shutdown." in {
