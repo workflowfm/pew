@@ -8,7 +8,7 @@ import com.workflowfm.pew.stateless.components.{AtomicExecutor, Reducer, ResultL
 import com.workflowfm.pew.stateless.instances.kafka.CustomKafkaExecutor
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors.{DrainControl, sendMessages}
-import com.workflowfm.pew.stateless.instances.kafka.settings.bson.BsonKafkaExecutorSettings
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
 import com.workflowfm.pew.{PromiseHandler, _}
 import org.apache.kafka.common.utils.Utils
 import org.bson.types.ObjectId
@@ -26,6 +26,11 @@ class KafkaExecutorTests
 
   // Ensure there are no outstanding messages before starting testing.
   new MessageDrain( true )
+
+
+  /////////////////////////
+  // Class Loader Checks //
+  /////////////////////////
 
   lazy val mainClassLoader: ClassLoader = Thread.currentThread().getContextClassLoader
   lazy val kafkaClassLoader: ClassLoader = Utils.getContextOrKafkaClassLoader
@@ -53,6 +58,11 @@ class KafkaExecutorTests
 
     await(future) shouldBe Done
   }
+
+
+  //////////////////////////////////////////
+  // Helper functions for execution tests //
+  //////////////////////////////////////////
 
   /** Jev, a `tryBut/always` control like a `try/finally`, but returns
     * with the output of the `always` block instead of the `try` block.
@@ -133,30 +143,48 @@ class KafkaExecutorTests
     }
   }
 
+
+  /////////////////////////
+  // All Execution Tests //
+  /////////////////////////
+
+  class DiyInterface {
+    implicit val s: KafkaExecutorSettings = completeProcess.settings
+    private val listener = new ResultListener
+
+    private val controls: Seq[DrainControl] = Seq(
+      KafkaConnectors.indyReducer(new Reducer),
+      KafkaConnectors.indySequencer,
+      KafkaConnectors.indyAtomicExecutor(new AtomicExecutor()),
+      KafkaConnectors.uniqueResultListener(listener),
+    )
+
+    def call( p: PiProcess, args: PiObject* ): Future[Any] = {
+      val pii = PiInstance(ObjectId.get, p, args: _*)
+
+      val handler = new PromiseHandler("test", pii.id)
+      listener.subscribe(handler)
+
+      sendMessages(ReduceRequest(pii, Seq()), PiiLog(PiEventStart(pii)))
+      handler.promise.future
+    }
+
+    def shutdown(): Unit = {
+      await( KafkaConnectors.shutdownAll(controls) )
+    }
+  }
+
   it should "call an atomic PbI (DIY interface)" in {
-    implicit val settings: BsonKafkaExecutorSettings = completeProcess.settings
-    val listener = new ResultListener
 
     val msgsOf: MessageMap = {
-      val controls: Seq[DrainControl]
-        = Seq(
-          KafkaConnectors.indyReducer(new Reducer),
-          KafkaConnectors.indySequencer,
-          KafkaConnectors.indyAtomicExecutor(new AtomicExecutor()),
-          KafkaConnectors.uniqueResultListener(listener),
-        )
+      val diyEx = new DiyInterface
 
       tryBut {
-        val pii = PiInstance(ObjectId.get, pbi, PiObject(1))
-        sendMessages(ReduceRequest(pii, Seq()), PiiLog(PiEventStart(pii)))
-
-        val handler = new PromiseHandler("test", pii.id)
-        listener.subscribe(handler)
-
-        await(handler.promise.future) should be("PbISleptFor1s")
+        val f1 = diyEx.call(pbi, PiObject(1))
+        await(f1) should be("PbISleptFor1s")
 
       } always {
-        await( KafkaConnectors.shutdownAll(controls) )
+        diyEx.shutdown()
         new MessageDrain(true)
       }
     }
@@ -165,17 +193,59 @@ class KafkaExecutorTests
     checkForUnmatchedLogs(msgsOf)
   }
 
+  it should "call an Rexample (DIY interface)" in {
+    val msgsOf: MessageMap = {
+      val diyEx = new DiyInterface
+
+      tryBut {
+        val f1 = diyEx.call(ri, PiObject(21))
+        await(f1) should be(("PbISleptFor2s", "PcISleptFor1s"))
+
+      } always {
+        diyEx.shutdown()
+        new MessageDrain(true)
+      }
+    }
+
+    checkForOutstandingMsgs(msgsOf)
+    checkForUnmatchedLogs(msgsOf)
+  }
+
+  def baremetalCall( ex: CustomKafkaExecutor, p: PiProcess, args: PiObject*  ): Future[Any] = {
+    val piiId = await( ex.init( pbi, args.toSeq ) )
+    val handler = new PromiseHandler("test", piiId)
+    ex.subscribe(handler)
+
+    ex.start(piiId)
+    handler.promise.future
+  }
+
   it should "call an atomic PbI (baremetal interface)" in {
     val msgsOf: MessageMap  = {
       val ex = makeExecutor(completeProcess.settings)
 
       tryBut {
-        val piiId = await(ex.init(pbi, Seq(PiObject(1))))
-        val handler = new PromiseHandler("test", piiId)
-        ex.subscribe(handler)
+        val f1 = baremetalCall( ex, pbi, PiObject(1) )
+        await(f1) should be("PbISleptFor1s")
 
-        ex.start(piiId)
-        await(handler.promise.future) should be("PbISleptFor1s")
+      } always {
+        ensureShutdownThen(ex) {
+          new MessageDrain(true)
+        }
+      }
+    }
+
+    checkForOutstandingMsgs( msgsOf )
+    checkForUnmatchedLogs( msgsOf )
+  }
+
+  it should "call an Rexample (baremetal interface)" in {
+    val msgsOf: MessageMap  = {
+      val ex = makeExecutor(completeProcess.settings)
+
+      tryBut {
+        val f1 = baremetalCall( ex, pbi, PiObject(21) )
+        await(f1) should be(("PbISleptFor2s", "PcISleptFor1s"))
 
       } always {
         ensureShutdownThen(ex) {
