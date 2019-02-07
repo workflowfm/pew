@@ -144,9 +144,12 @@ object Tracked {
     * within an ExecutionContext do not list the necessary key or value serialiser classes.
     * Explicitly setting `null` causes the constructor to use the Kafka ClassLoader
     * which should contain these values.
+    *
+    * (Note: Use `lazyProducer` to minimize the number of new Producers which are created,
+    * this reduces the number of system resources used (such as file handles))
     */
   def createProducer[K, V]( settings: ProducerSettings[K, V] ): KafkaProducer[K, V]
-    = withClassLoader( null ) { settings.createKafkaProducer() }
+    = withClassLoader( null ) { settings.lazyProducer }
 }
 
 /** A Tracked type which uses a `Committable` as tracking information.
