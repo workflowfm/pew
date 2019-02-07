@@ -111,11 +111,17 @@ class KafkaExecutorTests
   }
 
   def checkForOutstandingMsgs(msgsOf: => MessageMap): Unit = {
-    assert(msgsOf[SequenceRequest].isEmpty, "it shouldn't have outstanding SequenceRequests." )
-    assert(msgsOf[SequenceFailure].isEmpty, "it shouldn't have outstanding SequenceFailures." )
-    assert(msgsOf[ReduceRequest].isEmpty, "it shouldn't have outstanding ReduceRequests." )
-    assert(msgsOf[Assignment].isEmpty, "it shouldn't have outstanding Assignments." )
-    assert(msgsOf[PiiUpdate].isEmpty, "it shouldn't have outstanding PiiUpdates." )
+    withClue( clue =
+      s"#SequenceRequests: ${msgsOf[SequenceRequest].length}\n" +
+      s"#SequenceFailures: ${msgsOf[SequenceFailure].length}\n" +
+      s"#ReduceRequests:   ${msgsOf[ReduceRequest].length}\n" +
+      s"#Assignments:      ${msgsOf[Assignment].length}\n" +
+      s"#PiiUpdates:       ${msgsOf[PiiUpdate].length}\n" +
+      s"It shouldn't have any outstanding messsages.\n"
+    ) {
+      msgsOf[SequenceRequest] ++ msgsOf[SequenceFailure] ++ msgsOf[ReduceRequest] ++
+      msgsOf[Assignment] ++ msgsOf[PiiUpdate] shouldBe empty
+    }
   }
 
   def checkForUnmatchedLogs(msgsOf: => MessageMap): Unit = {
