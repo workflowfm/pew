@@ -506,20 +506,17 @@ class KafkaExecutorTests
   it should "call an Rexample after calling a failed process" in {
     val msgsOf: MessageMap = {
       tryBut {
-        val ex = makeExecutor(failureProcess.settings)
 
+        val ex1 = makeExecutor(failureProcess.settings)
         try {
-          val f1 = ex.execute(rif, Seq(21))
+          val f1 = ex1.execute(rif, Seq(21))
           a[RemoteException[ObjectId]] should be thrownBy await(f1)
-
-        } finally ensureShutdownThen(ex) {}
+        } finally ensureShutdownThen(ex1) {}
 
         val ex2 = makeExecutor(completeProcess.settings)
-
         try {
-          val f2 = ex.execute(ri, Seq(21))
-          await(f2) should be(("PbISleptFor1s", "PcXSleptFor1s"))
-
+          val f2 = ex2.execute(ri, Seq(21))
+          await(f2) should be(("PbISleptFor2s", "PcISleptFor1s"))
         } finally ensureShutdownThen(ex2) {}
 
       } always {
