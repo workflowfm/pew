@@ -280,7 +280,7 @@ class KafkaExecutorTests
       val ex = makeExecutor(completeProcess.settings)
 
       tryBut {
-        val f1 = baremetalCall( ex, pbi, PiObject(21) )
+        val f1 = baremetalCall( ex, ri, PiObject(21) )
         await(f1) should be(("PbISleptFor2s", "PcISleptFor1s"))
 
       } always {
