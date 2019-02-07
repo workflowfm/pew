@@ -419,6 +419,25 @@ class KafkaExecutorTests
     checkForUnmatchedLogs(msgsOf)
   }
 
+  it should "call 2 sequential Rexamples" in {
+    val msgsOf: MessageMap = {
+      val ex = makeExecutor(completeProcess.settings)
+
+      tryBut {
+        await(ex.execute(ri, Seq(21))) should be(("PbISleptFor2s", "PcISleptFor1s"))
+        await(ex.execute(ri, Seq(21))) should be(("PbISleptFor2s", "PcISleptFor1s"))
+
+      } always {
+        ensureShutdownThen(ex) {
+          new MessageDrain(true)
+        }
+      }
+    }
+
+    checkForOutstandingMsgs(msgsOf)
+    checkForUnmatchedLogs(msgsOf)
+  }
+
   it should "call 3 concurrent Rexamples" in {
     val msgsOf: MessageMap  = {
       val ex = makeExecutor(completeProcess.settings)
