@@ -606,7 +606,7 @@ class KafkaExecutorTests
       tryBut {
         val ex = makeExecutor(completeProcess.settings)
         ensureShutdownThen( ex ) {}
-        an[Exception] should be thrownBy ex.execute(rif, Seq(21))
+        a[ShutdownExecutorException] should be thrownBy ex.execute(rif, Seq(21))
 
       } always {
         new MessageDrain(true)

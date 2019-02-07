@@ -43,12 +43,16 @@ class MinimalKafkaExecutor( implicit settings: KafkaExecutorSettings )
     * @return A Future with the new unique ID that was generated
     */
   override def init( process: PiProcess, args: Seq[PiObject] ): Future[ObjectId] = {
+    if (isShutdown) throw new ShutdownExecutorException( "`init` was called." )
+
     val piiId = ObjectId.get
     piiStore = piiStore.put( PiInstance( piiId, process, args:_* ) )
     Future.successful( piiId )
   }
 
   override def start( id: ObjectId ): Unit = {
+    if (isShutdown) throw new ShutdownExecutorException( "`start` was called." )
+
     piiStore.get( id ) match {
       case None =>
         eventHandler.publish( PiFailureNoSuchInstance( id ) )
@@ -69,4 +73,6 @@ class MinimalKafkaExecutor( implicit settings: KafkaExecutorSettings )
   val eventHandlerControl: DrainControl = uniqueResultListener( eventHandler )
   override def shutdown: Future[Done] = KafkaConnectors.drainAndShutdown( eventHandlerControl )
   override def forceShutdown: Future[Done] = KafkaConnectors.shutdown( eventHandlerControl )
+
+  def isShutdown: Boolean = eventHandlerControl.isShutdown.isCompleted
 }
