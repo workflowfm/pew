@@ -504,7 +504,31 @@ class KafkaExecutorTests
   }
 
   it should "call an Rexample after calling a failed process" in {
-    pending
+    val msgsOf: MessageMap = {
+      tryBut {
+        val ex = makeExecutor(failureProcess.settings)
+
+        try {
+          val f1 = ex.execute(rif, Seq(21))
+          a[RemoteException[ObjectId]] should be thrownBy await(f1)
+
+        } finally ensureShutdownThen(ex) {}
+
+        val ex2 = makeExecutor(completeProcess.settings)
+
+        try {
+          val f2 = ex.execute(ri, Seq(21))
+          await(f2) should be(("PbISleptFor1s", "PcXSleptFor1s"))
+
+        } finally ensureShutdownThen(ex2) {}
+
+      } always {
+        new MessageDrain(true)
+      }
+    }
+
+    checkForOutstandingMsgs(msgsOf)
+    checkForUnmatchedLogs(msgsOf)
   }
 
   it should "call 2 concurrent Rexamples on different executors with same timings" in {
