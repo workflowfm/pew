@@ -3,6 +3,7 @@ package com.workflowfm.pew.stateless.instances.kafka.components
 import akka.Done
 import akka.kafka.scaladsl.Consumer.{Control, DrainingControl}
 import akka.stream.scaladsl.Sink
+import com.workflowfm.pew.PiEventFinish
 import com.workflowfm.pew.stateless.StatelessMessages
 import com.workflowfm.pew.stateless.components._
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
@@ -124,6 +125,14 @@ object KafkaConnectors {
   def specificResultListener( groupId: String )( resl: ResultListener )(implicit s: KafkaExecutorSettings ): DrainControl
     = run(
       srcResult[Untracked]( groupId )
+      wireTap { msg =>
+        msg.value.event match {
+          case res: PiEventFinish[_] =>
+            s.logMessageReceived(res)
+
+          case _ => // Other messages are uninteresting.
+        }
+      }
       via flowRespond( resl ),
       Sink.ignore
     )
