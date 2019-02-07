@@ -46,17 +46,22 @@ class KafkaExecutorTests
   }
 
   it should "should start a producer from inside a ExecutionContext" in {
-    implicit val settings = completeProcess.settings
+    try {
+      implicit val s: KafkaExecutorSettings = completeProcess.settings
 
-    val future: Future[Done] = Future {
-      Thread.sleep(100)
-    } map { _ =>
-      val pii = PiInstance(ObjectId.get, pbi, PiObject(1))
-      sendMessages(ReduceRequest(pii, Seq()))
-      Done
+      val future: Future[Done] = Future {
+        Thread.sleep(100)
+      } map { _ =>
+        val pii = PiInstance(ObjectId.get, pbi, PiObject(1))
+        sendMessages(ReduceRequest(pii, Seq()))
+        Done
+      }
+
+      await(future) shouldBe Done
+
+    } finally {
+      new MessageDrain(true)
     }
-
-    await(future) shouldBe Done
   }
 
 
