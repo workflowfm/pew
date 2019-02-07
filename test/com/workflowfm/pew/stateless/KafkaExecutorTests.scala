@@ -54,16 +54,44 @@ class KafkaExecutorTests
     await(future) shouldBe Done
   }
 
-  def checkShutdown( exec: CustomKafkaExecutor ): Unit = {
+  /** Jev, a `tryBut/always` control like a `try/finally`, but returns
+    * with the output of the `always` block instead of the `try` block.
+    *
+    * @param tryFn A code block which might throw errors.
+    * @return The return value of `always` block, if no errors were thrown.
+    */
+  private def tryBut( tryFn: => Unit ) = {
+    new {
+      def always[T]( alwaysFn: => T ): T = {
+        try {
+          tryFn
+          alwaysFn
+        } catch {
+          case throwable: Throwable =>
+            alwaysFn
+            throw throwable
+        }
+      }
+    }
+  }
+
+  def ensureShutdownThen[T]( exec: CustomKafkaExecutor )( fnFinally: => T ): T = {
     try {
       exec.syncShutdown(20.seconds)
+
     } catch {
-      case _: TimeoutException =>
-        assert( false, "Shutdown should not timeout." )
+      case ex: TimeoutException =>
+        Await.result( exec.forceShutdown, Duration.Inf )
+        fnFinally
+        throw ex
     }
 
-    for (control <- exec.allControls) {
-      assert( control.isShutdown.isCompleted, s"All controls ($control) should be shutdown." )
+    tryBut {
+      for (control <- exec.allControls) {
+        assert(control.isShutdown.isCompleted, s"All controls ($control) should be shutdown.")
+      }
+    } always {
+      fnFinally
     }
   }
 
@@ -109,190 +137,257 @@ class KafkaExecutorTests
     implicit val settings: BsonKafkaExecutorSettings = completeProcess.settings
     val listener = new ResultListener
 
-    val controls: Seq[DrainControl]
-      = Seq(
-        KafkaConnectors.indyReducer(new Reducer),
-        KafkaConnectors.indySequencer,
-        KafkaConnectors.indyAtomicExecutor(new AtomicExecutor()),
-        KafkaConnectors.uniqueResultListener(listener),
-      )
+    val msgsOf: MessageMap = {
+      val controls: Seq[DrainControl]
+        = Seq(
+          KafkaConnectors.indyReducer(new Reducer),
+          KafkaConnectors.indySequencer,
+          KafkaConnectors.indyAtomicExecutor(new AtomicExecutor()),
+          KafkaConnectors.uniqueResultListener(listener),
+        )
 
-    val pii = PiInstance(ObjectId.get, pbi, PiObject(1))
-    sendMessages(ReduceRequest(pii, Seq()), PiiLog(PiEventStart(pii)))
+      tryBut {
+        val pii = PiInstance(ObjectId.get, pbi, PiObject(1))
+        sendMessages(ReduceRequest(pii, Seq()), PiiLog(PiEventStart(pii)))
 
-    val handler = new PromiseHandler("test", pii.id)
-    listener.subscribe(handler)
+        val handler = new PromiseHandler("test", pii.id)
+        listener.subscribe(handler)
 
-    await( handler.promise.future ) should be("PbISleptFor1s")
-    await( KafkaConnectors.shutdownAll( controls ) )
+        await(handler.promise.future) should be("PbISleptFor1s")
 
-    val msgsOf = new MessageDrain(true)
+      } always {
+        await( KafkaConnectors.shutdownAll(controls) )
+        new MessageDrain(true)
+      }
+    }
+
     checkForOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
   it should "call an atomic PbI (baremetal interface)" in {
-    val ex = makeExecutor(completeProcess.settings)
+    val msgsOf: MessageMap  = {
+      val ex = makeExecutor(completeProcess.settings)
 
-    val piiId = await(ex.init(pbi, Seq(PiObject(1))))
-    val handler = new PromiseHandler("test", piiId)
-    ex.subscribe(handler)
+      tryBut {
+        val piiId = await(ex.init(pbi, Seq(PiObject(1))))
+        val handler = new PromiseHandler("test", piiId)
+        ex.subscribe(handler)
 
-    ex.start(piiId)
-    await(handler.promise.future) should be("PbISleptFor1s")
-    checkShutdown(ex)
+        ex.start(piiId)
+        await(handler.promise.future) should be("PbISleptFor1s")
 
-    val msgsOf = new MessageDrain(true)
+      } always {
+        ensureShutdownThen(ex) {
+          new MessageDrain(true)
+        }
+      }
+    }
+
     checkForOutstandingMsgs( msgsOf )
     checkForUnmatchedLogs( msgsOf )
   }
 
   it should "call an atomic PbI" in {
-    val ex = makeExecutor(completeProcess.settings)
-    await( ex.execute(pbi, Seq(1)) ) should be("PbISleptFor1s")
-    checkShutdown(ex)
+    val msgsOf: MessageMap  = {
+      val ex = makeExecutor(completeProcess.settings)
 
-    val msgsOf = new MessageDrain(true)
+      tryBut {
+        await( ex.execute(pbi, Seq(1)) ) should be("PbISleptFor1s")
+
+      } always {
+        ensureShutdownThen(ex) {
+          new MessageDrain(true)
+        }
+      }
+    }
+
     checkForOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
   it should "call 2 concurrent atomic PbI" in {
-    val ex = makeExecutor(completeProcess.settings)
+    val msgsOf: MessageMap  = {
+      val ex = makeExecutor(completeProcess.settings)
 
-    val f1 = ex.execute(pbi, Seq(2))
-    val f2 = ex.execute(pbi, Seq(1))
+      tryBut {
+        val f1 = ex.execute(pbi, Seq(2))
+        val f2 = ex.execute(pbi, Seq(1))
 
-    await(f1) should be("PbISleptFor2s")
-    await(f2) should be("PbISleptFor1s")
+        await(f1) should be("PbISleptFor2s")
+        await(f2) should be("PbISleptFor1s")
 
-    checkShutdown(ex)
+      } always {
+        ensureShutdownThen(ex) {
+          new MessageDrain(true)
+        }
+      }
+    }
 
-    val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
   it should "call an Rexample" in {
-    val ex = makeExecutor(completeProcess.settings)
-    await(ex.execute(ri, Seq(21))) should be(("PbISleptFor2s", "PcISleptFor1s"))
-    checkShutdown(ex)
+    val msgsOf: MessageMap  = {
+      val ex = makeExecutor(completeProcess.settings)
 
-    val msgsOf = new MessageDrain(true)
+      tryBut {
+        await(ex.execute(ri, Seq(21))) should be(("PbISleptFor2s", "PcISleptFor1s"))
+
+      } always {
+        ensureShutdownThen(ex) {
+          new MessageDrain(true)
+        }
+      }
+    }
+
     checkForOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
   it should "call an Rexample with same timings" in {
-    val ex = makeExecutor(completeProcess.settings)
-    await( ex.execute(ri, Seq(11)) ) should be(("PbISleptFor1s", "PcISleptFor1s"))
-    checkShutdown(ex)
+    val msgsOf: MessageMap  = {
+      val ex = makeExecutor(completeProcess.settings)
 
-    val msgsOf = new MessageDrain(true)
+      tryBut {
+        await(ex.execute(ri, Seq(11))) should be(("PbISleptFor1s", "PcISleptFor1s"))
+
+      } always {
+        ensureShutdownThen(ex) {
+          new MessageDrain(true)
+        }
+      }
+    }
+
     checkForOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
   it should "call 2 concurrent Rexamples" in {
-    val ex = makeExecutor(completeProcess.settings)
+    val msgsOf: MessageMap  = {
+      val ex = makeExecutor(completeProcess.settings)
 
-    val f1 = ex.execute(ri, Seq(31))
-    val f2 = ex.execute(ri, Seq(12))
+      tryBut {
+        val f1 = ex.execute(ri, Seq(31))
+        val f2 = ex.execute(ri, Seq(12))
 
-    await(f1) should be(("PbISleptFor3s", "PcISleptFor1s"))
-    await(f2) should be(("PbISleptFor1s", "PcISleptFor2s"))
+        await(f1) should be(("PbISleptFor3s", "PcISleptFor1s"))
+        await(f2) should be(("PbISleptFor1s", "PcISleptFor2s"))
 
-    checkShutdown(ex)
+      } always {
+        ensureShutdownThen(ex) {
+          new MessageDrain(true)
+        }
+      }
+    }
 
-    val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
   it should "call 2 concurrent Rexamples with same timings" in {
-    val ex = makeExecutor(completeProcess.settings)
+    val msgsOf: MessageMap  = {
+      val ex = makeExecutor(completeProcess.settings)
 
-    val f1 = ex.execute(ri, Seq(11))
-    val f2 = ex.execute(ri, Seq(11))
+      tryBut {
+        val f1 = ex.execute(ri, Seq(11))
+        val f2 = ex.execute(ri, Seq(11))
 
-    await(f1) should be(("PbISleptFor1s", "PcISleptFor1s"))
-    await(f2) should be(("PbISleptFor1s", "PcISleptFor1s"))
+        await(f1) should be(("PbISleptFor1s", "PcISleptFor1s"))
+        await(f2) should be(("PbISleptFor1s", "PcISleptFor1s"))
 
-    checkShutdown(ex)
+      } always {
+        ensureShutdownThen(ex) {
+          new MessageDrain(true)
+        }
+      }
+    }
 
-    val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
   it should "call 3 concurrent Rexamples" in {
-    val ex = makeExecutor(completeProcess.settings)
+    val msgsOf: MessageMap  = {
+      val ex = makeExecutor(completeProcess.settings)
 
-    val f1 = ex.execute(ri, Seq(11))
-    val f2 = ex.execute(ri, Seq(11))
-    val f3 = ex.execute(ri, Seq(11))
+      tryBut {
+        val f1 = ex.execute(ri, Seq(11))
+        val f2 = ex.execute(ri, Seq(11))
+        val f3 = ex.execute(ri, Seq(11))
 
-    await(f1) should be(("PbISleptFor1s", "PcISleptFor1s"))
-    await(f2) should be(("PbISleptFor1s", "PcISleptFor1s"))
-    await(f3) should be(("PbISleptFor1s", "PcISleptFor1s"))
+        await(f1) should be(("PbISleptFor1s", "PcISleptFor1s"))
+        await(f2) should be(("PbISleptFor1s", "PcISleptFor1s"))
+        await(f3) should be(("PbISleptFor1s", "PcISleptFor1s"))
 
-    checkShutdown(ex)
+      } always {
+        ensureShutdownThen(ex) {
+          new MessageDrain(true)
+        }
+      }
+    }
 
-    val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
   it should "call 2 Rexamples each with a different component" in {
-    val ex = makeExecutor(completeProcess.settings)
+    val msgsOf: MessageMap  = {
+      val ex = makeExecutor(completeProcess.settings)
 
-    val f1 = ex.execute(ri, Seq(11))
-    val f2 = ex.execute(ri2, Seq(11))
+      tryBut {
+        val f1 = ex.execute(ri, Seq(11))
+        val f2 = ex.execute(ri2, Seq(11))
 
-    await(f1) should be(("PbISleptFor1s", "PcISleptFor1s"))
-    await(f2) should be(("PbISleptFor1s", "PcXSleptFor1s"))
+        await(f1) should be(("PbISleptFor1s", "PcISleptFor1s"))
+        await(f2) should be(("PbISleptFor1s", "PcXSleptFor1s"))
 
-    checkShutdown(ex)
+      } always {
+        ensureShutdownThen(ex) {
+          new MessageDrain(true)
+        }
+      }
+    }
 
-    val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
-  /** Allows `await` to throw an exception but still ensures `exec` is correctly shutdown.
-    */
-  def awaitAndShutdown[T]( exec: CustomKafkaExecutor, fut: Future[T] ): Unit = {
-    try {
-      await( fut )
+  it should "call a failed atomic process" in {
+    val msgsOf: MessageMap = {
+      val ex = makeExecutor(failureProcess.settings)
 
-    } catch {
-      case ex: Exception =>
-        checkShutdown( exec )
-        new MessageDrain(true)
-        throw ex
+      tryBut {
+        val f1 = ex.execute(failp, Seq(1))
+        a[RemoteException[ObjectId]] should be thrownBy await(f1)
+
+      } always {
+        ensureShutdownThen(ex) {
+          new MessageDrain(true)
+        }
+      }
     }
 
-    checkShutdown( exec )
-  }
-
-  it should "call a failed atomic process" in {
-    val ex = makeExecutor(failureProcess.settings)
-    val f1 = ex.execute(failp, Seq(1))
-
-    a[RemoteException[ObjectId]] should be thrownBy awaitAndShutdown(ex, f1)
-
-    val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
   it should "call a failed composite process" in {
-    val ex = makeExecutor(failureProcess.settings)
-    val f1 = ex.execute(rif, Seq(21))
+    val msgsOf: MessageMap = {
+      val ex = makeExecutor(failureProcess.settings)
 
-    a[RemoteException[ObjectId]] should be thrownBy awaitAndShutdown(ex, f1)
+      tryBut {
+        val f1 = ex.execute(rif, Seq(21))
+        a[RemoteException[ObjectId]] should be thrownBy await(f1)
 
-    val msgsOf = new MessageDrain(true)
+      } always {
+        ensureShutdownThen(ex) {
+          new MessageDrain(true)
+        }
+      }
+    }
+
     checkForOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
@@ -302,19 +397,27 @@ class KafkaExecutorTests
   }
 
   it should "call 2 concurrent Rexamples on different executors with same timings" in {
-    val ex1 = makeExecutor(completeProcess.settings)
-    val ex2 = makeExecutor(completeProcess.settings)
 
-    val f1 = ex1.execute(ri, Seq(11))
-    val f2 = ex2.execute(ri, Seq(11))
+    val msgsOf: MessageMap = {
+      val ex1 = makeExecutor(completeProcess.settings)
+      val ex2 = makeExecutor(completeProcess.settings)
 
-    await(f1) should be(("PbISleptFor1s", "PcISleptFor1s"))
-    await(f2) should be(("PbISleptFor1s", "PcISleptFor1s"))
+      tryBut {
+        val f1 = ex1.execute(ri, Seq(11))
+        val f2 = ex2.execute(ri, Seq(11))
 
-    checkShutdown(ex1)
-    checkShutdown(ex2)
+        await(f1) should be(("PbISleptFor1s", "PcISleptFor1s"))
+        await(f2) should be(("PbISleptFor1s", "PcISleptFor1s"))
 
-    val msgsOf = new MessageDrain(true)
+      } always {
+        ensureShutdownThen(ex1) {
+          ensureShutdownThen(ex2) {
+            new MessageDrain(true)
+          }
+        }
+      }
+    }
+
     checkForOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
@@ -322,6 +425,7 @@ class KafkaExecutorTests
   it should "call an Rexample interupted with shutdown." in {
 
     val ourPiiId: ObjectId = {
+
       val ex = makeExecutor(shutdownProcess.settings)
       val futId: Future[ObjectId] = ex.call(ri, Seq(21))
 
@@ -332,20 +436,26 @@ class KafkaExecutorTests
       futId.value.get.get
     }
 
-    val handler = new PromiseHandler[ObjectId]("testhandler", ourPiiId)
-
     // Dont consume, we need the outstanding messages to resume.
     val fstMsgs: MessageMap = new MessageDrain(false)
 
-    val ex2 = makeExecutor(completeProcess.settings)
-    ex2.subscribe(handler)
-    pciw.continue()
+    val sndMsgs: MessageMap = {
 
-    await(handler.future) should be(("PbISleptFor2s", "PcISleptFor1s"))
+      val handler = new PromiseHandler[ObjectId]("testhandler", ourPiiId)
+      val ex2 = makeExecutor(completeProcess.settings)
 
-    checkShutdown(ex2)
+      tryBut {
+        ex2.subscribe(handler)
+        pciw.continue()
 
-    val sndMsgs: MessageMap = new MessageDrain(true)
+        await(handler.future) should be(("PbISleptFor2s", "PcISleptFor1s"))
+
+      } always {
+        ensureShutdownThen(ex2) {
+          new MessageDrain(true)
+        }
+      }
+    }
 
     // We should only be waiting on PiiUpdates or Assignments.
     def shouldBeEmpty(m: AnyMsg): Boolean = !(m.isInstanceOf[PiiUpdate] || m.isInstanceOf[Assignment])
@@ -374,18 +484,25 @@ class KafkaExecutorTests
 
     // Construct and send an outstanding PiiUpdate message to test robustness.
     val oldPii: PiInstance[ObjectId] = PiInstance.forCall(ObjectId.get, ri, 2, 1)
-    KafkaConnectors.sendMessages(PiiUpdate(oldPii))(completeProcess.settings)
 
-    val ex = makeExecutor(completeProcess.settings)
-    val f1 = ex.execute(ri, Seq(21))
+    val msgsOf: MessageMap = {
+      val ex = makeExecutor(completeProcess.settings)
 
-    await(f1) should be(("PbISleptFor2s", "PcISleptFor1s"))
-    checkShutdown(ex)
+      tryBut {
+        KafkaConnectors.sendMessages(PiiUpdate(oldPii))(completeProcess.settings)
 
-    // We don't care what state we leave the outstanding message in, provided we clean our own state.
-    val ourMsg: AnyMsg => Boolean = _.piiId != oldPii.id
+        val f1 = ex.execute(ri, Seq(21))
+        await(f1) should be(("PbISleptFor2s", "PcISleptFor1s"))
 
-    val msgsOf = new MessageDrain(true).filter(ourMsg)
+      } always {
+        ensureShutdownThen(ex) {
+          // We don't care what state we leave the outstanding message in, provided we clean our own state.
+          val ourMsg: AnyMsg => Boolean = _.piiId != oldPii.id
+          new MessageDrain(true).filter(ourMsg)
+        }
+      }
+    }
+
     checkForOutstandingMsgs(msgsOf)
   }
 
@@ -404,15 +521,21 @@ class KafkaExecutorTests
     //          PiInstance.forCall( ObjectId.get, ri, 2, 1 )
     //        ).collect({ case update: PiiUpdate => update }).head
 
-    KafkaConnectors.sendMessages(oldMsg)(completeProcess.settings)
+    val msgsOf: MessageMap = {
+      val ex = makeExecutor(completeProcess.settings)
 
-    val ex = makeExecutor(completeProcess.settings)
-    val f1 = ex.execute(ri, Seq(21))
+      tryBut {
+        KafkaConnectors.sendMessages(oldMsg)(completeProcess.settings)
 
-    await(f1) should be(("PbISleptFor2s", "PcISleptFor1s"))
-    checkShutdown(ex)
+        val f1 = ex.execute(ri, Seq(21))
+        await(f1) should be(("PbISleptFor2s", "PcISleptFor1s"))
 
-    val msgsOf = new MessageDrain(true)
+      } always {
+        ensureShutdownThen(ex) {
+          new MessageDrain(true)
+        }
+      }
+    }
 
     def shouldBeEmpty(m: AnyMsg): Boolean = !m.isInstanceOf[PiiUpdate]
     checkForOutstandingMsgs(msgsOf filter shouldBeEmpty)
@@ -428,36 +551,33 @@ class KafkaExecutorTests
 
   it should "call Rexamples under heavy load." in {
 
-    val ex = makeExecutor(completeProcess.settings)
+    val msgsOf: MessageMap = {
+      val ex = makeExecutor(completeProcess.settings)
 
-    try {
-      for (i <- 0 to 240) {
+      tryBut {
+        for (i <- 0 to 240) {
 
-        // Jev, intersperse some timeconsuming tasks.
-        val b: Seq[Int]
-        = Seq(41, 43, 47, 53, 59, 61)
-          .map(j => if ((i % j) == 0) 1 else 0)
+          // Jev, intersperse some timeconsuming tasks.
+          val b: Seq[Int]
+          = Seq(41, 43, 47, 53, 59, 61)
+            .map(j => if ((i % j) == 0) 1 else 0)
 
-        val f0 = ex.execute(ri, Seq(b(0) * 10 + b(1)))
-        val f1 = ex.execute(ri, Seq(b(2) * 10 + b(3)))
-        val f2 = ex.execute(ri, Seq(b(4) * 10 + b(5)))
+          val f0 = ex.execute(ri, Seq(b(0) * 10 + b(1)))
+          val f1 = ex.execute(ri, Seq(b(2) * 10 + b(3)))
+          val f2 = ex.execute(ri, Seq(b(4) * 10 + b(5)))
 
-        await(f0) shouldBe(s"PbISleptFor${b(0)}s", s"PcISleptFor${b(1)}s")
-        await(f1) shouldBe(s"PbISleptFor${b(2)}s", s"PcISleptFor${b(3)}s")
-        await(f2) shouldBe(s"PbISleptFor${b(4)}s", s"PcISleptFor${b(5)}s")
+          await(f0) shouldBe(s"PbISleptFor${b(0)}s", s"PcISleptFor${b(1)}s")
+          await(f1) shouldBe(s"PbISleptFor${b(2)}s", s"PcISleptFor${b(3)}s")
+          await(f2) shouldBe(s"PbISleptFor${b(4)}s", s"PcISleptFor${b(5)}s")
+        }
+
+      } always {
+        ensureShutdownThen(ex) {
+          new MessageDrain(true)
+        }
       }
-
-    } catch {
-      case e: Exception =>
-        e.printStackTrace()
-        checkShutdown(ex)
-        new MessageDrain(true)
-        assert( false, "Errors encountered during execution." )
     }
 
-    checkShutdown(ex)
-
-    val msgsOf = new MessageDrain(true)
     checkForOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
