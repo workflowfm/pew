@@ -44,7 +44,7 @@ object StatelessMessages {
   ) extends AnyMsg with HasPii {
 
     override def toString: String
-      = s"ReduceRequest( $piiId, $args )"
+      = s"ReduceRequest($piiId, $args)"
   }
 
   /** Emitted by a AtomicProcess executors to sequence their results into a common timeline.
