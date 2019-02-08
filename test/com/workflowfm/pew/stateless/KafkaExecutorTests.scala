@@ -660,13 +660,9 @@ class KafkaExecutorTests
     }
 
     withClue("Unexpected messages after the shutdown:\n") {
-
-      // We should only be waiting on PiiUpdates or Assignments.
-      def notExpectedMsg(m: AnyMsg): Boolean = {
-        m.piiId != ourPiiId || !(m.isInstanceOf[PiiUpdate] || m.isInstanceOf[Assignment])
-      }
-
-      checkForOutstandingMsgs(fstMsgs filter notExpectedMsg)
+      checkForOutstandingMsgs(fstMsgs filter {
+        m => m.piiId != ourPiiId || !(m.isInstanceOf[PiiUpdate] || m.isInstanceOf[Assignment])
+      })
     }
 
     withClue("produces exactly one outstanding PiiUpdate") {
@@ -679,12 +675,13 @@ class KafkaExecutorTests
     }
 
     withClue("should be waiting on *ALL* active assignments.") {
-      val calledIds: Seq[Int] = fstMsgs[PiiUpdate].filter(_.pii.id == ourPiiId).head.pii.called
-      val assignedIds: Seq[Int] = fstMsgs[Assignment].filter(_.pii.id == ourPiiId).map(_.callRef.id)
+      val ourFstMsgs = fstMsgs.filter( _.piiId == ourPiiId )
+      val calledIds: Set[Int] = ourFstMsgs[PiiUpdate].head.pii.called.toSet
+      val assignedIds: Set[Int] = ourFstMsgs[Assignment].map(_.callRef.id).toSet
       calledIds should contain theSameElementsAs assignedIds
     }
 
-    withClue("After completing PiInstance execution:") {
+    withClue("After completing PiInstance execution:\n") {
       checkForOutstandingMsgs(sndMsgs)
       checkForUnmatchedLogs(sndMsgs)
     }
