@@ -114,17 +114,22 @@ class KafkaExecutorTests
     }
   }
 
-  def checkForOutstandingMsgs(msgsOf: => MessageMap): Unit = {
-    withClue( clue =
-      s"#SequenceRequests: ${msgsOf[SequenceRequest].length}\n" +
-      s"#SequenceFailures: ${msgsOf[SequenceFailure].length}\n" +
-      s"#ReduceRequests:   ${msgsOf[ReduceRequest].length}\n" +
-      s"#Assignments:      ${msgsOf[Assignment].length}\n" +
-      s"#PiiUpdates:       ${msgsOf[PiiUpdate].length}\n" +
-      s"It shouldn't have any outstanding messsages.\n"
-    ) {
-      msgsOf[SequenceRequest] ++ msgsOf[SequenceFailure] ++ msgsOf[ReduceRequest] ++
-      msgsOf[Assignment] ++ msgsOf[PiiUpdate] shouldBe empty
+  def withClueMessageCounts[T](msgMap: MessageMap)(fun: => T): T = {
+    withClue(clue =
+      s"#SequenceRequests: ${msgMap[SequenceRequest].length}\n" +
+      s"#SequenceFailures: ${msgMap[SequenceFailure].length}\n" +
+      s"#ReduceRequests:   ${msgMap[ReduceRequest].length}\n" +
+      s"#Assignments:      ${msgMap[Assignment].length}\n" +
+      s"#PiiUpdates:       ${msgMap[PiiUpdate].length}\n"
+    )(fun)
+  }
+
+  def checkOutstandingMsgs(msgMap: MessageMap): Unit = {
+    withClueMessageCounts(msgMap) {
+      withClue(s"It shouldn't have any outstanding messsages.\n") {
+        msgMap[SequenceRequest] ++ msgMap[SequenceFailure] ++ msgMap[ReduceRequest] ++
+          msgMap[Assignment] ++ msgMap[PiiUpdate] shouldBe empty
+      }
     }
   }
 
@@ -258,7 +263,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
+    checkOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
@@ -276,7 +281,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
+    checkOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
@@ -304,7 +309,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs( msgsOf )
+    checkOutstandingMsgs( msgsOf )
     checkForUnmatchedLogs( msgsOf )
   }
 
@@ -323,7 +328,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs( msgsOf )
+    checkOutstandingMsgs( msgsOf )
     checkForUnmatchedLogs( msgsOf )
   }
 
@@ -341,7 +346,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
+    checkOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
@@ -363,7 +368,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
+    checkOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
@@ -381,7 +386,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
+    checkOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
@@ -399,7 +404,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
+    checkOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
@@ -421,7 +426,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
+    checkOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
@@ -443,7 +448,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
+    checkOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
@@ -462,7 +467,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
+    checkOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
@@ -486,7 +491,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
+    checkOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
@@ -508,7 +513,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
+    checkOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
@@ -534,7 +539,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
+    checkOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
@@ -553,7 +558,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
+    checkOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
@@ -572,7 +577,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
+    checkOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
@@ -597,7 +602,7 @@ class KafkaExecutorTests
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
+    checkOutstandingMsgs(msgsOf)
     checkForUnmatchedLogs(msgsOf)
   }
 
@@ -639,9 +644,9 @@ class KafkaExecutorTests
     }
 
     // Dont consume, we need the outstanding messages to resume.
-    val fstMsgs: MessageMap = new MessageDrain(false)
+    val atShutdown: MessageMap = new MessageDrain(false)
 
-    val sndMsgs: MessageMap = {
+    val onCompletion: MessageMap = {
 
       val handler = new PromiseHandler[ObjectId]("testhandler", ourPiiId)
       val ex2 = makeExecutor(completeProcess.settings)
@@ -660,30 +665,37 @@ class KafkaExecutorTests
     }
 
     withClue("Unexpected messages after the shutdown:\n") {
-      checkForOutstandingMsgs(fstMsgs filter {
-        m => m.piiId != ourPiiId || !(m.isInstanceOf[PiiUpdate] || m.isInstanceOf[Assignment])
-      })
+      withClueMessageCounts( atShutdown ) {
+
+        withClue( s"All messages should belong our PiInstance ($ourPiiId).\n" ) {
+          all( atShutdown[AnyMsg] map (_.piiId) ) shouldBe ourPiiId
+        }
+
+        withClue( "There should be no SequenceRequests, SequenceFailures or ReduceRequests:\n") {
+          atShutdown[SequenceRequest] ++ atShutdown[SequenceFailure] ++
+            atShutdown[ReduceRequest] shouldBe empty
+        }
+
+        withClue("There should be exactly 1 outstanding PiiUpdate:\n") {
+          atShutdown[PiiUpdate] should have size 1
+        }
+
+        withClue("There should be 1 or 2 outstanding Assignments") {
+          // Depending on whether the assignments ended up in different partitions.
+          atShutdown[Assignment] should (have size 1 or have size 2)
+        }
+
+        withClue("It should be waiting on *ALL* active assignments.") {
+          val calledIds: Set[Int] = atShutdown[PiiUpdate].head.pii.called.toSet
+          val assignedIds: Set[Int] = atShutdown[Assignment].map(_.callRef.id).toSet
+          calledIds should contain theSameElementsAs assignedIds
+        }
+      }
     }
 
-    withClue("produces exactly one outstanding PiiUpdate") {
-      fstMsgs[PiiUpdate] should (have size 1)
-    }
-
-    withClue("produces either 1 or 2 outstanding Assignments") {
-      // Depending on whether the assignments ended up in different partitions.
-      fstMsgs[Assignment] should (have size 1 or have size 2)
-    }
-
-    withClue("should be waiting on *ALL* active assignments.") {
-      val ourFstMsgs = fstMsgs.filter( _.piiId == ourPiiId )
-      val calledIds: Set[Int] = ourFstMsgs[PiiUpdate].head.pii.called.toSet
-      val assignedIds: Set[Int] = ourFstMsgs[Assignment].map(_.callRef.id).toSet
-      calledIds should contain theSameElementsAs assignedIds
-    }
-
-    withClue("After completing PiInstance execution:\n") {
-      checkForOutstandingMsgs(sndMsgs)
-      checkForUnmatchedLogs(sndMsgs)
+    withClue(s"After completing PiInstance ($ourPiiId) execution:\n") {
+      checkOutstandingMsgs(onCompletion)
+      checkForUnmatchedLogs(onCompletion)
     }
   }
 
@@ -703,14 +715,14 @@ class KafkaExecutorTests
 
       } always {
         ensureShutdownThen(ex) {
-          // We don't care what state we leave the outstanding message in, provided we clean our own state.
-          val ourMsg: AnyMsg => Boolean = _.piiId != oldPii.id
-          new MessageDrain(true).filter(ourMsg)
+          new MessageDrain(true)
         }
       }
     }
 
-    checkForOutstandingMsgs(msgsOf)
+    // We don't care what state we leave the outstanding message in,
+    // it is sufficient that we clean our own state.
+    checkOutstandingMsgs(msgsOf filter (_.piiId == oldPii.id))
   }
 
   it should "call an Rexample (with an outstanding *irreducible* PiiUpdate)" in {
@@ -745,7 +757,7 @@ class KafkaExecutorTests
     }
 
     def shouldBeEmpty(m: AnyMsg): Boolean = !m.isInstanceOf[PiiUpdate]
-    checkForOutstandingMsgs(msgsOf filter shouldBeEmpty)
+    checkOutstandingMsgs(msgsOf filter shouldBeEmpty)
 
     withClue( "The irreducible PiUpdate shouldn't be processed:" ) {
       msgsOf[PiiUpdate] should have size 1
@@ -787,6 +799,6 @@ class KafkaExecutorTests
     }
 
     checkForUnmatchedLogs(msgsOf)
-    checkForOutstandingMsgs(msgsOf)
+    checkOutstandingMsgs(msgsOf)
   }
 }
