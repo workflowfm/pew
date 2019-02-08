@@ -41,7 +41,11 @@ object StatelessMessages {
     pii:  PiInstance[ObjectId],
     args: Seq[CallResult]
 
-  ) extends AnyMsg with HasPii
+  ) extends AnyMsg with HasPii {
+
+    override def toString: String
+      = s"ReduceRequest( $piiId, $args )"
+  }
 
   /** Emitted by a AtomicProcess executors to sequence their results into a common timeline.
     * Consumed by Sequencers to produce ReduceRequests.
@@ -79,6 +83,9 @@ object StatelessMessages {
         case Left( _piiId ) => _piiId
         case Right( _pii ) => _pii.id
       }
+
+    override def toString: String
+      = s"SequenceFailure($piiId, $returns, $errors)"
   }
 
   object SequenceFailure {
@@ -119,7 +126,11 @@ object StatelessMessages {
     process:  String,
     args:     Seq[PiResource]
 
-  ) extends AnyMsg with HasPii
+  ) extends AnyMsg with HasPii {
+
+    override def toString: String
+      = s"Assignment($piiId, call ${callRef.id}, AP '$process', args $args)"
+  }
 
   /** An output message sent to the Results topic. Has no impact on PiInstance execution,
     * but it used by `ResultListeners` to implement the `PiObservable` interface.
