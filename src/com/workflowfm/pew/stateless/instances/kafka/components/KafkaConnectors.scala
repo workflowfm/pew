@@ -54,11 +54,11 @@ object KafkaConnectors {
     */
   def indyReducer( red: Reducer )(implicit s: KafkaExecutorSettings ): DrainControl
     = run(
-      srcReduceRequest[Transaction]
+      srcReduceRequest[PartTracked]
       via flowLogIn
       via flowRespond( red )
       via flowLogOut,
-      Tracked.sinkMulti[Transaction, AnyMsg]
+      Tracked.sinkMulti[PartTracked, AnyMsg]
     )
 
   /** Run an independent sequencer off of a PiiHistory topic, outputting sequenced
@@ -106,14 +106,14 @@ object KafkaConnectors {
     */
   def indyAtomicExecutor( exec: AtomicExecutor, threadsPerPart: Int = 1 )( implicit s: KafkaExecutorSettings ): DrainControl
     = run(
-      srcAssignment[Transaction]
+      srcAssignment[PartTracked]
       via flowLogIn
       groupBy( Int.MaxValue, _.part )
       via flowRespond( exec )
       via flowWaitFuture( threadsPerPart )
       via flowLogOut
       mergeSubstreams,
-      Tracked.sinkMulti[Transaction, AnyMsg]
+      Tracked.sinkMulti[PartTracked, AnyMsg]
     )
 
   /** Restart a terminated ResultListener group, join an existing group, or start a ResultListener with a specific
