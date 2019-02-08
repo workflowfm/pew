@@ -2,7 +2,7 @@ package com.workflowfm.pew.stateless.instances.kafka.components
 
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages._
-import com.workflowfm.pew.{PiFailure, PiInstance, PiObject}
+import com.workflowfm.pew.{PiEventCallEnd, PiFailure, PiInstance, PiObject}
 import org.bson.types.ObjectId
 
 import scala.collection.immutable
@@ -15,16 +15,25 @@ case class PartialResponse(
 
   def this() = this( None, immutable.Seq(), immutable.Seq() )
 
-  lazy val returnedCalls: Set[Int] = returns.map(_._1.id).toSet
+  /** All the AtomicProcess calls that are known to be concluded within this response.
+    */
+  lazy val finishedCalls: Set[Int] = {
+    val returnedCalls = returns.map(_._1.id)
+    val crashedCalls = errors.collect { case event: PiEventCallEnd[_] => event.ref }
+    ( returnedCalls ++ crashedCalls ).toSet
+  }
 
   /** We only *want* to send a response when we have actionable data to send:
-    * - ReduceRequest <- The latest PiInstance *and* at least one call ref to sequence.
     * - ResultFailure <- The latest PiInstance *and* all the SequenceRequests to dump.
+    * - ReduceRequest <- The latest PiInstance *and* at least one call ref to sequence.
     */
   val hasPayload: Boolean
-    = pii.exists( pii =>
-        if (returns.nonEmpty) pii.called.forall( returnedCalls.contains )
-        else                  returns.nonEmpty
+    = pii.exists(
+        pii =>
+          if (errors.nonEmpty)
+            pii.called.forall( finishedCalls.contains )
+          else
+            returns.nonEmpty
       )
 
   val cantSend: Boolean = pii.isEmpty
