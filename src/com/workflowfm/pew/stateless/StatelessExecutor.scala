@@ -17,7 +17,7 @@ class ShutdownExecutorException( message: String ) extends Exception( message )
   *
   */
 abstract class StatelessExecutor[KeyT]
-  extends ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
+  extends ProcessExecutor[KeyT] { this: PiObservable[KeyT] =>
 
   def shutdown: Future[Done]
   def forceShutdown: Future[Done] = shutdown

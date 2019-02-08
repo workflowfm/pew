@@ -1,22 +1,19 @@
 package com.workflowfm.pew.stateless.instances.kafka
 
-import akka.Done
 import com.workflowfm.pew.stateless.components._
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors.DrainControl
-import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
+import com.workflowfm.pew.stateless.instances.kafka.settings.{KafkaExecutorEnvironment, KafkaExecutorSettings}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 /** Wrapper for a CustomKafkaExecutor that controls the lifecycle of an arbitrary collection
   * of local Kafka connectors.
   */
-class CustomKafkaExecutor( components: DrainControl* )( implicit settings: KafkaExecutorSettings )
-  extends MinimalKafkaExecutor()( settings ) {
+class CustomKafkaExecutor( components: DrainControl* )( implicit env: KafkaExecutorEnvironment )
+  extends MinimalKafkaExecutor()( env ) {
 
-  val allControls: Seq[DrainControl] = eventHandlerControl +: components.toSeq
-  override def shutdown: Future[Done] = KafkaConnectors.drainAndShutdownAll( allControls )
-  override def forceShutdown: Future[Done] = KafkaConnectors.shutdownAll( allControls )
+  override lazy val allControls: Seq[DrainControl] = eventHandlerControl +: components.toSeq
 }
 
 /** Implements the full functionality of a Kafka Executor locally using the standard components.
@@ -31,7 +28,8 @@ object CompleteKafkaExecutor {
   def apply[ResultT]( implicit settings: KafkaExecutorSettings )
     : CustomKafkaExecutor = {
 
-    implicit val executionContext: ExecutionContext = settings.executionContext
+    implicit val env: KafkaExecutorEnvironment = settings.createEnvironment()
+    implicit val executionContext: ExecutionContext = env.context
 
     new CustomKafkaExecutor(
       indySequencer,

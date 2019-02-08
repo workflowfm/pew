@@ -5,7 +5,7 @@ import com.workflowfm.pew.execution.RexampleTypes._
 import com.workflowfm.pew.execution._
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows
-import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
+import com.workflowfm.pew.stateless.instances.kafka.settings.{KafkaExecutorEnvironment, KafkaExecutorSettings}
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.{BsonKafkaExecutorSettings, KafkaCodecRegistry}
 import com.workflowfm.pew.stateless.instances.kafka.{CompleteKafkaExecutor, CustomKafkaExecutor}
 import com.workflowfm.pew.util.ClassMap
@@ -58,7 +58,7 @@ trait KafkaTests extends ProcessExecutorTester {
   implicit val executionContext: ExecutionContext = ExecutionContext.global //sys
 
   def newSettings( piStore: PiProcessStore ): BsonKafkaExecutorSettings
-    = new BsonKafkaExecutorSettings( new KafkaCodecRegistry( piStore ), system, executionContext )
+    = new BsonKafkaExecutorSettings( new KafkaCodecRegistry( piStore ) )
 
   class ProcessType( val store: PiProcessStore) extends Object {
     val settings: BsonKafkaExecutorSettings = newSettings( store )
@@ -93,8 +93,8 @@ trait KafkaTests extends ProcessExecutorTester {
   // val isPiiResult: AnyMsg => Boolean = _.isInstanceOf[PiiResult[_]]
 
   // TODO: Fix consumer shutdown: https://github.com/akka/alpakka-kafka/issues/166
-  def outstanding( consume: Boolean ): Seq[ AnyMsg ] = {
-    implicit val s: KafkaExecutorSettings = completeProcess.settings
+  private def outstanding( consume: Boolean ): Seq[ AnyMsg ] = {
+    implicit val env: KafkaExecutorEnvironment = completeProcess.settings.createEnvironment()
 
     if (consume) println("!!! CONSUMING OUTSTANDING MESSAGES !!!")
 
@@ -109,7 +109,7 @@ trait KafkaTests extends ProcessExecutorTester {
         .map( Some(_) )
         .recover({ case _: TimeoutException => None })
         .collect({ case Some( msg ) => msg })
-        .runFold( Seq(): Seq[AnyMsg] )( _ :+ _ )( s.mat )
+        .runFold( Seq(): Seq[AnyMsg] )( _ :+ _ )( env.materializer )
 
     Await.result( fOutstanding, Duration.Inf )
   }

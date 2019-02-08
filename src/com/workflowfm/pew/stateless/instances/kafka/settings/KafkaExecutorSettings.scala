@@ -1,13 +1,37 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings
 
-import akka.actor._
+import akka.actor.ActorSystem
 import akka.kafka._
-import akka.stream._
+import akka.stream.Materializer
+import com.workflowfm.pew.stateless.StatelessMessages._
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.{AnyKey, KeyPiiId, KeyPiiIdCall}
 import com.workflowfm.pew.stateless.{CallRef, StatelessMessages}
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.bson.types.ObjectId
 
 import scala.concurrent.ExecutionContext
+
+abstract class KafkaExecutorEnvironment {
+
+  val settings: KafkaExecutorSettings
+
+  val context: ExecutionContext
+  val actors: ActorSystem
+  val materializer: Materializer
+
+  // Kafka - PiiId keyed consumer topic settings
+  val csPiiHistory:       ConsumerSettings[KeyPiiId, PiiHistory]
+  val csSequenceRequest:  ConsumerSettings[KeyPiiId, SequenceRequest]
+  val csReduceRequest:    ConsumerSettings[KeyPiiId, ReduceRequest]
+  val csResult:           ConsumerSettings[KeyPiiId, PiiLog]
+
+  // Kafka - (PiiId, CallRef) keyed consumer topic settings
+  val csAssignment:       ConsumerSettings[KeyPiiIdCall, Assignment]
+
+  // Kafka - All producer settings
+  val psAllMessages:      ProducerSettings[AnyKey, AnyMsg]
+
+}
 
 object KafkaExecutorSettings {
 
@@ -32,10 +56,7 @@ object KafkaExecutorSettings {
   * Consumer or Producer running on a Kafka cluster, otherwise they
   * might send messages incompatible with other components.
   */
-abstract class KafkaExecutorSettings(
-    implicit val actorSys: ActorSystem,
-    implicit val executionContext: ExecutionContext = ExecutionContext.global
-  ) {
+abstract class KafkaExecutorSettings {
 
   import KafkaExecutorSettings._
   import StatelessMessages._
@@ -51,22 +72,11 @@ abstract class KafkaExecutorSettings(
   def tnAssignment: TopicN
   def tnResult: TopicN
 
-  def mat: Materializer
-
   def serverAndPort: String
   def defaultGroupId: String
 
-  // Kafka - PiiId keyed consumer topic settings
-  def csPiiHistory:       ConsumerSettings[KeyPiiId, PiiHistory]
-  def csSequenceRequest:  ConsumerSettings[KeyPiiId, SequenceRequest]
-  def csReduceRequest:    ConsumerSettings[KeyPiiId, ReduceRequest]
-  def csResult:           ConsumerSettings[KeyPiiId, PiiLog]
-
-  // Kafka - (PiiId, CallRef) keyed consumer topic settings
-  def csAssignment:       ConsumerSettings[KeyPiiIdCall, Assignment]
-
-  // Kafka - All producer settings
-  def psAllMessages:      ProducerSettings[AnyKey, AnyMsg]
-
   def record: AnyMsg => ProducerRecord[AnyKey, AnyMsg]
+
+  def createEnvironment(): KafkaExecutorEnvironment
+
 }
