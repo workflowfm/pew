@@ -623,15 +623,42 @@ class KafkaExecutorTests
     }
   }
 
-  it should "call an Rexample interupted with shutdown." in {
+  it should "not complete execution of an AtomicProcess after a forced shutdown" in {
+    val onShutdown: MessageMap = {
+      tryBut {
+        val ex = makeExecutor(shutdownProcess.settings)
+        ex.execute(pci, Seq(1))
+
+        Thread.sleep(5.seconds.toMillis)
+        await(ex.forceShutdown)
+
+        pciw.fail()
+
+      } always {
+        new MessageDrain(true)
+      }
+    }
+
+    withClueMessageCounts(onShutdown) {
+      withClue("There should be no SequenceRequests, SequenceFailures, or ReduceRequests.\n") {
+        onShutdown[SequenceRequest] shouldBe empty
+        onShutdown[SequenceFailure] shouldBe empty
+        onShutdown[ReduceRequest] shouldBe empty
+      }
+    }
+  }
+
+  def testShutdown( process: PiProcess, args: Seq[Any], expectedResult: Any ): Unit = {
 
     val ourPiiId: ObjectId = {
       try {
         val ex = makeExecutor(shutdownProcess.settings)
-        val futId: Future[ObjectId] = ex.call(ri, Seq(21))
+        val futId: Future[ObjectId] = ex.call(process, args)
 
         Thread.sleep(10.seconds.toMillis)
-        await(ex.forceShutdown) // This won't drain so use forced shutdown.
+        await(ex.forceShutdown) // `forceShutdown` so it doesn't drain and produce.
+
+        pciw.fail() // To free the locked AtomicProcessExecutor thread.
 
         // The future is created with Future.success.
         futId.value.get.get
@@ -654,8 +681,7 @@ class KafkaExecutorTests
       tryBut {
         ex2.subscribe(handler)
         pciw.continue()
-
-        await(handler.future) should be(("PbISleptFor2s", "PcISleptFor1s"))
+        await(handler.future) shouldBe expectedResult
 
       } always {
         ensureShutdownThen(ex2) {
@@ -697,6 +723,15 @@ class KafkaExecutorTests
       checkOutstandingMsgs(onCompletion)
       checkForUnmatchedLogs(onCompletion)
     }
+  }
+
+  // Jev, use `PcI` as it's configured to `PPcIWait` under shutdown settings.
+  it should "call an atomic PcI interupted by a shutdown" in {
+    testShutdown( pci, Seq(1), "PcISleptFor1s" )
+  }
+
+  it should "call an Rexample interupted by a shutdown." in {
+    testShutdown( ri, Seq(21), ("PbISleptFor2s", "PcISleptFor1s") )
   }
 
   it should "call an Rexample (with an outstanding PiiUpdate)" in {

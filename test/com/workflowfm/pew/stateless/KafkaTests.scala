@@ -36,6 +36,11 @@ trait KafkaTests extends ProcessExecutorTester {
       promise.success( Done )
       promise = Promise[Done]()
     }
+
+    def fail(): Unit = {
+      promise.failure( new Exception("PcI: Test Failure" ) )
+      promise = Promise[Done]()
+    }
   }
 
   val failp = new FailP
