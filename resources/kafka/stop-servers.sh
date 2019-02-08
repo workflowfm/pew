@@ -12,4 +12,5 @@ fi
 
 # Jev, no reason to run in child processes, these run synchronously.
 $1/bin/kafka-server-stop.sh
+sleep 20 # Kafka doesn't seem to shutdown immediately,
 $1/bin/zookeeper-server-stop.sh
