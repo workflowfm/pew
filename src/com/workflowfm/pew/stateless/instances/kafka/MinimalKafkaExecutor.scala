@@ -74,12 +74,12 @@ class MinimalKafkaExecutor( implicit val environment: KafkaExecutorEnvironment )
 
   override def shutdown: Future[Done] = {
     KafkaConnectors.drainAndShutdownAll( allControls )
-    // environment.actors.terminate().map( _ => Done )
+    .flatMap( _ => environment.actors.terminate().map( _ => Done ) )
   }
 
   override def forceShutdown: Future[Done] = {
     KafkaConnectors.shutdownAll( allControls )
-    // environment.actors.terminate().map( _ => Done )
+    .flatMap( _ => environment.actors.terminate().map( _ => Done ) )
   }
 
   def isShutdown: Boolean = eventHandlerControl.isShutdown.isCompleted
