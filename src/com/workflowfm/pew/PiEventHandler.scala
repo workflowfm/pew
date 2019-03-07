@@ -15,13 +15,33 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 // TODO: Jev: Should this be moved into it's own file now?
 
 /** Super-class for any PiProcess events which take place during
-  * workflow execution or simulation.
+  * workflow execution or simulation. These can be understood as
+  * being divided in 2 ways (into 4 categories):
+  *
+  * By Level:
+  *   - Workflow Level: for events concerning CompositeProcess
+  *   begun with a call to `ProcessExecutor.execute`. These are
+  *   keyed by at least the ID of the corresponding PiInstance.
+  *   - Atomic Process Level: for events concerning AtomicProcess
+  *   that were called by an ProcessExecutor during the execution
+  *   of a Workflow Level CompositeProcess. These are keyed by
+  *   both the PiInstance ID and the individual call ID (which
+  *   uniquely enumerates each call made by a PiInstance).
+  *
+  * By Type:
+  *   - Start: these events mark the start of process execution.
+  *   - End: these events mark the termination of process
+  *   execution, either by successful completion along with a
+  *   result or by a failure. These should always be preceded by
+  *   a corresponding start/call event.
   *
   * @tparam KeyT The type used to identify PiInstances.
   */
 sealed trait PiEvent[KeyT] {
 
-  /** @return The PiInstance ID associated with this event.
+  /** Retrieve the unique PiInstance ID associated with this event.
+    *
+    * @return A unique ID of type `KeyT`.
     */
   def id: KeyT
 
@@ -30,7 +50,7 @@ sealed trait PiEvent[KeyT] {
   val metadata: PiMetadataMap
 
   /** @return The system time (in milliseconds) when this PiEvent
-    *         actually occured during computation.
+    *         actually occurred during computation.
     */
   def rawTime: Long = SystemTime( metadata )
 
@@ -80,6 +100,12 @@ object PiEvent {
 // PiInstance Level PiEvents //
 ///////////////////////////////
 
+/** Denotes the start of execution of a CompositeProcess.
+  *
+  * @param i PiInstance representing the start state of this PiProcess.
+  * @param metadata Metadata object.
+  * @tparam KeyT The type used to identify PiInstances.
+  */
 case class PiEventStart[KeyT](
    i: PiInstance[KeyT],
    override val metadata: PiMetadataMap = PiMetadata()
@@ -93,6 +119,13 @@ case class PiEventStart[KeyT](
   */
 sealed trait PiEventFinish[KeyT] extends PiEvent[KeyT]
 
+/** Denotes the successful completion of execution of a CompositeProcess.
+  *
+  * @param i PiInstance representing the terminal state of this PiProcess.
+  * @param res The corresponding `result` object of this CompositeProcess.
+  * @param metadata Metadata object.
+  * @tparam KeyT The type used to identify PiInstances.
+  */
 case class PiEventResult[KeyT](
     i: PiInstance[KeyT],
     res: Any,
@@ -110,6 +143,10 @@ case class PiEventResult[KeyT](
 // PiInstance Level Exceptions & Failures //
 ////////////////////////////////////////////
 
+/** Denotes that the corresponding PiInstance failed to complete execution.
+  *
+  * @tparam KeyT The type used to identify PiInstances.
+  */
 sealed trait PiFailure[KeyT]
   extends PiEvent[KeyT] {
 
@@ -128,6 +165,15 @@ sealed trait PiFailure[KeyT]
 }
 
 object PiFailure {
+
+  /** Helper function for ProcessExecutors providing standard functionality
+    * for upgrading AtomicProcess failures into a single error suitable for
+    * terminating a CompositeProcess.
+    *
+    * @param errors A list of AP failures encountered in a PiInstance.
+    * @tparam KeyT The type used to identify PiInstances.
+    * @return A single error to throw and terminate the PiInstance execution.
+    */
   def condense[KeyT]( errors: Seq[PiFailure[KeyT]] ): PiFailure[KeyT] = {
     errors.head match {
       case PiFailureAtomicProcessException(id, ref, message, trace, metadata) =>
@@ -137,8 +183,15 @@ object PiFailure {
   }
 }
 
+/** The ProcessExecutor could not provide a `result` after completing
+  * execution of this PiInstance.
+  *
+  * @param i PiInstance representing the final state of this PiProcess.
+  * @param metadata Metadata object.
+  * @tparam KeyT The type used to identify PiInstances.
+  */
 case class PiFailureNoResult[KeyT](
-    i:PiInstance[KeyT],
+    i: PiInstance[KeyT],
     override val metadata: PiMetadataMap = PiMetadata()
 
   ) extends PiFailure[KeyT] with PiEventFinish[KeyT] {
@@ -149,6 +202,18 @@ case class PiFailureNoResult[KeyT](
   override def exception: PiException[KeyT] = NoResultException[KeyT]( i )
 }
 
+/** The ProcessExecutor could not complete execution of this PiInstance
+  * because it required execution of an AtomicProcess unknown to the
+  * ProcessExecutor.
+  *
+  * (Note: This indicates the ProcessExecutor has been incorrectly
+  * configured)
+  *
+  * @param i PiInstance representing the final state of this PiProcess.
+  * @param process Name of the process that could not be identified.
+  * @param metadata Metadata object.
+  * @tparam KeyT The type used to identify PiInstances.
+  */
 case class PiFailureUnknownProcess[KeyT](
     i: PiInstance[KeyT],
     process: String,
@@ -163,6 +228,17 @@ case class PiFailureUnknownProcess[KeyT](
   override def exception: PiException[KeyT] = UnknownProcessException[KeyT]( i, process )
 }
 
+/** The ProcessExecutor attempted to dispatch a CompositeProcess to the
+  * AtomicProcessExecutor, this is likely because it was unable to be
+  * fully reduced.
+  *
+  * (Note: This indicates the workflow has not been properly constructed)
+  *
+  * @param i PiInstance representing the final state of this PiProcess.
+  * @param process Name of the unexpected CompositeProcess.
+  * @param metadata Metadata object.
+  * @tparam KeyT The type used to identify PiInstances.
+  */
 case class PiFailureAtomicProcessIsComposite[KeyT](
     i: PiInstance[KeyT],
     process: String,
@@ -177,6 +253,15 @@ case class PiFailureAtomicProcessIsComposite[KeyT](
   override def exception: PiException[KeyT] = AtomicProcessIsCompositeException[KeyT]( i, process )
 }
 
+/** A ProcessExecutor could not initiate execution of this PiInstance
+  * because it did not have a record of a prior initialisation using
+  * `ProcessExecutor.init`.
+  *
+  * @param id Unrecognised PiInstance ID attempting execution.
+  * @param metadata Metadata object.
+  * @tparam KeyT The type used to identify PiInstances.
+  */
+// TODO: Jev, should this actually be marked `PiEventFinish`.
 case class PiFailureNoSuchInstance[KeyT](
     override val id: KeyT,
     override val metadata: PiMetadataMap = PiMetadata()
@@ -188,7 +273,14 @@ case class PiFailureNoSuchInstance[KeyT](
   override def exception: PiException[KeyT] = NoSuchInstanceException[KeyT]( id )
 }
 
-/** At least one AtomicProcess called by this PiInstance encountered an exception.
+/** At least one AtomicProcess called by this PiInstance encountered
+  * irrecoverable exceptions during execution.
+  *
+  * @param id ID of corresponding PiInstance.
+  * @param message Message of Exception encountered by the AtomicProcess.
+  * @param trace A full trace of the encountered Exception.
+  * @param metadata Metadata object.
+  * @tparam KeyT The type used to identify PiInstances.
   */
 case class PiFailureExceptions[KeyT](
     override val id: KeyT,
@@ -219,11 +311,23 @@ object PiFailureExceptions {
 ///////////////////////////////////////
 
 /** PiEvents which are associated with a specific AtomicProcess call.
+  *
+  * @tparam KeyT The type used to identify PiInstances.
   */
 sealed trait PiAtomicProcessEvent[KeyT] extends PiEvent[KeyT] {
   def ref: Int
 }
 
+/** Denotes the start of a AtomicProcess execution made during the execution
+  * of a parent CompositeProcess.
+  *
+  * @param id PiInstance ID for the parent CompositeProcess.
+  * @param ref Enumerated ID for this AtomicProcess call, unique for this PiInstance.
+  * @param p Reference to AtomicProcess called.
+  * @param args Parameter values for the AtomicProcess call.
+  * @param metadata Metadata object.
+  * @tparam KeyT The type used to identify PiInstances.
+  */
 case class PiEventCall[KeyT](
     override val id: KeyT,
     ref: Int,
@@ -235,10 +339,21 @@ case class PiEventCall[KeyT](
 	override def asString: String = s" === [$id] PROCESS CALL: ${p.name} ($ref) args: ${args.mkString(",")}"
 }
 
-/** Abstract superclass for all PiAtomicProcessEvent which denote the termination of an AtomicProcess call.
+/** Abstract superclass for all PiAtomicProcessEvent which denote the termination
+  * of an AtomicProcess call.
+  *
+  * @tparam KeyT The type used to identify PiInstances.
   */
 trait PiEventCallEnd[KeyT] extends PiAtomicProcessEvent[KeyT]
 
+/** Denotes the successful completion of execution of a AtomicProcess.
+  *
+  * @param id PiInstance ID for the parent CompositeProcess.
+  * @param ref Enumerated ID for this AtomicProcess call, unique for this PiInstance.
+  * @param result Object returned by this execution of the AtomicProcess.
+  * @param metadata Metadata object.
+  * @tparam KeyT The type used to identify PiInstances.
+  */
 case class PiEventReturn[KeyT](
     override val id: KeyT,
     ref: Int,
@@ -255,6 +370,15 @@ case class PiEventReturn[KeyT](
 // AtomicProcess Call Level PiFailures //
 /////////////////////////////////////////
 
+/**
+  *
+  * @param id PiInstance ID for the parent CompositeProcess.
+  * @param ref Enumerated ID for this AtomicProcess call, unique for this PiInstance.
+  * @param message Message of the Exception encountered.
+  * @param trace A full trace of the encountered Exception.
+  * @param metadata Metadata object.
+  * @tparam KeyT The type used to identify PiInstances.
+  */
 case class PiFailureAtomicProcessException[KeyT](
     override val id: KeyT,
     ref: Int,
@@ -268,9 +392,14 @@ case class PiFailureAtomicProcessException[KeyT](
 
   override def exception: PiException[KeyT] = RemoteProcessException[KeyT]( id, ref, message, trace, rawTime )
 
+  /** @param other Object to compare to this.
+    * @return True if both objects concern the same failure.
+    */
   override def equals( other: Any ): Boolean = other match {
     case that: PiFailureAtomicProcessException[KeyT] =>
       id == that.id && ref == that.ref && message == that.message
+
+    case _ => false
   }
 }
 
