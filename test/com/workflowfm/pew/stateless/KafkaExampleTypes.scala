@@ -74,7 +74,7 @@ trait KafkaExampleTypes extends KafkaTests {
         Seq( PiResource( arg3, pci.inputs.head._1 ) )
       )
 
-    val pepeFinishing2 = PiEventProcessException( piiId, r2._1.id, testException )
+    val pepeFinishing2 = PiFailureAtomicProcessException( piiId, r2._1.id, testException )
     val rpeFinishing = RemoteProcessException( piiId, r2._1.id, testException )
 
     val sfFinishing21 = SequenceFailure( piiId, r2._1, rpeFinishing )

@@ -5,11 +5,11 @@ import com.workflowfm.pew.execution.RexampleTypes._
 import com.workflowfm.pew.execution._
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows
-import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
+import com.workflowfm.pew.stateless.instances.kafka.settings.{KafkaExecutorEnvironment, KafkaExecutorSettings}
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.{BsonKafkaExecutorSettings, KafkaCodecRegistry}
-import com.workflowfm.pew.stateless.instances.kafka.{CompleteKafkaExecutor, MinimalKafkaExecutor}
+import com.workflowfm.pew.stateless.instances.kafka.{CompleteKafkaExecutor, CustomKafkaExecutor}
 import com.workflowfm.pew.util.ClassMap
-import com.workflowfm.pew.{PiProcessStore, SimpleProcessStore}
+import com.workflowfm.pew.{PiEvent, PiProcessStore, SimpleProcessStore}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future, TimeoutException}
@@ -36,6 +36,11 @@ trait KafkaTests extends ProcessExecutorTester {
       promise.success( Done )
       promise = Promise[Done]()
     }
+
+    def fail(): Unit = {
+      promise.failure( new Exception("PcI: Test Failure" ) )
+      promise = Promise[Done]()
+    }
   }
 
   val failp = new FailP
@@ -53,7 +58,7 @@ trait KafkaTests extends ProcessExecutorTester {
   implicit val executionContext: ExecutionContext = ExecutionContext.global //sys
 
   def newSettings( piStore: PiProcessStore ): BsonKafkaExecutorSettings
-    = new BsonKafkaExecutorSettings( new KafkaCodecRegistry( piStore ), system, executionContext )
+    = new BsonKafkaExecutorSettings( new KafkaCodecRegistry( piStore ) )
 
   class ProcessType( val store: PiProcessStore) extends Object {
     val settings: BsonKafkaExecutorSettings = newSettings( store )
@@ -81,15 +86,15 @@ trait KafkaTests extends ProcessExecutorTester {
     ))
 
 
-  def makeExecutor( settings: KafkaExecutorSettings ): MinimalKafkaExecutor = {
+  def makeExecutor( settings: KafkaExecutorSettings ): CustomKafkaExecutor = {
     CompleteKafkaExecutor[(Y, Z)]( settings )
   }
 
   // val isPiiResult: AnyMsg => Boolean = _.isInstanceOf[PiiResult[_]]
 
   // TODO: Fix consumer shutdown: https://github.com/akka/alpakka-kafka/issues/166
-  def outstanding( consume: Boolean ): Seq[ AnyMsg ] = {
-    implicit val s: KafkaExecutorSettings = completeProcess.settings
+  private def outstanding( consume: Boolean ): Seq[ AnyMsg ] = {
+    implicit val env: KafkaExecutorEnvironment = completeProcess.settings.createEnvironment()
 
     if (consume) println("!!! CONSUMING OUTSTANDING MESSAGES !!!")
 
@@ -104,15 +109,18 @@ trait KafkaTests extends ProcessExecutorTester {
         .map( Some(_) )
         .recover({ case _: TimeoutException => None })
         .collect({ case Some( msg ) => msg })
-        .runFold( Seq(): Seq[AnyMsg] )( _ :+ _ )( s.mat )
+        .runFold( Seq(): Seq[AnyMsg] )( _ :+ _ )( env.materializer )
 
     Await.result( fOutstanding, Duration.Inf )
   }
 
-  class MessageMap( messages: Seq[AnyMsg] )
-    extends ClassMap[AnyMsg]( messages )
+  type MessageMap = ClassMap[AnyMsg]
+  type LogMap = ClassMap[PiEvent[_]]
 
   class MessageDrain( consume: Boolean = false )
     extends MessageMap( outstanding( consume ) )
+
+  def toLogMap( msgMap: MessageMap ): LogMap
+    = new ClassMap[PiEvent[_]]( msgMap[PiiLog] map (_.event) )
 
 }

@@ -7,13 +7,20 @@ import com.workflowfm.pew.execution._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Future, _}
 
+/** Exception throw when calling prohibited functions on a shutdown StatelessExecutor.
+  *
+  * @param message Message indicating cause of failure.
+  */
+class ShutdownExecutorException( message: String ) extends Exception( message )
+
 /** Boots up necessary Workflow actors for a "stateless" (no RAM) workflow execution.
   *
   */
 abstract class StatelessExecutor[KeyT]
-  extends ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
+  extends ProcessExecutor[KeyT] { this: PiObservable[KeyT] =>
 
   def shutdown: Future[Done]
+  def forceShutdown: Future[Done] = shutdown
 
   final def syncShutdown( timeout: Duration = Duration.Inf ): Done
     = Await.result( shutdown, timeout )

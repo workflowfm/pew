@@ -6,7 +6,7 @@ sealed abstract class PiException[KeyT]( message: String )
   extends Exception( message ) {
 
   def id: KeyT
-  def event: PiExceptionEvent[KeyT]
+  def event: PiFailure[KeyT]
 }
 
 sealed trait HasPiInstance[KeyT]
@@ -20,7 +20,7 @@ case class NoResultException[KeyT]( override val pii: PiInstance[KeyT] )
   extends PiException[KeyT]( s"[${pii.id}] NO RESULT!" )
     with HasPiInstance[KeyT] {
 
-  override def event: PiExceptionEvent[KeyT]
+  override def event: PiFailure[KeyT]
     = PiFailureNoResult( pii )
 }
 
@@ -28,7 +28,7 @@ case class UnknownProcessException[KeyT]( override val pii: PiInstance[KeyT], pr
   extends PiException[KeyT]( s"[${pii.id}] FAILED - Unknown process: $process" )
     with HasPiInstance[KeyT] {
 
-  override def event: PiExceptionEvent[KeyT]
+  override def event: PiFailure[KeyT]
     = PiFailureUnknownProcess( pii, process )
 }
 
@@ -36,14 +36,14 @@ case class AtomicProcessIsCompositeException[KeyT]( override val pii: PiInstance
   extends PiException[KeyT]( s"[${pii.id}] FAILED - Executor encountered composite process thread: $process" )
     with HasPiInstance[KeyT] {
 
-  override def event: PiExceptionEvent[KeyT]
+  override def event: PiFailure[KeyT]
     = PiFailureAtomicProcessIsComposite( pii, process )
 }
 
 case class NoSuchInstanceException[KeyT]( override val id: KeyT )
   extends PiException[KeyT]( s"[$id] FAILED - Failed to find instance!" ) {
 
-  override def event: PiExceptionEvent[KeyT]
+  override def event: PiFailure[KeyT]
    = PiFailureNoSuchInstance( id )
 }
 
@@ -54,8 +54,8 @@ class RemoteException[KeyT](
 
   ) extends PiException[KeyT]( message ) {
 
-  override def event: PiExceptionEvent[KeyT]
-    = PiEventException( id, message, getStackTrace, PiMetadata( SystemTime -> time ) )
+  override def event: PiFailure[KeyT]
+    = PiFailureExceptions( id, message, getStackTrace, PiMetadata( SystemTime -> time ) )
 }
 
 object RemoteException {
@@ -78,8 +78,8 @@ class RemoteProcessException[KeyT](
 
   ) extends PiException[KeyT]( message ) {
 
-  override def event: PiExceptionEvent[KeyT]
-    = PiEventProcessException( id, ref, message, getStackTrace, PiMetadata( SystemTime -> time ) )
+  override def event: PiFailure[KeyT]
+    = PiFailureAtomicProcessException( id, ref, message, getStackTrace, PiMetadata( SystemTime -> time ) )
 }
 
 object RemoteProcessException {

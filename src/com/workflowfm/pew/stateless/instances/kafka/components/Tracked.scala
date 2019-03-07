@@ -7,7 +7,7 @@ import akka.kafka.scaladsl.{Consumer, Producer, Transactional}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.{Done, NotUsed}
 import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
-import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorEnvironment
 import com.workflowfm.pew.util.ClassLoaderUtil.withClassLoader
 import org.apache.kafka.clients.producer.KafkaProducer
 import org.bson.types.ObjectId
@@ -57,7 +57,7 @@ trait TrackedSource[ T[X] <: Tracked[X] ] {
   */
 trait TrackedSink[ T[X] <: Tracked[X] ] {
   implicit val trackedSink: TrackedSink[T] = this
-  def sink[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[T[V], Future[Done]]
+  def sink[V <: AnyMsg]( implicit s: KafkaExecutorEnvironment ): Sink[T[V], Future[Done]]
 }
 
 /** Superclass of factory objects capable of creating new Kafka Sinks for Tracked collection types.
@@ -66,7 +66,7 @@ trait TrackedSink[ T[X] <: Tracked[X] ] {
   */
 trait TrackedMultiSink[ T[X] <: Tracked[X] ] {
   implicit val trackedMultiSink: TrackedMultiSink[T] = this
-  def sinkMulti[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[T[Seq[V]], Future[Done]]
+  def sinkMulti[V <: AnyMsg]( implicit s: KafkaExecutorEnvironment ): Sink[T[Seq[V]], Future[Done]]
 }
 
 /** Tracked type helper functions, using implicits to redirect to the correct
@@ -76,13 +76,13 @@ object Tracked {
 
   def source[T[X] <: Tracked[X], V]
     ( cs: ConsumerSettings[_, V], sub: AutoSubscription )
-    ( implicit s: KafkaExecutorSettings, ts: TrackedSource[T] )
+    ( implicit s: KafkaExecutorEnvironment, ts: TrackedSource[T] )
     : Source[T[V], Control] = ts.source( cs, sub )
 
-  def sink[T[X] <: Tracked[X], V <: AnyMsg]( implicit s: KafkaExecutorSettings, ts: TrackedSink[T] ): Sink[T[V], Future[Done]]
+  def sink[T[X] <: Tracked[X], V <: AnyMsg]( implicit s: KafkaExecutorEnvironment, ts: TrackedSink[T] ): Sink[T[V], Future[Done]]
     = ts.sink( s )
 
-  def sinkMulti[T[X] <: Tracked[X], V <: AnyMsg]( implicit s: KafkaExecutorSettings, ts: TrackedMultiSink[T] ): Sink[T[Seq[V]], Future[Done]]
+  def sinkMulti[T[X] <: Tracked[X], V <: AnyMsg]( implicit s: KafkaExecutorEnvironment, ts: TrackedMultiSink[T] ): Sink[T[Seq[V]], Future[Done]]
     = ts.sinkMulti( s )
 
   /** Map a function over the value within a tracked type.
@@ -144,9 +144,12 @@ object Tracked {
     * within an ExecutionContext do not list the necessary key or value serialiser classes.
     * Explicitly setting `null` causes the constructor to use the Kafka ClassLoader
     * which should contain these values.
+    *
+    * (Note: Use `lazyProducer` to minimize the number of new Producers which are created,
+    * this reduces the number of system resources used (such as file handles))
     */
   def createProducer[K, V]( settings: ProducerSettings[K, V] ): KafkaProducer[K, V]
-    = withClassLoader( null ) { settings.createKafkaProducer() }
+    = withClassLoader( null ) { settings.lazyProducer }
 }
 
 /** A Tracked type which uses a `Committable` as tracking information.
@@ -165,20 +168,20 @@ trait HasCommittableSinks[T[X] <: HasCommittable[X]]
   extends TrackedSink[T]
   with TrackedMultiSink[T] {
 
-  override def sink[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[HasCommittable[V], Future[Done]]
+  override def sink[V <: AnyMsg]( implicit s: KafkaExecutorEnvironment ): Sink[HasCommittable[V], Future[Done]]
     = Producer.commitableSink( s.psAllMessages, Tracked.createProducer( s.psAllMessages ) )
       .contramap( msg =>
         ProducerMessage.Message(
-          s.record( msg.value ),
+          s.settings.record( msg.value ),
           msg.commit
         )
       )
 
-  override def sinkMulti[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[HasCommittable[Seq[V]], Future[Done]]
+  override def sinkMulti[V <: AnyMsg]( implicit s: KafkaExecutorEnvironment ): Sink[HasCommittable[Seq[V]], Future[Done]]
     = Producer.commitableSink( s.psAllMessages, Tracked.createProducer( s.psAllMessages ) )
       .contramap( msgs =>
         ProducerMessage.MultiMessage(
-          msgs.value.map(s.record).to,
+          msgs.value.map(s.settings.record).to,
           msgs.commit
         )
       )
@@ -339,25 +342,25 @@ object Transaction
     = Transactional.source( cs, sub )
       .map( msg => Transaction( msg.record.value(), msg.partitionOffset ) )
 
-  override def sink[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[Transaction[V], Future[Done]] = {
+  override def sink[V <: AnyMsg]( implicit s: KafkaExecutorEnvironment ): Sink[Transaction[V], Future[Done]] = {
     // TODO: Construct the KafkaProducer with the correct ClassLoader
     val id = ObjectId.get.toString
     Transactional.sink( s.psAllMessages, id )
     .contramap( msg =>
       ProducerMessage.Message(
-        s.record( msg.value ),
+        s.settings.record( msg.value ),
         msg.partOffset
       )
     )
   }
 
-  override def sinkMulti[V <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[Transaction[Seq[V]], Future[Done]] = {
+  override def sinkMulti[V <: AnyMsg]( implicit s: KafkaExecutorEnvironment ): Sink[Transaction[Seq[V]], Future[Done]] = {
     // TODO: Construct the KafkaProducer with the correct ClassLoader
     val id = ObjectId.get.toString
     Transactional.sink( s.psAllMessages, id )
     .contramap( msgs =>
       ProducerMessage.MultiMessage(
-        msgs.value.map(s.record).to,
+        msgs.value.map(s.settings.record).to,
         msgs.partOffset
       )
     )
@@ -396,9 +399,9 @@ object Untracked
         .map( _ => Untracked( message.record.value ) )( ExecutionContext.global )
       )
 
-  override def sink[Value <: AnyMsg]( implicit s: KafkaExecutorSettings ): Sink[Untracked[Value], Future[Done]]
+  override def sink[Value <: AnyMsg]( implicit s: KafkaExecutorEnvironment ): Sink[Untracked[Value], Future[Done]]
     = Producer.plainSink( s.psAllMessages, Tracked.createProducer( s.psAllMessages ) )
-      .contramap( (msg: Untracked[Value]) => s.record( msg.value ) )
+      .contramap( (msg: Untracked[Value]) => s.settings.record( msg.value ) )
 
 }
 

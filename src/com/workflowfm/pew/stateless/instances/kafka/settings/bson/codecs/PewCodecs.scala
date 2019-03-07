@@ -23,8 +23,8 @@ object PewCodecs {
   val PIUNKNOWN: Class[PiFailureUnknownProcess[ObjectId]] = classOf[PiFailureUnknownProcess[ObjectId]]
   val PIFAPIS: Class[PiFailureAtomicProcessIsComposite[ObjectId]] = classOf[PiFailureAtomicProcessIsComposite[ObjectId]]
   val PIFNSI: Class[PiFailureNoSuchInstance[ObjectId]] = classOf[PiFailureNoSuchInstance[ObjectId]]
-  val PIEXCEPT: Class[PiEventException[ObjectId]] = classOf[PiEventException[ObjectId]]
-  val PIPROCEXCEPT: Class[PiEventProcessException[ObjectId]] = classOf[PiEventProcessException[ObjectId]]
+  val PIEXCEPT: Class[PiFailureExceptions[ObjectId]] = classOf[PiFailureExceptions[ObjectId]]
+  val PIPROCEXCEPT: Class[PiFailureAtomicProcessException[ObjectId]] = classOf[PiFailureAtomicProcessException[ObjectId]]
 
   val ANY_KEY:          Class[AnyKey]           = classOf[AnyKey]
   val ANY_MSG:          Class[AnyMsg]           = classOf[AnyMsg]
