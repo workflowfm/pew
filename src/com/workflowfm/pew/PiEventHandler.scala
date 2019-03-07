@@ -370,7 +370,8 @@ case class PiEventReturn[KeyT](
 // AtomicProcess Call Level PiFailures //
 /////////////////////////////////////////
 
-/**
+/** Denotes that a AtomicProcess call was terminated by encountering an Exception
+  * from which it could not recover.
   *
   * @param id PiInstance ID for the parent CompositeProcess.
   * @param ref Enumerated ID for this AtomicProcess call, unique for this PiInstance.
