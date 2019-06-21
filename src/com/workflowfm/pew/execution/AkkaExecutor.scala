@@ -18,10 +18,10 @@ class AkkaExecutor (store: PiInstanceStore[Int], processes: PiProcessStore)
     with PiObservable[Int] {
 
   def this(store:PiInstanceStore[Int], l:PiProcess*)
-          (implicit system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration) =
+          (implicit system: ActorSystem, context: ExecutionContext, timeout: FiniteDuration) =
     this(store,SimpleProcessStore(l :_*))
 
-  def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration,l:PiProcess*) =
+  def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration, l: PiProcess*) =
     this(SimpleInstanceStore[Int](), SimpleProcessStore(l :_*))(system, context, timeout)
 
   def this(l:PiProcess*)
@@ -111,16 +111,13 @@ class AkkaExecActor(var store: PiInstanceStore[Int], processes: PiProcessStore)
   var ctr: Int = 0
 
   /**
-    * Instantiate the initial process
+    * Initialize a workflow
     *
-    * @param p Initial process
+    * @param p Workflow process
     * @param args Instantiation arguments
-    * @return ID of the instance
+    * @return ID of the workflow instance
     */
   def init(p: PiProcess, args: Seq[PiObject]): Int = {
-    //TODO: This is the only place where ctr is used and should only be ran once per instance.
-    //  It seems that its functionality is now being done by the PiInstance internally
-    //  Could it be replaced with a constant 0?
     val inst = PiInstance(ctr, p, args:_*)
     store = store.put(inst)
     ctr = ctr + 1
@@ -128,10 +125,10 @@ class AkkaExecActor(var store: PiInstanceStore[Int], processes: PiProcessStore)
   }
 
   /**
-    * Start a process instance
+    * Start a workflow instance
     * Publish [[PiFailureNoSuchInstance]] if no such instance found in the store
     *
-    * @param id ID of the instance
+    * @param id ID of the workflow instance
     */
   def start(id: Int): Unit = store.get(id) match {
     case None => publish(PiFailureNoSuchInstance(id))
@@ -151,16 +148,16 @@ class AkkaExecActor(var store: PiInstanceStore[Int], processes: PiProcessStore)
             store = store.del(id)
         }
       } else {
-        // Create threads for each thread the new instance wants to call
+        // Create actors for each thread the new instance wants to call
         val (toCall, resultInstance) = newInstance.handleThreads(handleThread(newInstance))
 
         // Get the calls' Futures
         val futureCalls = toCall flatMap resultInstance.piFutureOf
 
-        // Add the resulting instance to the store
+        // Put the resulting instance to the store
         store = store.put(resultInstance)
 
-        // Run each of the new threads
+        // Run each of the new actors
         (toCall zip futureCalls) foreach runThread(resultInstance)
       }
   }
@@ -195,16 +192,16 @@ class AkkaExecActor(var store: PiInstanceStore[Int], processes: PiProcessStore)
                 store = store.del(newInstance.id)
             }
           } else {
-            // Create threads for each thread the new instance wants to call
+            // Create actors for each thread the new instance wants to call
             val (toCall, resultInstance) = newInstance.handleThreads(handleThread(newInstance))
 
             // Get the calls' Futures
             val futureCalls = toCall flatMap resultInstance.piFutureOf
 
-            // Add the resulting instance to the store
+            // Put the resulting instance to the store
             store = store.put(resultInstance)
 
-            // Run each of the new threads
+            // Run each of the new actors
             (toCall zip futureCalls) foreach runThread(resultInstance)
           }
         }
@@ -264,9 +261,9 @@ class AkkaExecActor(var store: PiInstanceStore[Int], processes: PiProcessStore)
   def simulationReady(): Boolean = store.simulationReady
 
   def receive: PartialFunction[Any, Unit] = {
-    case AkkaExecutor.Init(p, args) => sender() ! init(p,args)
+    case AkkaExecutor.Init(p, args) => sender() ! init(p, args)
     case AkkaExecutor.Start(id) => start(id)
-    case AkkaExecutor.Result(id, ref, res) => postResult(id,ref,res)
+    case AkkaExecutor.Result(id, ref, res) => postResult(id, ref, res)
     case AkkaExecutor.Error(id, ref, ex) =>
       publish( PiFailureAtomicProcessException(id, ref, ex) )
       store = store.del(id)
