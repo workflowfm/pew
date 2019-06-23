@@ -15,3 +15,6 @@
 \#*\#
 .\#*
 .projectile
+
+# Ignore kafka and zookeper logs
+resources/kafka/data
