@@ -10,38 +10,38 @@ import org.bson.{BsonReader, BsonWriter}
 class SequenceRequestCodec(
     refCodec: Codec[CallRef],
     objCodec: Codec[PiObject]
-  ) extends ClassCodec[SequenceRequest] {
+) extends ClassCodec[SequenceRequest] {
 
-  val idN = "_id"
+  val idN  = "_id"
   val refN = "callRef"
   val objN = "piObj"
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): SequenceRequest = {
 
-    reader.readName( idN )
+    reader.readName(idN)
     val piiId = reader.readObjectId()
 
-    reader.readName( refN )
-    val ref: CallRef = ctx.decodeWithChildContext( refCodec, reader )
+    reader.readName(refN)
+    val ref: CallRef = ctx.decodeWithChildContext(refCodec, reader)
 
-    reader.readName( objN )
-    val obj: PiObject = ctx.decodeWithChildContext( objCodec, reader )
+    reader.readName(objN)
+    val obj: PiObject = ctx.decodeWithChildContext(objCodec, reader)
 
-    SequenceRequest( piiId, (ref, obj) )
+    SequenceRequest(piiId, (ref, obj))
   }
 
   override def encodeBody(writer: BsonWriter, value: SequenceRequest, ctx: EncoderContext): Unit = {
 
-    writer.writeName( idN )
-    writer.writeObjectId( value.piiId )
+    writer.writeName(idN)
+    writer.writeObjectId(value.piiId)
 
     val (callRef, piObj) = value.request
 
-    writer.writeName( refN )
-    ctx.encodeWithChildContext( refCodec, writer, callRef )
+    writer.writeName(refN)
+    ctx.encodeWithChildContext(refCodec, writer, callRef)
 
-    writer.writeName( objN )
-    ctx.encodeWithChildContext( objCodec, writer, piObj )
+    writer.writeName(objN)
+    ctx.encodeWithChildContext(objCodec, writer, piObj)
   }
 
 }

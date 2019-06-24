@@ -13,38 +13,37 @@ class SequenceFailureCodec(
     refCodec: Codec[CallRef],
     objCodec: Codec[PiObject],
     errCodec: Codec[PiFailure[ObjectId]]
-
-  ) extends ClassCodec[SequenceFailure] {
+) extends ClassCodec[SequenceFailure] {
 
   import com.workflowfm.pew.mongodb.bson.BsonUtil._
 
-  val hasPiiN = "hasPii"
-  val piiN = "pii"
-  val resultsN = "results"
+  val hasPiiN   = "hasPii"
+  val piiN      = "pii"
+  val resultsN  = "results"
   val failuresN = "failures"
-  val refN = "ref"
-  val hasObjN = "hasObj"
-  val objN = "obj"
-  val failN = "err"
+  val refN      = "ref"
+  val hasObjN   = "hasObj"
+  val objN      = "obj"
+  val failN     = "err"
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): SequenceFailure = {
 
-    val hasPii: Boolean = reader.readBoolean( hasPiiN )
-    reader.readName( piiN )
+    val hasPii: Boolean = reader.readBoolean(hasPiiN)
+    reader.readName(piiN)
 
     val eitherPii =
       if (hasPii)
-        Right( ctx.decodeWithChildContext( piiCodec, reader ) )
+        Right(ctx.decodeWithChildContext(piiCodec, reader))
       else
-        Left( reader.readObjectId() )
+        Left(reader.readObjectId())
 
-    val results = readArray( reader, resultsN ) { () =>
+    val results = readArray(reader, resultsN) { () =>
       reader.readStartDocument()
 
-      reader.readName( refN )
-      val ref: CallRef = ctx.decodeWithChildContext( refCodec, reader )
+      reader.readName(refN)
+      val ref: CallRef = ctx.decodeWithChildContext(refCodec, reader)
 
-      val hasObj: Boolean = reader.readBoolean( hasObjN )
+      val hasObj: Boolean = reader.readBoolean(hasObjN)
 
       val obj: PiObject =
         if (hasObj) {
@@ -56,8 +55,8 @@ class SequenceFailureCodec(
       (ref, obj)
     }
 
-    val failures = readArray( reader, failuresN ) { () =>
-      ctx.decodeWithChildContext( errCodec, reader )
+    val failures = readArray(reader, failuresN) { () =>
+      ctx.decodeWithChildContext(errCodec, reader)
     }
 
     SequenceFailure(
@@ -69,22 +68,22 @@ class SequenceFailureCodec(
 
   override def encodeBody(writer: BsonWriter, value: SequenceFailure, ctx: EncoderContext): Unit = {
 
-    writer.writeBoolean( hasPiiN, value.pii.isRight )
-    writer.writeName( piiN )
+    writer.writeBoolean(hasPiiN, value.pii.isRight)
+    writer.writeName(piiN)
 
     value.pii match {
-      case Right( _pii ) => ctx.encodeWithChildContext( piiCodec, writer, _pii )
-      case Left( _piiId ) => writer.writeObjectId( _piiId )
+      case Right(_pii)  => ctx.encodeWithChildContext(piiCodec, writer, _pii)
+      case Left(_piiId) => writer.writeObjectId(_piiId)
     }
 
-    writeArray( writer, resultsN, value.returns ) {
-      case ( ref, obj ) =>
+    writeArray(writer, resultsN, value.returns) {
+      case (ref, obj) =>
         writer.writeStartDocument()
 
-        writer.writeName( refN )
-        ctx.encodeWithChildContext( refCodec, writer, ref )
+        writer.writeName(refN)
+        ctx.encodeWithChildContext(refCodec, writer, ref)
 
-        writer.writeBoolean( hasObjN, obj != null )
+        writer.writeBoolean(hasObjN, obj != null)
 
         if (obj != null) {
           writer.writeName(objN)
@@ -94,8 +93,8 @@ class SequenceFailureCodec(
         writer.writeEndDocument()
     }
 
-    writeArray( writer, failuresN, value.errors ) {
-      ctx.encodeWithChildContext( errCodec, writer, _ )
+    writeArray(writer, failuresN, value.errors) {
+      ctx.encodeWithChildContext(errCodec, writer, _)
     }
   }
 }

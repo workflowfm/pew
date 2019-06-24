@@ -9,28 +9,27 @@ import scala.concurrent._
 /** Runs AtomicProcesses and handles all necessary communication with the various stateless workflow actors.
   *
   */
-class AtomicExecutor( implicit exec: ExecutionContext )
-    extends StatelessComponent[Assignment, Future[Seq[AnyMsg]]] {
+class AtomicExecutor(implicit exec: ExecutionContext) extends StatelessComponent[Assignment, Future[Seq[AnyMsg]]] {
 
   override def respond: Assignment => Future[Seq[AnyMsg]] = {
-    case Assignment( pii, ref, name, args ) =>
+    case Assignment(pii, ref, name, args) =>
+      def fail(piEx: PiException[ObjectId]): Future[SequenceFailure] =
+        Future.successful(SequenceFailure(pii.id, ref, piEx))
 
-      def fail( piEx: PiException[ObjectId]): Future[SequenceFailure]
-      = Future.successful( SequenceFailure( pii.id, ref, piEx ) )
-
-      def failOther( t: Throwable ): Future[SequenceFailure]
-      = fail( RemoteProcessException[ObjectId]( pii.id, ref.id, t ) )
+      def failOther(t: Throwable): Future[SequenceFailure] = fail(RemoteProcessException[ObjectId](pii.id, ref.id, t))
 
       try {
-        val proc: MetadataAtomicProcess = pii.getAtomicProc( name )
+        val proc: MetadataAtomicProcess = pii.getAtomicProc(name)
 
         try {
-          proc.runMeta( args.map(_.obj) )
+          proc
+            .runMeta(args.map(_.obj))
             .map({
-              case (res, meta) => Seq(
-                SequenceRequest( pii.id, (ref, res) ),
-                PiiLog( PiEventReturn( pii.id, ref.id, res, meta ) )
-              )
+              case (res, meta) =>
+                Seq(
+                  SequenceRequest(pii.id, (ref, res)),
+                  PiiLog(PiEventReturn(pii.id, ref.id, res, meta))
+                )
             })
             .recoverWith({ case t: Throwable => failOther(t).map(Seq(_)) })
 
@@ -44,11 +43,11 @@ class AtomicExecutor( implicit exec: ExecutionContext )
         }
 
       } catch {
-        case ex: UnknownProcessException[ObjectId] => fail( ex ).map(Seq(_))
-        case ex: AtomicProcessIsCompositeException[ObjectId] => fail( ex ).map(Seq(_))
-        case ex: Exception => failOther( ex ).map(Seq(_))
+        case ex: UnknownProcessException[ObjectId]           => fail(ex).map(Seq(_))
+        case ex: AtomicProcessIsCompositeException[ObjectId] => fail(ex).map(Seq(_))
+        case ex: Exception                                   => failOther(ex).map(Seq(_))
       }
   }
 }
 
-case class PreExecutionException( t: Throwable ) extends Throwable
+case class PreExecutionException(t: Throwable) extends Throwable

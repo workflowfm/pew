@@ -10,13 +10,13 @@ object ClassLoaderUtil {
     * @tparam T The return type of `fnWrapped`
     * @return The returned value of `fnWrapped`
     */
-  def withClassLoader[T]( tmpClassLoader: ClassLoader )( fnWrapped: => T ): T = {
+  def withClassLoader[T](tmpClassLoader: ClassLoader)(fnWrapped: => T): T = {
     val pushedClassLoader = Thread.currentThread().getContextClassLoader
-    try{
-      Thread.currentThread().setContextClassLoader( tmpClassLoader )
+    try {
+      Thread.currentThread().setContextClassLoader(tmpClassLoader)
       fnWrapped
     } finally {
-      Thread.currentThread().setContextClassLoader( pushedClassLoader )
+      Thread.currentThread().setContextClassLoader(pushedClassLoader)
     }
   }
 

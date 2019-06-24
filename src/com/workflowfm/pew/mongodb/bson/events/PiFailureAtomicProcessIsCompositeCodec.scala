@@ -6,34 +6,38 @@ import com.workflowfm.pew.{PiFailureAtomicProcessIsComposite, PiInstance}
 import org.bson.{BsonReader, BsonWriter}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 
-class PiFailureAtomicProcessIsCompositeCodec[T]( piiCodec: Codec[PiInstance[T]], metaCodec: Codec[PiMetadataMap] )
-  extends ClassCodec[PiFailureAtomicProcessIsComposite[T]] {
+class PiFailureAtomicProcessIsCompositeCodec[T](piiCodec: Codec[PiInstance[T]], metaCodec: Codec[PiMetadataMap])
+    extends ClassCodec[PiFailureAtomicProcessIsComposite[T]] {
 
   val piiIdN: String = "piiId"
-  val procN: String = "proc"
-  val timeN: String = "timestamp"
+  val procN: String  = "proc"
+  val timeN: String  = "timestamp"
 
-  override def encodeBody(writer: BsonWriter, value: PiFailureAtomicProcessIsComposite[T], ctx: EncoderContext): Unit = {
+  override def encodeBody(
+      writer: BsonWriter,
+      value: PiFailureAtomicProcessIsComposite[T],
+      ctx: EncoderContext
+  ): Unit = {
 
-    writer.writeName( piiIdN )
-    ctx.encodeWithChildContext( piiCodec, writer, value.i )
+    writer.writeName(piiIdN)
+    ctx.encodeWithChildContext(piiCodec, writer, value.i)
 
-    writer.writeString( procN, value.process )
+    writer.writeString(procN, value.process)
 
-    writer.writeName( timeN )
-    ctx.encodeWithChildContext( metaCodec, writer, value.metadata )
+    writer.writeName(timeN)
+    ctx.encodeWithChildContext(metaCodec, writer, value.metadata)
   }
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): PiFailureAtomicProcessIsComposite[T] = {
 
-    reader.readName( piiIdN )
-    val pii: PiInstance[T] = ctx.decodeWithChildContext( piiCodec, reader )
+    reader.readName(piiIdN)
+    val pii: PiInstance[T] = ctx.decodeWithChildContext(piiCodec, reader)
 
-    val proc: String = reader.readString( procN )
+    val proc: String = reader.readString(procN)
 
-    reader.readName( timeN )
-    val data: PiMetadataMap = ctx.decodeWithChildContext( metaCodec, reader )
-    
-    PiFailureAtomicProcessIsComposite( pii, proc, data )
+    reader.readName(timeN)
+    val data: PiMetadataMap = ctx.decodeWithChildContext(metaCodec, reader)
+
+    PiFailureAtomicProcessIsComposite(pii, proc, data)
   }
 }

@@ -20,16 +20,16 @@ abstract class KafkaExecutorEnvironment {
   val materializer: Materializer
 
   // Kafka - PiiId keyed consumer topic settings
-  val csPiiHistory:       ConsumerSettings[KeyPiiId, PiiHistory]
-  val csSequenceRequest:  ConsumerSettings[KeyPiiId, SequenceRequest]
-  val csReduceRequest:    ConsumerSettings[KeyPiiId, ReduceRequest]
-  val csResult:           ConsumerSettings[KeyPiiId, PiiLog]
+  val csPiiHistory: ConsumerSettings[KeyPiiId, PiiHistory]
+  val csSequenceRequest: ConsumerSettings[KeyPiiId, SequenceRequest]
+  val csReduceRequest: ConsumerSettings[KeyPiiId, ReduceRequest]
+  val csResult: ConsumerSettings[KeyPiiId, PiiLog]
 
   // Kafka - (PiiId, CallRef) keyed consumer topic settings
-  val csAssignment:       ConsumerSettings[KeyPiiIdCall, Assignment]
+  val csAssignment: ConsumerSettings[KeyPiiIdCall, Assignment]
 
   // Kafka - All producer settings
-  val psAllMessages:      ProducerSettings[AnyKey, AnyMsg]
+  val psAllMessages: ProducerSettings[AnyKey, AnyMsg]
 
 }
 
@@ -37,8 +37,8 @@ object KafkaExecutorSettings {
 
   // Kafka - Topic Keys
   sealed trait AnyKey
-  case class KeyPiiId( piiId: ObjectId ) extends AnyKey
-  case class KeyPiiIdCall( piiId: ObjectId, ref: CallRef) extends AnyKey
+  case class KeyPiiId(piiId: ObjectId)                   extends AnyKey
+  case class KeyPiiIdCall(piiId: ObjectId, ref: CallRef) extends AnyKey
 
   type AnyRes = Any
 
@@ -63,7 +63,7 @@ abstract class KafkaExecutorSettings {
 
   // Kafka - Debug output
   def logMessageReceived(msg: Any): Unit = println(s"Received: $msg.")
-  def logMessageSent(msg: Any): Unit = println(s"Sent: $msg.")
+  def logMessageSent(msg: Any): Unit     = println(s"Sent: $msg.")
 
   // Kafka - Topic Names
   type TopicN = String

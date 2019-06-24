@@ -10,23 +10,24 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-class AkkaExecutor (store: PiInstanceStore[Int], processes: PiProcessStore)
-                   (implicit val system: ActorSystem,
-                    override implicit val executionContext: ExecutionContext = ExecutionContext.global,
-                    implicit val timeout: FiniteDuration = 10.seconds)
-  extends SimulatorExecutor[Int]
+class AkkaExecutor(store: PiInstanceStore[Int], processes: PiProcessStore)(
+    implicit val system: ActorSystem,
+    implicit override val executionContext: ExecutionContext = ExecutionContext.global,
+    implicit val timeout: FiniteDuration = 10.seconds
+) extends SimulatorExecutor[Int]
     with PiObservable[Int] {
 
-  def this(store:PiInstanceStore[Int], l:PiProcess*)
-          (implicit system: ActorSystem, context: ExecutionContext, timeout: FiniteDuration) =
-    this(store,SimpleProcessStore(l :_*))
+  def this(
+      store: PiInstanceStore[Int],
+      l: PiProcess*
+  )(implicit system: ActorSystem, context: ExecutionContext, timeout: FiniteDuration) =
+    this(store, SimpleProcessStore(l: _*))
 
-  def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration, l: PiProcess*) =
-    this(SimpleInstanceStore[Int](), SimpleProcessStore(l :_*))(system, context, timeout)
+  def this(system: ActorSystem, context: ExecutionContext, timeout: FiniteDuration, l: PiProcess*) =
+    this(SimpleInstanceStore[Int](), SimpleProcessStore(l: _*))(system, context, timeout)
 
-  def this(l:PiProcess*)
-          (implicit system: ActorSystem) =
-    this(SimpleInstanceStore[Int](), SimpleProcessStore(l :_*))(system, ExecutionContext.global, 10.seconds)
+  def this(l: PiProcess*)(implicit system: ActorSystem) =
+    this(SimpleInstanceStore[Int](), SimpleProcessStore(l: _*))(system, ExecutionContext.global, 10.seconds)
 
   // Execution actor
   val execActor: ActorRef = system.actorOf(AkkaExecutor.execprops(store, processes))
@@ -35,10 +36,11 @@ class AkkaExecutor (store: PiInstanceStore[Int], processes: PiProcessStore)
   implicit val tOut: Timeout = Timeout(timeout)
 
   override def simulationReady: Boolean =
-    Await.result(execActor ? AkkaExecutor.SimReady, timeout)
+    Await
+      .result(execActor ? AkkaExecutor.SimReady, timeout)
       .asInstanceOf[Boolean]
 
-  override protected def init(process:PiProcess, args:Seq[PiObject]): Future[Int] =
+  override protected def init(process: PiProcess, args: Seq[PiObject]): Future[Int] =
     execActor ? AkkaExecutor.Init(process, args) map (_.asInstanceOf[Int])
 
   override protected def start(id: Int): Unit =
@@ -89,9 +91,11 @@ object AkkaExecutor {
     * @param exc Actor execution context
     * @return Process executor actor properties
     */
-  def execprops(store: PiInstanceStore[Int], processes: PiProcessStore)
-               (implicit system: ActorSystem, exc: ExecutionContext): Props =
-    Props(new AkkaExecActor(store,processes))
+  def execprops(
+      store: PiInstanceStore[Int],
+      processes: PiProcessStore
+  )(implicit system: ActorSystem, exc: ExecutionContext): Props =
+    Props(new AkkaExecActor(store, processes))
 }
 
 /**
@@ -102,10 +106,10 @@ object AkkaExecutor {
   * @param system Akka actor system
   * @param executionContext Actor execution context
   */
-class AkkaExecActor(var store: PiInstanceStore[Int], processes: PiProcessStore)
-                   (implicit system: ActorSystem,
-                    override implicit val executionContext: ExecutionContext = ExecutionContext.global)
-  extends Actor
+class AkkaExecActor(var store: PiInstanceStore[Int], processes: PiProcessStore)(
+    implicit system: ActorSystem,
+    implicit override val executionContext: ExecutionContext = ExecutionContext.global
+) extends Actor
     with SimplePiObservable[Int] {
 
   var ctr: Int = 0
@@ -118,10 +122,10 @@ class AkkaExecActor(var store: PiInstanceStore[Int], processes: PiProcessStore)
     * @return ID of the workflow instance
     */
   def init(p: PiProcess, args: Seq[PiObject]): Int = {
-    val inst = PiInstance(ctr, p, args:_*)
+    val inst = PiInstance(ctr, p, args: _*)
     store = store.put(inst)
     ctr = ctr + 1
-    ctr-1
+    ctr - 1
   }
 
   /**
@@ -208,8 +212,7 @@ class AkkaExecActor(var store: PiInstanceStore[Int], processes: PiProcessStore)
     }
   }
 
-  def handleThread(i: PiInstance[Int])
-                  (ref: Int, f: PiFuture): Boolean = {
+  def handleThread(i: PiInstance[Int])(ref: Int, f: PiFuture): Boolean = {
     //TODO Isn't the first match redundant, given the type of f is given as PiFuture in the argument list?
     //  Is it being used to name components of f?
     f match {
@@ -219,7 +222,7 @@ class AkkaExecActor(var store: PiInstanceStore[Int], processes: PiProcessStore)
             publish(PiFailureUnknownProcess(i, name))
             false
           case Some(_: MetadataAtomicProcess) => true
-          case Some(_: CompositeProcess) =>
+          case Some(_: CompositeProcess)      =>
             // Composite processes should not be encountered here
             publish(PiFailureAtomicProcessIsComposite(i, name))
             false
@@ -227,8 +230,7 @@ class AkkaExecActor(var store: PiInstanceStore[Int], processes: PiProcessStore)
     }
   }
 
-  def runThread(i: PiInstance[Int])
-               (t: (Int, PiFuture)): Unit = {
+  def runThread(i: PiInstance[Int])(t: (Int, PiFuture)): Unit = {
     //TODO Isn't the first match redundant, given the type of t.second is given as PiFuture in the argument list?
     // Is it being used to name components of t?
     t match {
@@ -236,11 +238,13 @@ class AkkaExecActor(var store: PiInstanceStore[Int], processes: PiProcessStore)
         i.getProc(name) match {
           case None =>
             // This should never happen! We already checked!
-            System.err.println("*** [" + i.id + "] ERROR *** Unable to find process: " + name + " even though we checked already")
+            System.err.println(
+              "*** [" + i.id + "] ERROR *** Unable to find process: " + name + " even though we checked already"
+            )
           case Some(p: MetadataAtomicProcess) =>
             // Prepare timeout and forget types of arguments
             implicit val tOut: Timeout = Timeout(1.second)
-            val objs = args map (_.obj)
+            val objs                   = args map (_.obj)
 
             // Create a new actor for the atomic process and tell it about the call
             try {
@@ -261,30 +265,29 @@ class AkkaExecActor(var store: PiInstanceStore[Int], processes: PiProcessStore)
   def simulationReady(): Boolean = store.simulationReady
 
   def receive: PartialFunction[Any, Unit] = {
-    case AkkaExecutor.Init(p, args) => sender() ! init(p, args)
-    case AkkaExecutor.Start(id) => start(id)
+    case AkkaExecutor.Init(p, args)        => sender() ! init(p, args)
+    case AkkaExecutor.Start(id)            => start(id)
     case AkkaExecutor.Result(id, ref, res) => postResult(id, ref, res)
     case AkkaExecutor.Error(id, ref, ex) =>
-      publish( PiFailureAtomicProcessException(id, ref, ex) )
+      publish(PiFailureAtomicProcessException(id, ref, ex))
       store = store.del(id)
-    case AkkaExecutor.Ping => sender() ! AkkaExecutor.Ping
-    case AkkaExecutor.AckCall => Unit
-    case AkkaExecutor.SimReady => sender() ! simulationReady()
-    case AkkaExecutor.Subscribe(h) => subscribe(h) pipeTo sender()
+    case AkkaExecutor.Ping              => sender() ! AkkaExecutor.Ping
+    case AkkaExecutor.AckCall           => Unit
+    case AkkaExecutor.SimReady          => sender() ! simulationReady()
+    case AkkaExecutor.Subscribe(h)      => subscribe(h) pipeTo sender()
     case AkkaExecutor.Unsubscribe(name) => unsubscribe(name) pipeTo sender()
-    case m => System.err.println("!!! Received unknown message: " + m)
+    case m                              => System.err.println("!!! Received unknown message: " + m)
   }
 }
 
-class AkkaAtomicProcessExecutor(implicit val exc: ExecutionContext = ExecutionContext.global)
-  extends Actor { //(executor: ActorRef, p: PiProcess, args: Seq[PiObject])
+class AkkaAtomicProcessExecutor(implicit val exc: ExecutionContext = ExecutionContext.global) extends Actor { //(executor: ActorRef, p: PiProcess, args: Seq[PiObject])
 
-   def receive: PartialFunction[Any, Unit] = {
+  def receive: PartialFunction[Any, Unit] = {
     case AkkaExecutor.ACall(id, ref, p, args, actor) =>
       //System.err.println("*** [" + id + "] Calling atomic process: " + p.name + " ref:" + ref)
-      p.runMeta(args).onComplete{
+      p.runMeta(args).onComplete {
         case Success(res) => actor ! AkkaExecutor.Result(id, ref, res)
-        case Failure(ex) => actor ! AkkaExecutor.Error(id, ref, ex)
+        case Failure(ex)  => actor ! AkkaExecutor.Error(id, ref, ex)
       }
       actor ! AkkaExecutor.AckCall
     case m => System.err.println("!! Received unknown message: " + m)

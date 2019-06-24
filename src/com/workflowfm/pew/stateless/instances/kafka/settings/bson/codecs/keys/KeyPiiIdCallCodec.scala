@@ -6,10 +6,9 @@ import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettin
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.{BsonReader, BsonWriter}
 
-class KeyPiiIdCallCodec( refCodec: Codec[CallRef] )
-  extends ClassCodec[KeyPiiIdCall] {
+class KeyPiiIdCallCodec(refCodec: Codec[CallRef]) extends ClassCodec[KeyPiiIdCall] {
 
-  val idN = "id"
+  val idN      = "id"
   val callRefN = "ref"
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): KeyPiiIdCall = {
@@ -18,17 +17,17 @@ class KeyPiiIdCallCodec( refCodec: Codec[CallRef] )
     val piiId = reader.readObjectId()
 
     reader.readName(callRefN)
-    val ref: CallRef = ctx.decodeWithChildContext( refCodec, reader )
+    val ref: CallRef = ctx.decodeWithChildContext(refCodec, reader)
 
-    KeyPiiIdCall( piiId, ref )
+    KeyPiiIdCall(piiId, ref)
   }
 
   override def encodeBody(writer: BsonWriter, key: KeyPiiIdCall, ctx: EncoderContext): Unit = {
 
     writer.writeName(idN)
-    writer.writeObjectId( key.piiId )
+    writer.writeObjectId(key.piiId)
 
     writer.writeName(callRefN)
-    ctx.encodeWithChildContext( refCodec, writer, key.ref )
+    ctx.encodeWithChildContext(refCodec, writer, key.ref)
   }
 }

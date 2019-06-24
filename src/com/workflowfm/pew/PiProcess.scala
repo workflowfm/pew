@@ -7,10 +7,10 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 
 /**
- * Corresponds to any process that can be executed within our framework.
- * The specification generally follows the proofs-as-processes format, with PiObject patterns
- * representing CLL types, paired with strings representing the channel names. *
- */
+  * Corresponds to any process that can be executed within our framework.
+  * The specification generally follows the proofs-as-processes format, with PiObject patterns
+  * representing CLL types, paired with strings representing the channel names. *
+  */
 sealed trait PiProcess {
   /** Process name */
   def name: String
@@ -29,21 +29,21 @@ sealed trait PiProcess {
   def allDependencies: Seq[PiProcess] = PiProcess.allDependenciesOf(this)
 
   /**
-   * Initializes a PiState that executes this process with a given list of PiObject arguments.
-   * Generates an Output term from each PiObject in args so that they can be fed to the process.
-   * Also generates an Input that consumes the output of the process when it is done.
-   * Adds all dependencies to the state and then runs a PiCall directly.
-   */
+    * Initializes a PiState that executes this process with a given list of PiObject arguments.
+    * Generates an Output term from each PiObject in args so that they can be fed to the process.
+    * Also generates an Input that consumes the output of the process when it is done.
+    * Adds all dependencies to the state and then runs a PiCall directly.
+    */
   def execState(args: Seq[PiObject]): PiState = {
-      val iTerms = args zip (inputs map (_._2)) map { case (o, c) => Output.of(o, c) }
-      val oTerm = Input.of(output._1, output._2)
-      PiState() withProc this withProcs (allDependencies :_*) withTerms
-        iTerms withTerm oTerm withTerm PiCall(name,channels map Chan)
+    val iTerms = args zip (inputs map (_._2)) map { case (o, c) => Output.of(o, c) }
+    val oTerm  = Input.of(output._1, output._2)
+    PiState() withProc this withProcs (allDependencies: _*) withTerms
+      iTerms withTerm oTerm withTerm PiCall(name, channels map Chan)
   }
 
   /** Used when a process is called to map argument channels to the given values. */
-  def mapArgs(args: Chan*) = ChanMap(channels map Chan zip args:_*)
-  def mapFreshArgs(i: Int, args: Chan*) = ChanMap(channels map (_ + "#" + i) map Chan zip args:_*)
+  def mapArgs(args: Chan*)              = ChanMap(channels map Chan zip args: _*)
+  def mapFreshArgs(i: Int, args: Chan*) = ChanMap(channels map (_ + "#" + i) map Chan zip args: _*)
 
   def inputFrees(): Seq[Seq[Chan]] = inputs map (_._1.frees)
 
@@ -56,10 +56,10 @@ sealed trait PiProcess {
   def toIEntry: (String, PiProcess) = iname -> this
 
   /**
-   * This is used to identify simulation processes that need (virtual) time to complete.
-   * If a process is not a simulation process, then the simulator needs to wait for it to complete before
-   * the next virtual tick.
-   */
+    * This is used to identify simulation processes that need (virtual) time to complete.
+    * If a process is not a simulation process, then the simulator needs to wait for it to complete before
+    * the next virtual tick.
+    */
   def isSimulatedProcess = false
 }
 object PiProcess {
@@ -83,17 +83,17 @@ trait MetadataAtomicProcess extends PiProcess {
 
   /** Constructs a PiFuture to be added to the state when the process is called. */
   def getFuture(i: Int, m: ChanMap): PiFuture =
-    PiFuture(name,
-      m.resolve(Chan(output._2).fresh(i)),
-      inputs map { case (o,c) => PiResource.of(o.fresh(i), c + "#" + i, m) })
+    PiFuture(name, m.resolve(Chan(output._2).fresh(i)), inputs map {
+      case (o, c) => PiResource.of(o.fresh(i), c + "#" + i, m)
+    })
   def getFuture(i: Int, args: Chan*): PiFuture =
-    getFuture(i, mapFreshArgs(i, args:_*))
+    getFuture(i, mapFreshArgs(i, args: _*))
 
   /**  Constructs the Input terms needed to appropriately receive the process inputs. */
   def getInputs(i: Int, m: ChanMap): Seq[Input] =
-    inputs map { case (o,c) => Input.of(m.sub(o.fresh(i)), m.resolve(c + "#" + i)) }
+    inputs map { case (o, c) => Input.of(m.sub(o.fresh(i)), m.resolve(c + "#" + i)) }
   def getInputs(i: Int, args: Chan*): Seq[Input] =
-    getInputs(i, mapFreshArgs(i, args:_*))
+    getInputs(i, mapFreshArgs(i, args: _*))
 
   override val dependencies: Seq[PiProcess] = Seq()
 }
@@ -111,12 +111,12 @@ object MetadataAtomicProcess {
     (result, PiMetadata(data: _*))
 
   /*
-    /** Upgrade AtomicProcess to MetadataAtomicProcesses so ProcessExecutors
-      * can simply integrate existing process.
-      *
-      * @return A MetadataAtomicProcess wrapper around the input AtomicProcess
-      *         *IFF* it's not already a MetadataAtomicProcess.
-      */
+  /** Upgrade AtomicProcess to MetadataAtomicProcesses so ProcessExecutors
+ * can simply integrate existing process.
+ *
+ * @return A MetadataAtomicProcess wrapper around the input AtomicProcess
+ *         *IFF* it's not already a MetadataAtomicProcess.
+ */
    implicit def from: AtomicProcess => MetadataAtomicProcess = {
       case existing: MetadataAtomicProcess => existing
 
@@ -130,45 +130,44 @@ object MetadataAtomicProcess {
             = original.run(args).map((_, PiMetadata()))
         }
     }
-  */
+ */
 }
 
 trait AtomicProcess extends MetadataAtomicProcess {
   /** Implements the standard AtomicProcess interface for unsupporting ProcessExecutors. */
-  final override def runMeta(args: Seq[PiObject])
-                            (implicit ec: ExecutionContext): Future[MetadataAtomicResult] =
+  final override def runMeta(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[MetadataAtomicResult] =
     run(args).map(MetadataAtomicProcess.result(_))
 
-  def run(args: Seq[PiObject])(implicit ec:ExecutionContext): Future[PiObject]
+  def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject]
 }
 
-case class DummyProcess(override val name: String,
-                        override val channels: Seq[String],
-                        outChan: String,
-                        override val inputs: Seq[(PiObject, String)])
-  extends AtomicProcess {
+case class DummyProcess(
+    override val name: String,
+    override val channels: Seq[String],
+    outChan: String,
+    override val inputs: Seq[(PiObject, String)]
+) extends AtomicProcess {
 
-  override val output: (PiObject, String) = (PiItem(None), outChan)
+  override val output: (PiObject, String)                                                = (PiItem(None), outChan)
   override def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] = Future.successful(output._1)
 }
 
 trait CompositeProcess extends PiProcess {
   /** The body of the composition as a pi-calculus term constructed via proof. */
-  def body:Term
+  def body: Term
 
   /** Calling function that instantiates the body with a given set of channel arguments. */
-  def call(m: ChanMap): Term = body.sub(m)
-  def call(args: Chan*): Term = call(mapArgs(args:_*))
+  def call(m: ChanMap): Term  = body.sub(m)
+  def call(args: Chan*): Term = call(mapArgs(args: _*))
 }
 
-case class DummyComposition(override val name: String, i: String, o: String, n: String)
-  extends CompositeProcess {
+case class DummyComposition(override val name: String, i: String, o: String, n: String) extends CompositeProcess {
 
-  override val output: (PiObject, String) = (Chan(n), o)
+  override val output: (PiObject, String)      = (Chan(n), o)
   override val inputs: Seq[(PiObject, String)] = Seq((Chan(n), i))
-  override val channels: Seq[String] = Seq(i,o)
-  override val body = PiId(i, o, n)
-  override val dependencies: Seq[PiProcess] = Seq()
+  override val channels: Seq[String]           = Seq(i, o)
+  override val body                            = PiId(i, o, n)
+  override val dependencies: Seq[PiProcess]    = Seq()
 }
 
 trait PiProcessStore {
@@ -178,28 +177,27 @@ trait PiProcessStore {
 
   def getOrElse[B >: PiProcess](name: String, default: => B): B =
     get(name) match {
-      case None => default
+      case None    => default
       case Some(r) => r
     }
   def entryOf(name: String): Option[(String, PiProcess)] = get(name) map (_.toEntry)
-  def toMap: Map[String, PiProcess] = Map(getAll map (_.toEntry) :_*)
-  def toIMap: Map[String, PiProcess] = Map(getAll map (_.toIEntry) :_*)
+  def toMap: Map[String, PiProcess]                      = Map(getAll map (_.toEntry): _*)
+  def toIMap: Map[String, PiProcess]                     = Map(getAll map (_.toIEntry): _*)
 }
 object PiProcessStore {
   /**
-   * Shortcut to create name->PiProcess maps from a seq of processes.
-   * These are used within PiState.
-   */
+    * Shortcut to create name->PiProcess maps from a seq of processes.
+    * These are used within PiState.
+    */
   def mapOf(l: PiProcess*): Map[String, PiProcess] = (Map[String, PiProcess]() /: l)(_ + _.toEntry)
 }
 
-case class SimpleProcessStore(m: Map[String,PiProcess])
-  extends PiProcessStore {
+case class SimpleProcessStore(m: Map[String, PiProcess]) extends PiProcessStore {
 
   override def get(name: String): Option[PiProcess] = m.get(name)
-  override def getAll: Seq[PiProcess] = m.values.toSeq
+  override def getAll: Seq[PiProcess]               = m.values.toSeq
 }
 object SimpleProcessStore {
-  def apply(l: PiProcess*): SimpleProcessStore = SimpleProcessStore((Map[String, PiProcess]() /: l) (_ + _.toIEntry))
+  def apply(l: PiProcess*): SimpleProcessStore = SimpleProcessStore((Map[String, PiProcess]() /: l)(_ + _.toIEntry))
   //def procs(l: PiProcess*): SimpleProcessStore = SimpleProcessStore((Map[String, PiProcess]() /: l) (_ + _.toEntry))
 }

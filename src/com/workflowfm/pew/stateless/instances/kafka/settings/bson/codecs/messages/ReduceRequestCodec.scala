@@ -9,51 +9,51 @@ import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.types.ObjectId
 import org.bson.{BsonReader, BsonWriter}
 
-class ReduceRequestCodec( piiCodec: Codec[PiiT], refCodec: Codec[CallRef], objCodec: Codec[PiObject] )
-  extends ClassCodec[ReduceRequest] {
+class ReduceRequestCodec(piiCodec: Codec[PiiT], refCodec: Codec[CallRef], objCodec: Codec[PiObject])
+    extends ClassCodec[ReduceRequest] {
 
   import com.workflowfm.pew.mongodb.bson.BsonUtil._
 
-  val piiN = "pii"
+  val piiN  = "pii"
   val argsN = "args"
-  val refN = "ref"
-  val objN = "obj"
+  val refN  = "ref"
+  val objN  = "obj"
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): ReduceRequest = {
 
-    reader.readName( piiN )
-    val pii: PiInstance[ObjectId] = ctx.decodeWithChildContext( piiCodec, reader )
+    reader.readName(piiN)
+    val pii: PiInstance[ObjectId] = ctx.decodeWithChildContext(piiCodec, reader)
 
-    val args = readArray( reader, argsN ) { () =>
+    val args = readArray(reader, argsN) { () =>
       reader.readStartDocument()
 
-      reader.readName( refN )
-      val ref = ctx.decodeWithChildContext( refCodec, reader )
+      reader.readName(refN)
+      val ref = ctx.decodeWithChildContext(refCodec, reader)
 
-      reader.readName( objN )
-      val obj = ctx.decodeWithChildContext( objCodec, reader )
+      reader.readName(objN)
+      val obj = ctx.decodeWithChildContext(objCodec, reader)
 
       reader.readEndDocument()
       (ref, obj)
     }
 
-    ReduceRequest( pii, args )
+    ReduceRequest(pii, args)
   }
 
   override def encodeBody(writer: BsonWriter, value: ReduceRequest, ctx: EncoderContext): Unit = {
 
-    writer.writeName( piiN )
-    ctx.encodeWithChildContext( piiCodec, writer, value.pii )
+    writer.writeName(piiN)
+    ctx.encodeWithChildContext(piiCodec, writer, value.pii)
 
-    writeArray( writer, argsN, value.args ) {
+    writeArray(writer, argsN, value.args) {
       case (ref, obj) =>
         writer.writeStartDocument()
 
-        writer.writeName( refN )
-        ctx.encodeWithChildContext( refCodec, writer, ref )
+        writer.writeName(refN)
+        ctx.encodeWithChildContext(refCodec, writer, ref)
 
-        writer.writeName( objN )
-        ctx.encodeWithChildContext( objCodec, writer, obj )
+        writer.writeName(objN)
+        ctx.encodeWithChildContext(objCodec, writer, obj)
 
         writer.writeEndDocument()
     }
