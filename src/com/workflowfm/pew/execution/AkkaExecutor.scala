@@ -4,6 +4,7 @@ import akka.actor._
 import akka.pattern.{ask, pipe}
 import akka.util.Timeout
 import com.workflowfm.pew._
+import com.workflowfm.pew.stream.{ PiObservable, PiStream, PiEventHandler, PiSwitch }
 
 import scala.concurrent._
 import scala.concurrent.duration._
@@ -40,9 +41,8 @@ class AkkaExecutor (
     
   override protected def start(id:Int) = execActor ! AkkaExecutor.Start(id)
 
-  override def subscribe(handler:PiEventHandler[Int]):Future[Boolean] = (execActor ? AkkaExecutor.Subscribe(handler)).mapTo[Boolean]
+  override def subscribe(handler:PiEventHandler[Int]):Future[PiSwitch] = (execActor ? AkkaExecutor.Subscribe(handler)).mapTo[PiSwitch]
 
-  override def unsubscribe(name:String):Future[Boolean] = (execActor ? AkkaExecutor.Unsubscribe(name)).mapTo[Boolean]
 }
 
 object AkkaExecutor {
@@ -60,7 +60,6 @@ object AkkaExecutor {
   case object SimReady
   
   case class Subscribe(handler:PiEventHandler[Int])
-  case class Unsubscribe(name:String)
 
   def atomicprops(implicit context: ExecutionContext = ExecutionContext.global): Props = Props(new AkkaAtomicProcessExecutor())
   def execprops(store:PiInstanceStore[Int], processes:PiProcessStore)(implicit system: ActorSystem, exc: ExecutionContext): Props = Props(new AkkaExecActor(store,processes))
@@ -70,9 +69,9 @@ class AkkaExecActor(
   var store:PiInstanceStore[Int],
   processes:PiProcessStore
 )(
-  implicit system: ActorSystem,
-  override implicit val executionContext: ExecutionContext = ExecutionContext.global
-) extends Actor with SimplePiObservable[Int] {
+  override implicit val system: ActorSystem,
+  implicit val executionContext: ExecutionContext = ExecutionContext.global
+) extends Actor with PiStream[Int] {
 
   var ctr:Int = 0
 
@@ -192,7 +191,6 @@ class AkkaExecActor(
     case AkkaExecutor.AckCall => Unit
     case AkkaExecutor.SimReady => sender() ! simulationReady()
     case AkkaExecutor.Subscribe(h) => subscribe(h) pipeTo sender()
-    case AkkaExecutor.Unsubscribe(name) => unsubscribe(name) pipeTo sender()
     case m => System.err.println("!!! Received unknown message: " + m)
   }
 

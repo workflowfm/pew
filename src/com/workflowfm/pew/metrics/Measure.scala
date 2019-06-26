@@ -1,6 +1,7 @@
 package com.workflowfm.pew.metrics
 
 import com.workflowfm.pew._
+import com.workflowfm.pew.stream.PiEventHandler
 
 /** Metrics for a particular instance of an atomic process.
   *

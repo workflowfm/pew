@@ -1,7 +1,7 @@
 package com.workflowfm.pew.stateless.components
 
 import com.workflowfm.pew.stateless.StatelessMessages.PiiLog
-import com.workflowfm.pew._
+import com.workflowfm.pew.stream.{ PiObservable, SimplePiObservable, PiEventHandler }
 import org.bson.types.ObjectId
 
 import scala.language.implicitConversions

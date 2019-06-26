@@ -9,7 +9,8 @@ import com.workflowfm.pew.stateless.instances.kafka.CustomKafkaExecutor
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors.{DrainControl, sendMessages}
 import com.workflowfm.pew.stateless.instances.kafka.settings.{KafkaExecutorEnvironment, KafkaExecutorSettings}
-import com.workflowfm.pew.{PiEventFinish, PromiseHandler, _}
+import com.workflowfm.pew.{PiEventFinish, _}
+import com.workflowfm.pew.stream.PromiseHandler
 import org.apache.kafka.common.utils.Utils
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith

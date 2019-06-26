@@ -1,6 +1,8 @@
 package com.workflowfm.pew.execution
 
 import com.workflowfm.pew._
+import com.workflowfm.pew.stream.SimplePiObservable
+
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.annotation.tailrec

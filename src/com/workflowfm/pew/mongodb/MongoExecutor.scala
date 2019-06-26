@@ -2,6 +2,7 @@ package com.workflowfm.pew.mongodb
 
 import com.workflowfm.pew._
 import com.workflowfm.pew.execution._
+import com.workflowfm.pew.stream.SimplePiObservable
 import com.workflowfm.pew.mongodb.bson.PiCodecProvider
 
 import scala.concurrent._

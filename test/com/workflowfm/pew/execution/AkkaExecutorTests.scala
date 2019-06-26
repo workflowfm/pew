@@ -7,6 +7,7 @@ import org.scalatest.junit.JUnitRunner
 import scala.concurrent._
 import scala.concurrent.duration._
 import com.workflowfm.pew._
+import com.workflowfm.pew.stream._
 import com.workflowfm.pew.execution._
 import RexampleTypes._
 
@@ -145,21 +146,21 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   it should "execute Rexample with a CounterHandler" in {
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
     val factory = new CounterHandlerFactory[Int]("counter")
-    ex.subscribe(new PrintEventHandler("printer"))
+    val kill = ex.subscribe(new PrintEventHandler("printer"))
 
     val f1 = ex.call(ri,Seq(21),factory) flatMap(_.future)
     
     val r1 = await(f1)
     r1 should be (8)
-    ex.unsubscribe("printer")
+    kill.map(_.stop)
   }
 
   it should "allow separate handlers per executor" in {
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
     val ex2 = new AkkaExecutor(pai,pbi,pci,ri)
     val factory = new CounterHandlerFactory[Int]("counter")
-    ex.subscribe(new PrintEventHandler("printer"))
-    ex2.subscribe(new PrintEventHandler("printer"))
+    val k1 = ex.subscribe(new PrintEventHandler("printer"))
+    val k2 = ex2.subscribe(new PrintEventHandler("printer"))
 
     val f1 = ex.call(ri,Seq(99),factory) flatMap(_.future)
     val f2 = ex2.execute(ri,Seq(11))
@@ -170,8 +171,8 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     val r1 = await(f1)
     r1 should be (8)
     
-    ex.unsubscribe("printer")
-    ex2.unsubscribe("printer")
+    k1.map(_.stop)
+    k2.map(_.stop)
   }
 
   it should "allow separate handlers for separate workflows" in {
@@ -194,8 +195,8 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   it should "unsubscribe handlers successfully" in {
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
     val factory = new CounterHandlerFactory[Int]("counter" + _)
-    ex.subscribe(new PrintEventHandler("printerX"))
-    ex.unsubscribe("printerX")
+    val kill = ex.subscribe(new PrintEventHandler("printerX"))
+    kill.map(_.stop)
 
     val f1 = ex.call(ri,Seq(55),factory) flatMap(_.future)
     val f2 = ex.call(ri,Seq(11),factory) flatMap(_.future)

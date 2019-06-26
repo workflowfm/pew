@@ -1,6 +1,7 @@
 package com.workflowfm.pew.execution
 
 import com.workflowfm.pew._
+import com.workflowfm.pew.stream.{ PiObservable, PiEventHandler, PiEventHandlerFactory, ResultHandlerFactory }
 import scala.concurrent._
 import scala.concurrent.duration._
 
@@ -83,25 +84,12 @@ trait ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
     * @return A Future with the result of the executed process
     */
   def execute(process:PiProcess,args:Seq[Any]):Future[Any] =
-    call(process,args,new PromiseHandlerFactory[KeyT]({ id => s"[$id]"})) flatMap (_.future)
+    call(process,args,new ResultHandlerFactory[KeyT]({ id => s"[$id]"})) flatMap (_.future)
 }
 
 object ProcessExecutor {
-  // def default = SingleBlockingExecutor(Map[String,PiProcess]())
-  
   final case class AlreadyExecutingException(private val cause: Throwable = None.orNull)
                     extends Exception("Unable to execute more than one process at a time", cause)
-
-  /*
-  final case class UnknownProcessException(val process:String, private val cause: Throwable = None.orNull)
-                    extends Exception("Unknown process: " + process, cause) 
-  final case class AtomicProcessIsCompositeException(val process:String, private val cause: Throwable = None.orNull)
-                    extends Exception("Executor encountered composite process thread: " + process + " (this should never happen!)", cause)
-  final case class NoResultException(val id:String, private val cause: Throwable = None.orNull)
-                    extends Exception("Failed to get result for: " + id, cause) 
-  final case class NoSuchInstanceException(val id:String, private val cause: Throwable = None.orNull)
-                    extends Exception("Failed to find instance with id: " + id, cause)
-  */
 }
 
 trait SimulatorExecutor[KeyT] extends ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
@@ -114,7 +102,7 @@ trait SimulatorExecutor[KeyT] extends ProcessExecutor[KeyT] { this:PiObservable[
   def simulationReady:Boolean
 
   /**
-    * Executes a process with a PromiseHandler
+    * Executes a process with a ResultHandler
     * Same as ProcessExecutor.execute but blocks until call has been initiated.
     * The simulator needs to ensure this has happened before continuing.
     * @param process The (atomic or composite) PiProcess to be executed
@@ -122,7 +110,7 @@ trait SimulatorExecutor[KeyT] extends ProcessExecutor[KeyT] { this:PiObservable[
     * @return A Future with the result of the executed process
     */
   def simulate(process:PiProcess,args:Seq[Any],timeout:FiniteDuration=10.seconds):Future[Any] = {
-    val f = call(process,args,new PromiseHandlerFactory[KeyT]({ id => s"[$id]"}))
+    val f = call(process,args,new ResultHandlerFactory[KeyT]({ id => s"[$id]"}))
     val handler = Await.result(f, timeout)
     handler.future
   }
