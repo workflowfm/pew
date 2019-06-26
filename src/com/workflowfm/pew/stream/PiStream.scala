@@ -1,6 +1,6 @@
 package com.workflowfm.pew.stream
 
-import com.workflowfm.pew.{ PiEvent, PiExceptionEvent, PiEventResult }
+import com.workflowfm.pew.{ PiEvent, PiEventResult }
 
 import akka.actor._
 import akka.stream._

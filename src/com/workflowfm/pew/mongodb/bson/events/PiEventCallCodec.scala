@@ -47,9 +47,9 @@ class PiEventCallCodec[T](
 
     val ref: Int = reader.readInt32( callRefN )
 
-    val proc: AtomicProcess
+    val proc: MetadataAtomicProcess
       = ctx.decodeWithChildContext( procCodec, reader )
-        .asInstanceOf[AtomicProcess]
+        .asInstanceOf[MetadataAtomicProcess]
 
     val args: Seq[PiObject]
       = readArray( reader, argsN ) { () =>

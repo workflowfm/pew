@@ -109,7 +109,7 @@ class PiRightCodec( objCodec: Codec[PiObject] )
 class PiObjectCodec( registry: CodecRegistry = DEFAULT_CODEC_REGISTRY )
   extends SuperclassCodec[PiObject] {
 
-  val anyCodec: Codec[Any] = new AnyCodec( registry )
+  lazy val anyCodec: Codec[Any] = new AnyCodec( registry )
 
   updateWith( new PiItemCodec( anyCodec ) )
   updateWith( new ChanCodec() )

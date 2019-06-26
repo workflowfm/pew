@@ -3,7 +3,7 @@ package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messag
 import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.SequenceFailure
-import com.workflowfm.pew.{PiExceptionEvent, PiInstance, PiObject}
+import com.workflowfm.pew.{PiFailure, PiInstance, PiObject}
 import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
 import org.bson.types.ObjectId
 import org.bson.{BsonReader, BsonWriter}
@@ -12,7 +12,7 @@ class SequenceFailureCodec(
     piiCodec: Codec[PiInstance[ObjectId]],
     refCodec: Codec[CallRef],
     objCodec: Codec[PiObject],
-    errCodec: Codec[PiExceptionEvent[ObjectId]]
+    errCodec: Codec[PiFailure[ObjectId]]
 
   ) extends ClassCodec[SequenceFailure] {
 

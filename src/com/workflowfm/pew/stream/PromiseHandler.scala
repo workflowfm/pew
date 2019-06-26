@@ -1,6 +1,6 @@
 package com.workflowfm.pew.stream
 
-import com.workflowfm.pew.{ PiEvent, PiException, PiExceptionEvent, PiEventResult }
+import com.workflowfm.pew.{ PiEvent, PiException, PiFailure, PiEventResult }
 
 import scala.concurrent.{ Promise, Future, ExecutionContext }
 
@@ -15,7 +15,7 @@ trait PromiseHandler[T,R] extends PiEventHandler[T] {
   
   override def apply(e:PiEvent[T]) = if (e.id == this.id) update(e) match {
     case PiEventResult(i,res,_) => promise.success(succeed(res)); true
-    case ex: PiExceptionEvent[T] => fail(ex.exception) match {
+    case ex: PiFailure[T] => fail(ex.exception) match {
       case Left(r) => promise.success(r); true
       case Right(x) => promise.failure(x); true
     }

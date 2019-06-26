@@ -91,7 +91,7 @@ class MultiStateExecutor(var store:PiInstanceStore[Int], processes:PiProcessStor
             publish(PiEventReturn(i.id,ref,PiObject.get(res._1),res._2))
             postResult(i.id,ref,res._1)
           }
-          case Failure (ex) => publish(PiEventProcessException(i.id,ref,ex))
+          case Failure (ex) => publish(PiFailureAtomicProcessException(i.id,ref,ex))
         }
         System.err.println("*** [" + i.id + "] Called process: " + p.name + " ref:" + ref)
         true

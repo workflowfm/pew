@@ -7,6 +7,7 @@ import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, Assignment, Seque
 import com.workflowfm.pew.stateless.components.AtomicExecutor
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows.{flowRespond, flowWaitFuture}
 import com.workflowfm.pew.stateless.instances.kafka.components.{MockTracked, Tracked}
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorEnvironment
 import com.workflowfm.pew.stateless.{CallRef, KafkaExampleTypes}
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
@@ -17,6 +18,9 @@ import scala.concurrent.{Await, Future}
 
 @RunWith(classOf[JUnitRunner])
 class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
+
+  private lazy val environment: KafkaExecutorEnvironment
+    = completeProcess.settings.createEnvironment()
 
   val assgnException: Assignment
     = Assignment(
@@ -64,7 +68,7 @@ class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
         .source( history )
         .groupBy( Int.MaxValue, _.part )
         .via( flowRespond( new AtomicExecutor() ) )
-        .via( flowWaitFuture( 1 )( completeProcess.settings ) )
+        .via( flowWaitFuture( 1 )( environment ) )
         .mergeSubstreams
         .runWith(Sink.seq)(ActorMaterializer())
 

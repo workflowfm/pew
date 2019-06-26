@@ -2,7 +2,7 @@ package com.workflowfm.pew.stateless.instances.kafka.components
 
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages._
-import com.workflowfm.pew.{PiEventReturn, PiExceptionEvent, PiInstance, PiObject}
+import com.workflowfm.pew.{PiEventCallEnd, PiFailure, PiInstance, PiObject}
 import org.bson.types.ObjectId
 
 import scala.collection.immutable
@@ -10,21 +10,30 @@ import scala.collection.immutable
 case class PartialResponse(
     pii:      Option[PiInstance[ObjectId]],
     returns:  immutable.Seq[CallResult],
-    errors:   immutable.Seq[PiExceptionEvent[ObjectId]]
+    errors:   immutable.Seq[PiFailure[ObjectId]]
   ) {
 
   def this() = this( None, immutable.Seq(), immutable.Seq() )
 
-  lazy val returnedCalls: Set[Int] = returns.map(_._1.id).toSet
+  /** All the AtomicProcess calls that are known to be concluded within this response.
+    */
+  lazy val finishedCalls: Set[Int] = {
+    val returnedCalls = returns.map(_._1.id)
+    val crashedCalls = errors.collect { case event: PiEventCallEnd[_] => event.ref }
+    ( returnedCalls ++ crashedCalls ).toSet
+  }
 
   /** We only *want* to send a response when we have actionable data to send:
-    * - ReduceRequest <- The latest PiInstance *and* at least one call ref to sequence.
     * - ResultFailure <- The latest PiInstance *and* all the SequenceRequests to dump.
+    * - ReduceRequest <- The latest PiInstance *and* at least one call ref to sequence.
     */
   val hasPayload: Boolean
-    = pii.exists( pii =>
-        if (returns.nonEmpty) pii.called.forall( returnedCalls.contains )
-        else                  returns.nonEmpty
+    = pii.exists(
+        pii =>
+          if (errors.nonEmpty)
+            pii.called.forall( finishedCalls.contains )
+          else
+            returns.nonEmpty
       )
 
   val cantSend: Boolean = pii.isEmpty
@@ -34,16 +43,12 @@ case class PartialResponse(
   def message: Seq[AnyMsg]
     = pii.map( pii =>
         if (errors.nonEmpty) {
-          if (hasPayload) errors.map( PiiLog( _ ) )
+          if (hasPayload) Seq( PiiLog( PiFailure.condense( errors ) ) )
           else Seq( SequenceFailure( Right( pii ), returns, errors ) )
-
-        } else ReduceRequest( pii, returns ) +: returns.map( r => PiiLog( returnEvent( pii.id, r ) ) )
+        } else Seq( ReduceRequest( pii, returns ) )
 
       ).getOrElse( Seq() )
 
-  protected def returnEvent( id: ObjectId, callResult: CallResult ): PiEventReturn[ObjectId]
-    = PiEventReturn[ObjectId]( id, callResult._1.id, PiObject.get(callResult._2) )
-      
   /** Overwrite with the latest PiInstance information.
     */
   def update( newPii: PiInstance[ObjectId] ): PartialResponse
