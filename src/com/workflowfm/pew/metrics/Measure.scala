@@ -177,7 +177,7 @@ class MetricsAggregator[KeyT] {
   def processMetrics = processMap.values.flatMap(_.values).toSeq.sortBy(_.start)
   /** Returns all the tracked instances of [[ProcessMetrics]] associated with a particular workflow, sorted by starting time.
     * @param id the ID of the workflow
-    * */
+    */
   def processMetricsOf(id:KeyT) = processMap.getOrElse(id,Map[Int,ProcessMetrics[KeyT]]()).values.toSeq.sortBy(_.start)
   /** Returns a [[scala.collection.immutable.Set]] of all process names being tracked.
     * This is useful when using process names as a category, for example to colour code tasks in the timeline.
