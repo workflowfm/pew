@@ -22,6 +22,8 @@ Includes feature updates, bug fixes, and open issues.
 * Fixed some codec issues (see also [#31](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/31)).
 * The simulator now measures the simulation's real (system) duration.
 * `SimMetricsActor` no longer keeps a reference to the `Coordinator`. This makes for a cleaner, more flexible implementation, allowing multiple simulations across multiple `Coordinator`s. The downside is that simulations can be run asynchronously, making it hard to disambiguate which results came from which `Coordinator`. We leave that problem to the user for now.
+* Some `PiEvents` got rearranged or renamed (see also [#45](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/45)).
+* Bugfixes and improvements for `KafkaExecutor` and `KafkaExecutorTests` (see also [#45](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/45)).
 * Various improvements in Executor unit tests.
 
 
