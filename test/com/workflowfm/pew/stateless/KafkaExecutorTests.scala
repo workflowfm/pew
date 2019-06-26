@@ -10,7 +10,7 @@ import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors.{DrainControl, sendMessages}
 import com.workflowfm.pew.stateless.instances.kafka.settings.{KafkaExecutorEnvironment, KafkaExecutorSettings}
 import com.workflowfm.pew.{PiEventFinish, _}
-import com.workflowfm.pew.stream.PromiseHandler
+import com.workflowfm.pew.stream.ResultHandler
 import org.apache.kafka.common.utils.Utils
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
@@ -239,11 +239,11 @@ class KafkaExecutorTests
     def call( p: PiProcess, args: PiObject* ): Future[Any] = {
       val pii = PiInstance(ObjectId.get, p, args: _*)
 
-      val handler = new PromiseHandler("test", pii.id)
+      val handler = new ResultHandler("test", pii.id)
       listener.subscribe(handler)
 
       sendMessages(ReduceRequest(pii, Seq()), PiiLog(PiEventStart(pii)))
-      handler.promise.future
+      handler.future
     }
 
     def shutdown(): Unit = {
@@ -290,11 +290,11 @@ class KafkaExecutorTests
 
   def baremetalCall( ex: CustomKafkaExecutor, p: PiProcess, args: PiObject*  ): Future[Any] = {
     val piiId = await( ex.init( p, args.toSeq ) )
-    val handler = new PromiseHandler("test", piiId)
+    val handler = new ResultHandler("test", piiId)
     ex.subscribe(handler)
 
     ex.start(piiId)
-    handler.promise.future
+    handler.future
   }
 
   it should "call an atomic PbI (baremetal interface)" in {
@@ -682,7 +682,7 @@ class KafkaExecutorTests
 
     val onCompletion: MessageMap = {
 
-      val handler = new PromiseHandler[ObjectId]("testhandler", ourPiiId)
+      val handler = new ResultHandler[ObjectId]("testhandler", ourPiiId)
       val ex2 = makeExecutor(completeProcess.settings)
 
       tryBut {
