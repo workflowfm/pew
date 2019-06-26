@@ -1,0 +1,38 @@
+#+TITLE: Metrics
+#+AUTHOR: Petros Papapanagiotou
+#+EMAIL: petrospapapan@gmail.com
+#+OPTIONS: toc:2 
+#+EXCLUDE_TAGS: noexport
+
+* Introduction
+
+The PEW engine is able to automatically track metrics during workflow execution. These can be used to monitor the workflows and extract analytics and insights.
+
+Metrics can be tracked in 2 settings:
+1) [[realtime][*Real-time execution*]]: These are metrics from the engine regarding the execution of any workflow.
+2) [[simulation][*Simulation*]]: These are metrics from the simulator across the simulated time.
+
+We describe the general setting and the individual metrics next.
+
+* Setting
+The general idea for PEW, is that the engine will automatically collect all the available metrics at runtime. The user can then implement an output function to generate some analytics from the collected metrics.
+
+The following key concepts are used by PEW for capturing and managing metrics:
+
+** `Metrics` 
+Metrics are captured around individual concepts, such as an atomic process or task, a persistent resource, or a workflow. Each set of metrics is captured in an immutable case class. This includes the different features being measured and the methods to update them based on what is happening in the engine.
+
+** `Aggregator`
+An `Aggregator` is a mutable class that collects all the `Metrics` collected across multiple workflows in one place. It contains methods to update the different metrics, indexed by some id, and based on different events that may take place.
+
+** `Output`
+An `Output` is essentially a function that can generate any outputs from the `Metrics` within an `Aggregator`. Outputs may include analytics, visualizations, reports, or anything else.
+
+* <<realtime>>Real-time execution metrics
+
+Real-time metrics are aimed to be generic and domain-independent. We describe each of the general setting concepts above in this particular context.
+
+** `Metrics`
+
+We collect the [[https://github.com/PetrosPapapa/WorkflowFM-PEW/blob/master/src/com/workflowfm/pew/metrics/Measure.scala][following real-time metrics]]:
+

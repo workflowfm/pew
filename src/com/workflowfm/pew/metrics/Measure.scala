@@ -2,19 +2,47 @@ package com.workflowfm.pew.metrics
 
 import com.workflowfm.pew._
 
+/** Metrics for a particular instance of an atomic process.
+  *
+  * @constructor initialize the metrics of a process for a workflow with ID `piID`, unique call reference `ref`, and process name `process`, starting now
+  *
+  * @tparam KeyT the type used for workflow IDs
+  * @param piID the ID of the workflow that executed this process
+  * @param ref the call reference for that process, i.e. a unique call ID for this particular workflow
+  * @param process the name of the process
+  * @param start the system time in milliseconds when the process call started
+  * @param finish the system time in milliseconds that the process call finished, or [[scala.None]] if it is still running
+  * @param result a [[String]] representation of the returned result from the process call, or [[scala.None]] if it still running. In case of failure, the field is populated with the `getLocalizedMessage` of the exception thrown 
+ */
 case class ProcessMetrics[KeyT] (piID:KeyT, ref:Int, process:String, start:Long=System.currentTimeMillis(), finish:Option[Long]=None, result:Option[String]=None) {
   def complete(time:Long,result:Any) = copy(finish=Some(time),result=Some(result.toString))
 }
 
+/** Metrics for a particular workflow.
+  * 
+  * @constructor initialize the metrics of a workflow with ID `piID` starting now
+  *
+  * @tparam KeyT the type used for workflow IDs
+  * @param piID the unique ID of the workflow.
+  * @param start the system time in milliseconds when the workflow started executing
+  * @param calls the number of calls to atomic processes
+  * @param finish the system time in milliseconds that this workflow finished, or [[scala.None]] if it is still running
+  * @param result a [[String]] representation of the returned result from the workflow, or [[scala.None]] if it still running. In case of failure, the field is populated with the `getLocalizedMessage` of the exception thrown 
+ */
 case class WorkflowMetrics[KeyT] (piID:KeyT, start:Long=System.currentTimeMillis(), calls:Int=0, finish:Option[Long]=None, result:Option[String]=None) {
   def complete(time:Long,result:Any) = copy(finish=Some(time),result=Some(result.toString))
   def call = copy(calls=calls+1)
 }
 
+/** Collects/aggregates metrics across multiple process calls and workflow executions
+  *
+  */
 class MetricsAggregator[KeyT] {
   import scala.collection.immutable.Map
-  
+
+  /** Process metrics indexed by workflow ID, then by call reference ID */
   val processMap = scala.collection.mutable.Map[KeyT,Map[Int,ProcessMetrics[KeyT]]]()
+  /** Workflow metrics indexed by workflow ID */
   val workflowMap = scala.collection.mutable.Map[KeyT,WorkflowMetrics[KeyT]]()
   
   // Set
