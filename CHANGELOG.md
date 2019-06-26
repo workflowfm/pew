@@ -21,6 +21,7 @@ Includes feature updates, bug fixes, and open issues.
 * Implemented `PiStream` using Akka's `BroadcastHub` to enable more flexible event handling (see also [#34](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/34)). Executors can now be mixed in with (at least) either of the two default observables, namely `SimplePiObservable` and `PiStream`. 
 * Fixed some codec issues (see also [#31](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/31)).
 * The simulator now measures the simulation's real (system) duration.
+* `SimMetricsActor` no longer keeps a reference to the `Coordinator`. This makes for a cleaner, more flexible implementation, allowing multiple simulations across multiple `Coordinator`s. The downside is that simulations can be run asynchronously, making it hard to disambiguate which results came from which `Coordinator`. We leave that problem to the user for now.
 * Various improvements in Executor unit tests.
 
 
