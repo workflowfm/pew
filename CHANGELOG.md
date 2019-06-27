@@ -11,7 +11,6 @@ Includes feature updates, bug fixes, and open issues.
 * [AkkaExecutor.Call may timeout #4](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/4) - since v0.1
 
 
-
 ## [v1.4.0](https://github.com/PetrosPapapa/WorkflowFM-PEW/releases/tag/v1.4.0) - 2019-07-01
 
 ### Features
