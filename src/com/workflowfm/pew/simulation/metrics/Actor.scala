@@ -10,7 +10,10 @@ import com.workflowfm.pew.simulation.Coordinator
 
 
 // Provide a callbackActor to get a response when we are done. Otherwise we'll shutdown the ActorSystem 
-
+/** Interacts with a [[Coordinator]] to run simulations and apply a [[SimMetricsOutput]] when they are done.
+  * @param m the [[SimMetricsOutput]] that will be applied to the metrics from every simulation [[Coordinator]] when it is done
+  * @param callbackActor optional argument for a callback actor that we can forward the [[Coordinator.Done]] message. If this is [[scala.None]], we do not forward the message, but we shutdown the actor system, as we assume all simulations are completed.
+  */
 class SimMetricsActor(m:SimMetricsOutput, callbackActor:Option[ActorRef])(implicit system: ActorSystem) extends Actor {
 
   def receive = {
@@ -38,6 +41,7 @@ class SimMetricsActor(m:SimMetricsOutput, callbackActor:Option[ActorRef])(implic
   }
 }
 
+/** Contains the messages involved in [[SimMetricsActor]] and the [[akka.actor.Props]] initializer. */
 object SimMetricsActor {
   case class Start(coordinator:ActorRef)
   case class StartSims(coordinator:ActorRef,sims:Seq[(Long,Simulation)],executor:SimulatorExecutor[_])
