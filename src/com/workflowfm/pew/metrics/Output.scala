@@ -146,10 +146,10 @@ trait FileOutput {
   }
 }
 
-/** Outputs metrics to a file using a standard CSV format.
-  * Generates 2 CSV files,
-  * one for processes with a "-tasks.csv" suffix,
-  * and one for workflows with a "-workflows.csv" suffix.
+/** Outputs metrics to files using a standard CSV format.
+  * Generates 2 CSV files:
+  * 1. one for processes with a "-tasks.csv" suffix,
+  * 2. and one for workflows with a "-workflows.csv" suffix.
   *
   * @tparam KeyT the type used for workflow IDs
   * @param path path to directory where the files will be placed
@@ -168,7 +168,7 @@ class MetricsCSVFileOutput[KeyT](path:String,name:String) extends MetricsStringO
 }
 
 /** Outputs metrics to a file using the d3-timeline format.
-  * Generates 1 file with a ""-data.js" suffix.
+  * Generates 1 file with a "-data.js" suffix.
   * This can then be combined with the resources at
   * [[https://github.com/PetrosPapapa/WorkflowFM-PEW/tree/master/resources/d3-timeline]]
   * to render the timeline in a browser. 
