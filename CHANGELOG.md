@@ -11,13 +11,27 @@ Includes feature updates, bug fixes, and open issues.
 * [AkkaExecutor.Call may timeout #4](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/4) - since v0.1
 
 
+## [v1.3.0](https://github.com/PetrosPapapa/WorkflowFM-PEW/releases/tag/v1.3.0) - 2019-06-19
+
+For some unknown reason, the version number was increased in `build.sbt` back in December without actually merging the intended changes or creating a new tag. In the meantime, [#45](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/45)) was merged with various bug fixes and minor changes, the Ski example was updated and some documentation was added. I decided to create the tag now and push the stream changes to 1.4.0.
+
+### Features
+
+* All `PiEvents` now carry an array of `PiMetadata`. The default value contains the system time of the event. Atomic processes can expose additional metadata for `PiEventReturn` (see also [#21](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/21)).
+* Fixed some codec issues (see also [#31](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/31)).
+* The simulator now measures the simulation's real (system) duration.
+* Some `PiEvents` got rearranged or renamed (see also [#45](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/45)).
+* Bugfixes and improvements for `KafkaExecutor` and `KafkaExecutorTests` (see also [#45](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/45)).
+* Various improvements in Executor unit tests.
+
+
 ## [v1.2.2](https://github.com/PetrosPapapa/WorkflowFM-PEW/releases/tag/v1.2.2) - 2018-12-03
 
 ### Features
 
-* Fixed `AkkaPiObservable` registering handlers globally (see also [#7](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/7)). 
-* Improved simulation `Coordinator`. Processes can now interact with the `Coordinator` and its clock cycle is a bit more robust (see also [#28](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/28)).  
-* Fixed/improved Codecs for custom data types, which includes `AnyCodec` and associated parts (see also [#29](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/29)).  
+* Fixed `AkkaPiObservable` registering handlers globally (see also [#7](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/7)).
+* Improved simulation `Coordinator`. Processes can now interact with the `Coordinator` and its clock cycle is a bit more robust (see also [#28](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/28)).
+* Fixed/improved Codecs for custom data types, which includes `AnyCodec` and associated parts (see also [#29](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/29)).
 * Fixed issues with the `ClassLoader` crashing in Kafka (see also [#30](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/30)).
 
 
