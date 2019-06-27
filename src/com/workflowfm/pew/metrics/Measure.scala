@@ -186,10 +186,10 @@ class MetricsAggregator[KeyT] {
   def processSet = processMap.values.flatMap(_.values.map(_.process)).toSet[String]
 }
 
-/** A [[MetricsAggregator]] that is also a [[PiEventHandler]].
+/** A [[MetricsAggregator]] that is also a [[com.workflowfm.pew.stream.PiEventHandler]].
   * Aggregates metrics automatically based on [[PiEvent]]s and system time.
   *
-  * @param name a unique name to identify the instance of [[PiEventHandler]]
+  * @param name a unique name to identify the instance of [[com.workflowfm.pew.stream.PiEventHandler]]
   * @param timeFn the [[PiMetadata]] key to retrieve timing information (the recorder system time by default)
   */
 class MetricsHandler[KeyT](override val name: String, timeFn: PiMetadata.Key[Long] = PiMetadata.SystemTime )
