@@ -41,7 +41,7 @@ class SingleStateExecutorTests extends FlatSpec with Matchers with ProcessExecut
     try {
       await(f1)
     } catch {
-      case (e:Exception) => e.getMessage.contains("Exception: Fail") should be (true)
+      case (e:Exception) => e.getMessage.contains("Fail") should be (true)
     }
 	}
   
