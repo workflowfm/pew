@@ -8,7 +8,9 @@ lazy val commonSettings = Seq (
 	scalaVersion := "2.12.6"
 )
 
-// The dependencies are in Maven format, with % separating the parts.  
+autoAPIMappings := true
+
+// The dependencies are in Maven format, with % separating the parts.
 // Notice the extra bit "test" on the end of JUnit and ScalaTest, which will 
 // mean it is only a test dependency.
 //
