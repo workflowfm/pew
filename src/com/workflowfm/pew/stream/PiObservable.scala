@@ -29,9 +29,7 @@ trait PiObservable[T] {
   def subscribe(handler:PiEventHandler[T]):Future[PiSwitch]
 }
 
-/** A simple [[PiObservable]] and [[PiPublisher]] with a mutable map of handlers.
-  * @note Assumes each handler has a unique name.
-  */
+/** A simple [[PiObservable]] and [[PiPublisher]] with a mutable map of handlers. */
 trait SimplePiObservable[T] extends PiObservable[T] with PiPublisher[T] {
   import collection.mutable.Map
 

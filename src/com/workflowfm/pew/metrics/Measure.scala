@@ -66,7 +66,7 @@ class MetricsAggregator[KeyT] {
   def processSet = processMap.values.flatMap(_.values.map(_.process)).toSet[String]
 }
 
-class MetricsHandler[KeyT](override val name: String, timeFn: PiMetadata.Key[Long] = PiMetadata.SystemTime )
+class MetricsHandler[KeyT](timeFn: PiMetadata.Key[Long] = PiMetadata.SystemTime)
   extends MetricsAggregator[KeyT] with PiEventHandler[KeyT] {
 
   override def apply( e: PiEvent[KeyT] ): Boolean = {
