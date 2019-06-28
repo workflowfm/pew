@@ -29,7 +29,7 @@ class SingleStateExecutorTests extends FlatSpec with Matchers with ProcessExecut
   
   "SingleStateExecutor" should "execute Rexample concurrently" in {
     val executor = new SingleStateExecutor(pai,pbi,pci,ri)
-    executor.subscribe(new PrintEventHandler("printer"))
+    executor.subscribe(new PrintEventHandler)
 		exe(executor,ri,13)//.isEmpty should be( false )
 		//exe(new SingleStateExecutor(pai,pbi,pci,ri),ri,31)//.isEmpty should be( false )
 	}

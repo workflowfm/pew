@@ -55,7 +55,7 @@ trait PiStream[T] extends PiSource[T] with PiPublisher[T] {
     // Using a shared kill switch even though we only want to shutdown one stream, because
     // the shared switch is available immediately (pre-materialization) so we can use it
     // as a sink.
-    val killSwitch = KillSwitches.shared(s"kill:${handler.name}")
+    val killSwitch = KillSwitches.shared("PiEventHandlerKillSwitch")
     val x = source
       .via(killSwitch.flow) // Use the killSwitch as a flow so we can kill the entire stream.
       .map(handler(_)) // Run the events through the handler.

@@ -145,8 +145,8 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
 
   it should "execute Rexample with a CounterHandler" in {
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
-    val factory = new CounterHandlerFactory[Int]("counter")
-    val kill = ex.subscribe(new PrintEventHandler("printer"))
+    val factory = new CounterHandlerFactory[Int]
+    val kill = ex.subscribe(new PrintEventHandler)
 
     val f1 = ex.call(ri,Seq(21),factory) flatMap(_.future)
     
@@ -158,9 +158,9 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   it should "allow separate handlers per executor" in {
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
     val ex2 = new AkkaExecutor(pai,pbi,pci,ri)
-    val factory = new CounterHandlerFactory[Int]("counter")
-    val k1 = ex.subscribe(new PrintEventHandler("printer"))
-    val k2 = ex2.subscribe(new PrintEventHandler("printer"))
+    val factory = new CounterHandlerFactory[Int]
+    val k1 = ex.subscribe(new PrintEventHandler)
+    val k2 = ex2.subscribe(new PrintEventHandler)
 
     val f1 = ex.call(ri,Seq(99),factory) flatMap(_.future)
     val f2 = ex2.execute(ri,Seq(11))
@@ -177,7 +177,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
 
   it should "allow separate handlers for separate workflows" in {
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
-    val factory = new CounterHandlerFactory[Int]("counter" + _)
+    val factory = new CounterHandlerFactory[Int]
 
     val f1 = ex.call(ri,Seq(55),factory) flatMap(_.future)
     val f2 = ex.call(ri,Seq(11),factory) flatMap(_.future)
@@ -194,8 +194,8 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
 
   it should "unsubscribe handlers successfully" in {
     val ex = new AkkaExecutor(pai,pbi,pci,ri)
-    val factory = new CounterHandlerFactory[Int]("counter" + _)
-    val kill = ex.subscribe(new PrintEventHandler("printerX"))
+    val factory = new CounterHandlerFactory[Int]
+    val kill = ex.subscribe(new PrintEventHandler)
     kill.map(_.stop)
 
     val f1 = ex.call(ri,Seq(55),factory) flatMap(_.future)

@@ -40,8 +40,9 @@ trait SimplePiObservable[T] extends PiObservable[T] with PiPublisher[T] {
   protected val handlers:Map[String,PiEventHandler[T]] = Map[String,PiEventHandler[T]]()
   
   override def subscribe(handler:PiEventHandler[T]):Future[PiSwitch] = Future {
-    handlers += (handler.name -> handler)
-    Switch(handler.name)
+    val name = java.util.UUID.randomUUID.toString
+    handlers += (name -> handler)
+    Switch(name)
   }
   
   def unsubscribe(handlerName:String):Future[Boolean] = Future {

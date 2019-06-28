@@ -9,7 +9,6 @@ import scala.collection.immutable.Queue
 // Return true if the handler is done and needs to be unsubscribed.
 /** A listener for [[PiEvent]]s. */
 trait PiEventHandler[KeyT] extends (PiEvent[KeyT]=>Boolean) {
-  def name:String
   /** Compose with another handler. */
   def and(h:PiEventHandler[KeyT]) = MultiPiEventHandler(this,h)
 }
@@ -22,7 +21,7 @@ trait PiEventHandlerFactory[T,H <: PiEventHandler[T]] {
 }
 
 /** Example of a [[PiEventHandler]] that simply prints a string representation of the event to `System.err`. */
-class PrintEventHandler[T](override val name:String) extends PiEventHandler[T] {   
+class PrintEventHandler[T] extends PiEventHandler[T] {   
   val formatter = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss.SSS")
   override def apply(e:PiEvent[T]) = {
     val time = formatter.format(e.rawTime)
@@ -33,7 +32,6 @@ class PrintEventHandler[T](override val name:String) extends PiEventHandler[T] {
 
 /** A [[PiEventHandler]] consisting of a queue of multiple handlers. */
 case class MultiPiEventHandler[T](handlers:Queue[PiEventHandler[T]]) extends PiEventHandler[T] {
-  override def name = handlers map (_.name) mkString(",")
   override def apply(e:PiEvent[T]) = handlers map (_(e)) forall (_ == true)
   override def and(h:PiEventHandler[T]) = MultiPiEventHandler(handlers :+ h)
 }
