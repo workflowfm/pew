@@ -1,5 +1,3 @@
-name := "PEW"
-
 sbtVersion := "1.2.6"
 
 lazy val commonSettings = Seq (
@@ -37,21 +35,29 @@ libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.2.1"
 
 libraryDependencies += "junit" % "junit" % "4.8.2"
 
-EclipseKeys.preTasks := Seq(compile in Compile, compile in Test)
+lazy val skiexample = project
+  .in(file("skiexample"))
+  .settings(
+    commonSettings,
+    scalaSource in Compile := baseDirectory.value / "src",
+    scalaSource in Test := baseDirectory.value / "test"
+  ).dependsOn(rootRef)
 
-lazy val skiexample = project 
-	.in(file("skiexample"))
-	.settings(
-        	commonSettings,
-        	scalaSource in Compile := baseDirectory.value / "src",
-        	scalaSource in Test := baseDirectory.value / "test"
-	).dependsOn(rootRef)
+lazy val simulator = project
+  .in(file("simulator"))
+  .settings(
+    commonSettings,
+    name := "pew-simulator",
+    libraryDependencies += "com.workflowfm" %% "workflowfm-simulator" % "0.1"
+  ).dependsOn(rootRef)
+
 
 lazy val root = project
-	.in(file("."))
-	.settings(
-		commonSettings,
-		scalaSource in Compile := baseDirectory.value / "src",
-		scalaSource in Test := baseDirectory.value / "test"
-	)
+  .in(file("."))
+  .settings(
+	commonSettings,
+    name := "pew",
+	scalaSource in Compile := baseDirectory.value / "src",
+	scalaSource in Test := baseDirectory.value / "test"
+  )
 lazy val rootRef = LocalProject("root")
