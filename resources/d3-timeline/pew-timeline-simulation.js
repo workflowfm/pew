@@ -19,7 +19,7 @@ function displayResults(selection,data) {
 	
 	var chart = d3.timeline()
 		.tickFormat( //
-				{format: d3.format.utc("03d"),
+				{format: d3.format("03d"),
 				tickInterval: 1, // This forces us to start from 001 
 				numTicks: totalTicks,
 				//tickValues: ticks, // Use this to start from 000
@@ -59,7 +59,7 @@ function displayResults(selection,data) {
 		// datum is the data object
 		div.style("left", (d3.event.pageX) + "px")		
            .style("top", (d3.event.pageY - 28) + "px");
-		div.text(d.task + "\n" +
+		div.text(d.label + "\n" +
 				 chart.tickFormat().format(new Date(d.starting_time)) + "-" + chart.tickFormat().format(new Date(d.ending_time)) + "\n" +
 				 "Delay: " + chart.tickFormat().format(new Date(d.delay)) + "\n" +
 				 "Cost: " + d.cost
@@ -104,7 +104,7 @@ function workflow(datum) {
 function newWorkflow(datum) {
 	var selection = d3.select(this);
 	selection.append("p").text(datum.id);
-	selection.append("svg")
+	selection.append("svg").attr("class","timeline")
 		//.attr("width", '100%')
 		//.attr("width", totalTicks*widthPerTick);
 	displayResults(selection,datum.data);
@@ -113,7 +113,7 @@ function newWorkflow(datum) {
 function displayOne(tag,workflowData) {
 	var div = d3.select(tag)//.data(workflowData)
 	div.selectAll("svg").remove()
-	div.append("svg")
+	div.append("svg").attr("class","timeline")
 	displayResults(div,workflowData)
 }
 
