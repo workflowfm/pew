@@ -102,6 +102,7 @@ class AkkaExecActor(
   			//System.err.println("*** [" + ctr + "] Updating state after init")
   			store = store.put(resi)
   			(toCall zip futureCalls) map runThread(resi)
+            publish(PiEventIdle(resi))
   	  }
     }
   }
@@ -130,6 +131,7 @@ class AkkaExecActor(
 		        //System.err.println("*** [" + i.id + "] Updating state after: " + ref)
 			      store = store.put(resi)
 		        (toCall zip futureCalls) map runThread(resi)
+                publish(PiEventIdle(resi))
     		  }
         }
 	  }
