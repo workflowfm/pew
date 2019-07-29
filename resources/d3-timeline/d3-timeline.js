@@ -134,7 +134,7 @@
 
     var appendBackgroundBar = function (yAxisMapping, index, g, data, datum) {
       var greenbarYAxis = ((itemHeight + itemMargin) * yAxisMapping[index]) + margin.top;
-      g.selectAll("svg").data(data).enter()
+      g.selectAll("svg").filter(".timeline").data(data).enter()
         .insert("rect")
         .attr("class", "row-green-bar")
         .attr("x", fullLengthBackgrounds ? 0 : margin.left)
@@ -270,69 +270,78 @@
           }
 
           if (backgroundColor) { appendBackgroundBar(yAxisMapping, index, g, data, datum); }
-
-          g.selectAll("svg").data(data).enter()
-            .append(function(d, i) {
-                return document.createElementNS(d3.ns.prefix.svg, "display" in d? d.display:display);
-            })
-            .attr("x", getXPos)
-            .attr("y", getStackPosition)
-            .attr("width", function (d, i) {
-              return (d.ending_time - d.starting_time) * scaleFactor;
-            })
-            .attr("cy", function(d, i) {
-                return getStackPosition(d, i) + itemHeight/2;
-            })
-            .attr("cx", getXPos)
-            .attr("r", itemHeight / 2)
-            .attr("height", itemHeight)
-            .style("stroke", "black") // added by Petros
-            .style("fill", function(d, i){
-              var dColorPropName;
-              if (d.color) return d.color;
-              if( colorPropertyName ){
-                dColorPropName = d[colorPropertyName];
-                if ( dColorPropName ) {
-                  return colorCycle( dColorPropName );
-                } else {
-                  return colorCycle( datum[colorPropertyName] );
-                }
-              }
-              return colorCycle(index);
-            })
-            .on("mousemove", function (d, i) {
-              hover(d, index, datum);
-            })
-            .on("mouseover", function (d, i) {
-              mouseover(d, i, datum);
-            })
-            .on("mouseout", function (d, i) {
-              mouseout(d, i, datum);
-            })
-            .on("click", function (d, i) {
-              click(d, index, datum);
-            })
-            .attr("class", function (d, i) {
-              return datum.class ? "timelineSeries_"+datum.class : "timelineSeries_"+index;
-            })
-            .attr("id", function(d, i) {
-              // use deprecated id field
-              if (datum.id && !d.id) {
-                return 'timelineItem_'+datum.id;
-              }
-
-              return d.id ? d.id : "timelineItem_"+index+"_"+i;
-            })
+            
+          var svgs = g.selectAll("svg").filter(".timeline").data(data).enter()
+              .append(function(d, i) {
+                  return document.createElementNS(d3.ns.prefix.svg, "svg");
+              })
+              .attr("x", getXPos)
+              .attr("y", getStackPosition)
+              .attr("width", function (d, i) {
+                  return (d.ending_time - d.starting_time) * scaleFactor + 2;
+              }) 
+              .attr("height", itemHeight + 2)
           ;
 
-          g.selectAll("svg").data(data).enter()
-            .append("text")
-            .attr("x", getXTextPos)
-            .attr("y", getStackTextPosition)
-            .text(function(d) {
-              return d.label;
-            })
-          ;
+          svgs.append(function(d, i ) { 
+              return document.createElementNS(d3.ns.prefix.svg, "display" in d? d.display:display);
+          })
+                .attr("x", 1)
+                .attr("y", 1)
+                .attr("width", function (d, i) {
+                    return (d.ending_time - d.starting_time) * scaleFactor;
+                })
+                .attr("height", itemHeight)
+                .style("stroke", "black") // added by Petros
+                .attr("cy", function(d, i) {
+                    return getStackPosition(d, i) + itemHeight/2;
+                })
+                .attr("cx", getXPos)
+                .attr("r", itemHeight / 2)
+                .style("fill", function(d, i){
+                    var dColorPropName;
+                    if (d.color) return d.color;
+                    if( colorPropertyName ){
+                        dColorPropName = d[colorPropertyName];
+                        if ( dColorPropName ) {
+                            return colorCycle( dColorPropName );
+                        } else {
+                            return colorCycle( datum[colorPropertyName] );
+                        }
+                    }
+                    return colorCycle(index);
+                })
+                .on("mousemove", function (d, i) {
+                    hover(d, index, datum);
+                })
+                .on("mouseover", function (d, i) {
+                    mouseover(d, i, datum);
+                })
+                .on("mouseout", function (d, i) {
+                    mouseout(d, i, datum);
+                })
+                .on("click", function (d, i) {
+                    click(d, index, datum);
+                })
+                .attr("class", function (d, i) {
+                    return datum.class ? "timelineSeries_"+datum.class : "timelineSeries_"+index;
+                })
+                .attr("id", function(d, i) {
+                    // use deprecated id field
+                    if (datum.id && !d.id) {
+                        return 'timelineItem_'+datum.id;
+                    }
+
+                    return d.id ? d.id : "timelineItem_"+index+"_"+i;
+                });
+
+          svgs.append("text")
+                .attr("x", 6)
+                .attr("y", itemHeight * 0.75 + 1)
+                .text(function(d) {
+                    return d.label;
+                })
+            ;
 
           if (rowSeparatorsColor) {
             var lineYAxis = ( itemHeight + itemMargin / 2 + margin.top + (itemHeight + itemMargin) * yAxisMapping[index]);
@@ -360,15 +369,9 @@
 
           function getStackPosition(d, i) {
             if (stacked) {
-              return margin.top + (itemHeight + itemMargin) * yAxisMapping[index];
+              return margin.top + (itemHeight + itemMargin) * yAxisMapping[index] - 1;
             }
-            return margin.top;
-          }
-          function getStackTextPosition(d, i) {
-            if (stacked) {
-              return margin.top + (itemHeight + itemMargin) * yAxisMapping[index] + itemHeight * 0.75;
-            }
-            return margin.top + itemHeight * 0.75;
+            return margin.top - 1;
           }
         });
       });
@@ -424,18 +427,14 @@
       }
 
       function getXPos(d, i) {
-        return margin.left + (d.starting_time - beginning) * scaleFactor;
-      }
-
-      function getXTextPos(d, i) {
-        return margin.left + (d.starting_time - beginning) * scaleFactor + 5;
+        return margin.left + (d.starting_time - beginning) * scaleFactor - 1;
       }
 
       function setHeight() {
         if (!height && !gParentItem.attr("height")) {
           if (itemHeight) {
             // set height based off of item height
-            height = gSize.height + gSize.top - gParentSize.top;
+            height = g[0][0].getBBox().height + gSize.top; // - gParentSize.top;
             // set bounding rectangle height
             d3.select(gParent[0][0]).attr("height", height);
           } else {

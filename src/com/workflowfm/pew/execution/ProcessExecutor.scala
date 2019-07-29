@@ -84,7 +84,7 @@ trait ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
     * @return A Future with the result of the executed process
     */
   def execute(process:PiProcess,args:Seq[Any]):Future[Any] =
-    call(process,args,new ResultHandlerFactory[KeyT]({ id => s"[$id]"})) flatMap (_.future)
+    call(process,args,new ResultHandlerFactory[KeyT]) flatMap (_.future)
 }
 
 object ProcessExecutor {
@@ -110,7 +110,7 @@ trait SimulatorExecutor[KeyT] extends ProcessExecutor[KeyT] { this:PiObservable[
     * @return A Future with the result of the executed process
     */
   def simulate(process:PiProcess,args:Seq[Any],timeout:FiniteDuration=10.seconds):Future[Any] = {
-    val f = call(process,args,new ResultHandlerFactory[KeyT]({ id => s"[$id]"}))
+    val f = call(process,args,new ResultHandlerFactory[KeyT])
     val handler = Await.result(f, timeout)
     handler.future
   }

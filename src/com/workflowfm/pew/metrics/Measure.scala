@@ -192,7 +192,7 @@ class MetricsAggregator[KeyT] {
   * @param name a unique name to identify the instance of [[com.workflowfm.pew.stream.PiEventHandler]]
   * @param timeFn the [[PiMetadata]] key to retrieve timing information (the recorder system time by default)
   */
-class MetricsHandler[KeyT](override val name: String, timeFn: PiMetadata.Key[Long] = PiMetadata.SystemTime )
+class MetricsHandler[KeyT](timeFn: PiMetadata.Key[Long] = PiMetadata.SystemTime )
   extends MetricsAggregator[KeyT] with PiEventHandler[KeyT] {
 
   /** Converts [[PiEvent]]s to metrics updates. */

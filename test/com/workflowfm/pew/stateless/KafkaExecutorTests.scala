@@ -239,7 +239,7 @@ class KafkaExecutorTests
     def call( p: PiProcess, args: PiObject* ): Future[Any] = {
       val pii = PiInstance(ObjectId.get, p, args: _*)
 
-      val handler = new ResultHandler("test", pii.id)
+      val handler = new ResultHandler(pii.id)
       listener.subscribe(handler)
 
       sendMessages(ReduceRequest(pii, Seq()), PiiLog(PiEventStart(pii)))
@@ -290,7 +290,7 @@ class KafkaExecutorTests
 
   def baremetalCall( ex: CustomKafkaExecutor, p: PiProcess, args: PiObject*  ): Future[Any] = {
     val piiId = await( ex.init( p, args.toSeq ) )
-    val handler = new ResultHandler("test", piiId)
+    val handler = new ResultHandler(piiId)
     ex.subscribe(handler)
 
     ex.start(piiId)
@@ -682,7 +682,7 @@ class KafkaExecutorTests
 
     val onCompletion: MessageMap = {
 
-      val handler = new ResultHandler[ObjectId]("testhandler", ourPiiId)
+      val handler = new ResultHandler[ObjectId](ourPiiId)
       val ex2 = makeExecutor(completeProcess.settings)
 
       tryBut {
