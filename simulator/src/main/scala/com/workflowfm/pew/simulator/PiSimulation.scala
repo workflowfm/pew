@@ -1,6 +1,7 @@
 package com.workflowfm.pew.simulator
 
 import akka.actor.ActorRef
+import com.workflowfm.pew.stream.{ PiEventHandler, PiEventHandlerFactory }
 import com.workflowfm.pew.{ AtomicProcess, PiProcess }
 import com.workflowfm.pew.execution.SimulatorExecutor
 import com.workflowfm.simulator.{ SimulatedProcess, SimulationActor }
@@ -11,16 +12,26 @@ trait SimulatedPiProcess extends AtomicProcess with SimulatedProcess {
 }
 
 abstract class PiSimulation (val name: String, val coordinator: ActorRef) {
-  def run(executor: SimulatorExecutor[_]): Future[Any]
-  def getProcesses(): Seq[PiProcess]
-  def simulateWith(executor: SimulatorExecutor[_])(implicit executionContext: ExecutionContext): PiSimulationActor =
+
+  def rootProcess: PiProcess
+  def args: Seq[Any]
+
+  def getProcesses(): Seq[PiProcess] = rootProcess :: rootProcess.allDependencies.toList
+
+  def simulateWith[T](executor: SimulatorExecutor[T])(implicit executionContext: ExecutionContext): PiSimulationActor[T] =
     new PiSimulationActor(this, executor)
 }
 
-class PiSimulationActor(sim: PiSimulation, executor: SimulatorExecutor[_])
+class PiSimulationActor[T](sim: PiSimulation, executor: SimulatorExecutor[T])
   (override implicit val executionContext: ExecutionContext)
     extends SimulationActor(sim.name, sim.coordinator) {
-  override def run(): Future[Any] = sim.run(executor)
-  def simulationReady = executor.simulationReady
+
+  val factory = new PiSimHandlerFactory[T](this)
+
+  override def run(): Future[Any] = {
+    executor.call(sim.rootProcess, sim.args, factory) flatMap (_.future)
+  }
+
+  def simulationCheck = if (executor.simulationReady) ready()
 }
 
