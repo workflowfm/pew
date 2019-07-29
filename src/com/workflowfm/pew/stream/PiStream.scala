@@ -9,6 +9,7 @@ import akka.{ NotUsed, Done }
 
 import scala.concurrent.{ Future, ExecutionContext }
 
+/** A [[PiObservable]] implemented using an Akka Stream Source. */
 trait PiSource[T] extends PiObservable[T] {
   implicit val materializer:Materializer
 
@@ -26,11 +27,15 @@ trait PiSource[T] extends PiObservable[T] {
 
 }
 
+/** A [[PiSource]] that also implements [[PiPublisher]] with Akka Streams.
+  * Uses [[akka.stream.scaladsl.BroadcastHub]], which allows us to clone new sources and attach the
+  * handlers as sinks.
+  */
 trait PiStream[T] extends PiSource[T] with PiPublisher[T] {
   implicit val system:ActorSystem
   override implicit val materializer = ActorMaterializer()
 
-  private val sourceQueue = Source.queue[PiEvent[T]](PiSource.bufferSize, PiSource.overflowStrategy)
+  private val sourceQueue = Source.queue[PiEvent[T]](PiStream.bufferSize, PiStream.overflowStrategy)
 
   private val (
     queue: SourceQueueWithComplete[PiEvent[T]],
@@ -38,7 +43,6 @@ trait PiStream[T] extends PiSource[T] with PiPublisher[T] {
   ) = {
     val (q,s) = sourceQueue.toMat(BroadcastHub.sink(bufferSize = 256))(Keep.both).run()
     s.runWith(Sink.ignore)
-    //s.runForeach(e => println(s">>>>>>>>>> ${e.id} ${e.time - 1542976910000L}"))
     (q,s)
   }
 
@@ -46,30 +50,28 @@ trait PiStream[T] extends PiSource[T] with PiPublisher[T] {
 
   override def getSource = source
   //def subscribe(sink:PiEvent[T]=>Unit):Future[Done] = source.runForeach(sink(_))
-  
+
   override def subscribe(handler:PiEventHandler[T]):Future[PiSwitch] = {
     // Using a shared kill switch even though we only want to shutdown one stream, because
     // the shared switch is available immediately (pre-materialization) so we can use it
     // as a sink.
-    val killSwitch = KillSwitches.shared(s"kill:${handler.name}")
+    val killSwitch = KillSwitches.shared("PiEventHandlerKillSwitch")
     val x = source
-      .via(killSwitch.flow)
-      //.map { e => println(s">>> ${handler.name}: ${e.id} ${e.time- 1542976910000L}") ; e }
-      .map(handler(_))
-      .runForeach { r => if (r) {
-        //println(s"===KILLING IN THE NAME OF: ${handler.name}")
-        killSwitch.shutdown() }
-      }
+      .via(killSwitch.flow) // Use the killSwitch as a flow so we can kill the entire stream.
+      .map(handler(_)) // Run the events through the handler.
+      .runForeach { r => if (r) { // if the returned value is true, we need to "unsubscribe"
+        killSwitch.shutdown() // we could not do this with a regular killSwitch, only with a shared one
+      } }
     Future.successful(PiKillSwitch(killSwitch))
   }
 }
 
-object PiSource {
+object PiStream {
   val bufferSize = 5
   val overflowStrategy = OverflowStrategy.backpressure
 }
 
-
+/** A wrapper of [[akka.stream.KillSwitch]] to stop [[PiEventHandler]]s. */
 case class PiKillSwitch(switch:KillSwitch) extends PiSwitch {
   override def stop = switch.shutdown()
 }

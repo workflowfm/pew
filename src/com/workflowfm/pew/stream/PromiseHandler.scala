@@ -43,20 +43,19 @@ trait PromiseHandler[T,R] extends PiEventHandler[T] {
   def fail(exception:PiException[T]) :Either[R,Exception]
 }
 
-class ResultHandler[T](override val name:String, override val id:T) extends PromiseHandler[T,Any] {
+class ResultHandler[T](override val id:T) extends PromiseHandler[T,Any] {
 
   override def succeed(result:Any) = result
   override def fail(exception:PiException[T]) = Right(exception)
 }
 
-class ResultHandlerFactory[T](name:T=>String) extends PiEventHandlerFactory[T,ResultHandler[T]] {
-  def this(name:String) = this { _:T => name }
-  override def build(id:T) = new ResultHandler[T](name(id),id)
+class ResultHandlerFactory[T] extends PiEventHandlerFactory[T,ResultHandler[T]] {
+  override def build(id:T) = new ResultHandler[T](id)
 }
 
 
 
-class CounterHandler[T](override val name:String, override val id:T) extends PromiseHandler[T,Int] {   
+class CounterHandler[T](override val id:T) extends PromiseHandler[T,Int] {   
   private var counter:Int = 0
   def count = counter
 
@@ -70,9 +69,8 @@ class CounterHandler[T](override val name:String, override val id:T) extends Pro
   override def fail(exception:PiException[T]) = Left(counter)
 }
 
-class CounterHandlerFactory[T](name:T=>String) extends PiEventHandlerFactory[T,CounterHandler[T]] {
-  def this(name:String) = this { _:T => name }
-  override def build(id:T) = new CounterHandler[T](name(id),id)
+class CounterHandlerFactory[T] extends PiEventHandlerFactory[T,CounterHandler[T]] {
+  override def build(id:T) = new CounterHandler[T](id)
 }
 
 
