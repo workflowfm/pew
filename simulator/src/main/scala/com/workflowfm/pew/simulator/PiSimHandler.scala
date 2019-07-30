@@ -6,7 +6,7 @@ import com.workflowfm.pew.{ PiEvent, PiEventIdle, PiEventResult, PiFailure }
 class PiSimHandler[T](actor: PiSimulationActor[T], id: T) extends ResultHandler[T](id) {
   override def apply(e: PiEvent[T]) = {
     e match {
-      case PiEventIdle(i,_) => actor.simulationCheck
+      case PiEventIdle(i,_) if (i.id == id) => actor.simulationCheck
       case _ => Unit
     }
     super.apply(e)
