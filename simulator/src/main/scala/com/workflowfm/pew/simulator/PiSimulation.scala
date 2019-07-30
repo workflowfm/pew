@@ -11,43 +11,22 @@ trait SimulatedPiProcess extends AtomicProcess with SimulatedProcess {
   override def isSimulatedProcess = true
 }
 
-abstract class PiSimulation (val name: String, val coordinator: ActorRef) {
+abstract class PiSimulationActor[T] (override val name: String, override val coordinator: ActorRef)
+  (implicit executionContext: ExecutionContext)
+    extends SimulationActor(name, coordinator) {
+
   def rootProcess: PiProcess
   def args: Seq[Any]
 
   def getProcesses(): Seq[PiProcess] = rootProcess :: rootProcess.allDependencies.toList
-}
 
-class PiSimulationActor[T](implicit executionContext: ExecutionContext)
-    extends SimulationActor(simulation.name, simulation.coordinator) {
-
-  var executor: Option[SimulatorExecutor[T]] = None
+  def executor: SimulatorExecutor[T]
   val factory = new PiSimHandlerFactory[T](this)
 
-  override def run(): Future[Any] = executor match {
-    case None => Future.failed(new RuntimeException(s"Tried to start simulation actor [${simulation.name}] with no executor."))
-    case Some(exe) => exe.call(simulation.rootProcess, simulation.args, factory) flatMap (_.future)
+  override def run(): Future[Any] = {
+    executor.call(rootProcess, args, factory) flatMap (_.future)
   }
 
-  def simulationCheck = if (executor.map(_.simulationReady).getOrElse(true)) ready()
-
-  def piSimulatorReceive: Receive = {
-    case PiSimulationActor.Init(exe) => {
-      if (executor.isEmpty && exe.isInstanceOf[SimulatorExecutor[T]])
-        executor = Some(exe.asInstanceOf[SimulatorExecutor[T]])
-      sender() ! PiSimulationActor.Ack
-  }}
-
-  override def receive = piSimulatorReceive orElse piSimulatorReceive
-}
-object PiSimulationActor {
-  case class Init[T](executor: SimulatorExecutor[T])
-  case object Ack
-
-  /*
-  def props[T](simulation: PiSimulation)
-  (implicit executionContext: ExecutionContext): Props =
-    Props(new PiSimulationActor[T](simulation))
-   */
+  def simulationCheck = if (executor.simulationReady) ready()
 }
 
