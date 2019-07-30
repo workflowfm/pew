@@ -4,48 +4,50 @@ import akka.actor.{ ActorRef, Props }
 import com.workflowfm.pew.stream.{ PiEventHandler, PiEventHandlerFactory }
 import com.workflowfm.pew.{ AtomicProcess, PiProcess }
 import com.workflowfm.pew.execution.SimulatorExecutor
-import com.workflowfm.simulator.{ SimulatedProcess, Simulation, SimulationActor }
+import com.workflowfm.simulator.{ SimulatedProcess, SimulationActor }
 import scala.concurrent.{ ExecutionContext, Future }
 
-/*
-trait SimulatedProcess {
-  def simulationActor: Actor
-
-  def simulate[T](
-    gen: TaskGenerator,
-    result:TaskMetrics => T,
-    resources:String*
-  )(implicit executionContext: ExecutionContext):Future[T] = {
-//    simulationActor ! SimulationActor.AddTask(gen, resources:_*).map(m => result(m))
-  }
-}
- */
 trait SimulatedPiProcess extends AtomicProcess with SimulatedProcess {
   override def isSimulatedProcess = true
 }
 
-abstract class PiSimulation (override val name: String, override val coordinator: ActorRef) extends Simulation(name, coordinator) {
+abstract class PiSimulation (val name: String, val coordinator: ActorRef) {
   def rootProcess: PiProcess
   def args: Seq[Any]
 
   def getProcesses(): Seq[PiProcess] = rootProcess :: rootProcess.allDependencies.toList
 }
 
-class PiSimulationActor[T](override val simulation: PiSimulation, executor: SimulatorExecutor[T])
-  (override implicit val executionContext: ExecutionContext)
-    extends SimulationActor {
+class PiSimulationActor[T](implicit executionContext: ExecutionContext)
+    extends SimulationActor(simulation.name, simulation.coordinator) {
 
+  var executor: Option[SimulatorExecutor[T]] = None
   val factory = new PiSimHandlerFactory[T](this)
 
-  override def run(): Future[Any] = {
-    executor.call(simulation.rootProcess, simulation.args, factory) flatMap (_.future)
+  override def run(): Future[Any] = executor match {
+    case None => Future.failed(new RuntimeException(s"Tried to start simulation actor [${simulation.name}] with no executor."))
+    case Some(exe) => exe.call(simulation.rootProcess, simulation.args, factory) flatMap (_.future)
   }
 
-  def simulationCheck = if (executor.simulationReady) ready()
+  def simulationCheck = if (executor.map(_.simulationReady).getOrElse(true)) ready()
+
+  def piSimulatorReceive: Receive = {
+    case PiSimulationActor.Init(exe) => {
+      if (executor.isEmpty && exe.isInstanceOf[SimulatorExecutor[T]])
+        executor = Some(exe.asInstanceOf[SimulatorExecutor[T]])
+      sender() ! PiSimulationActor.Ack
+  }}
+
+  override def receive = piSimulatorReceive orElse piSimulatorReceive
 }
 object PiSimulationActor {
-  def props[T](simulation: PiSimulation, executor: SimulatorExecutor[T])
+  case class Init[T](executor: SimulatorExecutor[T])
+  case object Ack
+
+  /*
+  def props[T](simulation: PiSimulation)
   (implicit executionContext: ExecutionContext): Props =
-    Props(new PiSimulationActor[T](simulation, executor))
+    Props(new PiSimulationActor[T](simulation))
+   */
 }
 
