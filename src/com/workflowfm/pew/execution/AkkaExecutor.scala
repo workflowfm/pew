@@ -14,7 +14,8 @@ import java.util.UUID
 
 class AkkaExecutor (
   store:PiInstanceStore[UUID],
-  processes:PiProcessStore
+  processes:PiProcessStore,
+  atomicExecutor: ActorRef
 )(
   implicit val system: ActorSystem,
   override implicit val executionContext: ExecutionContext = ExecutionContext.global,
@@ -23,16 +24,16 @@ class AkkaExecutor (
 
   def this(store:PiInstanceStore[UUID], l:PiProcess*)
     (implicit system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration) =
-    this(store,SimpleProcessStore(l :_*))
+    this(store,SimpleProcessStore(l :_*),system.actorOf(AkkaExecutor.atomicprops()))
 
   def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration,l:PiProcess*) =
-    this(SimpleInstanceStore[UUID](),SimpleProcessStore(l :_*))(system,context,timeout)
+    this(SimpleInstanceStore[UUID](),SimpleProcessStore(l :_*),system.actorOf(AkkaExecutor.atomicprops()))(system,context,timeout)
 
   def this(l:PiProcess*)(implicit system: ActorSystem) =
-    this(SimpleInstanceStore[UUID](),SimpleProcessStore(l :_*))(system,ExecutionContext.global,10.seconds)
+    this(SimpleInstanceStore[UUID](),SimpleProcessStore(l :_*),system.actorOf(AkkaExecutor.atomicprops()))(system,ExecutionContext.global,10.seconds)
 
 
-  val execActor = system.actorOf(AkkaExecutor.execprops(store,processes))
+  val execActor = system.actorOf(AkkaExecutor.execprops(store,processes,atomicExecutor))
   implicit val tOut = Timeout(timeout)
   
   override def simulationReady = Await.result(execActor ? AkkaExecutor.SimReady,timeout).asInstanceOf[Boolean]
@@ -63,12 +64,15 @@ object AkkaExecutor {
   case class Subscribe(handler:PiEventHandler[UUID])
 
   def atomicprops(implicit context: ExecutionContext = ExecutionContext.global): Props = Props(new AkkaAtomicProcessExecutor())
-  def execprops(store:PiInstanceStore[UUID], processes:PiProcessStore)(implicit system: ActorSystem, exc: ExecutionContext): Props = Props(new AkkaExecActor(store,processes))
+
+  def execprops(store:PiInstanceStore[UUID], processes:PiProcessStore, atomicExecutor: ActorRef)
+    (implicit system: ActorSystem, exc: ExecutionContext): Props = Props(new AkkaExecActor(store,processes,atomicExecutor))
 }
 
 class AkkaExecActor(
   var store:PiInstanceStore[UUID],
-  processes:PiProcessStore
+  processes:PiProcessStore,
+  atomicExecutor: ActorRef
 )(
   override implicit val system: ActorSystem,
   implicit val executionContext: ExecutionContext = ExecutionContext.global
@@ -167,7 +171,7 @@ class AkkaExecActor(
           try {
             publish(PiEventCall(i.id,ref,p,objs))
             // TODO Change from ! to ? to require an acknowledgement
-            system.actorOf(AkkaExecutor.atomicprops()) ! AkkaExecutor.ACall(i.id,ref,p,objs,self)
+            atomicExecutor ! AkkaExecutor.ACall(i.id,ref,p,objs,self)
           } catch {
             case _:Throwable => Unit //TODO specify timeout exception here! - also print a warning
           }
