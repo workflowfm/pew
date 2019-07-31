@@ -99,7 +99,7 @@ trait AtomicProcess extends MetadataAtomicProcess {
 
   /** Implements the standard AtomicProcess interface for unsupporting ProcessExecutors.
     */
-  final override def runMeta( args: Seq[PiObject] )( implicit ec: ExecutionContext ): Future[MetadataAtomicResult]
+  override def runMeta( args: Seq[PiObject] )( implicit ec: ExecutionContext ): Future[MetadataAtomicResult]
     = run( args ).map(MetadataAtomicProcess.result(_))
 
   def run(args:Seq[PiObject])(implicit ec:ExecutionContext):Future[PiObject]
