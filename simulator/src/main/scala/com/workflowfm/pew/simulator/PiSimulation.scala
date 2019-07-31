@@ -16,7 +16,8 @@ trait SimulatedPiProcess extends AtomicProcess with SimulatedProcess {
 
   override val iname = s"$simulationName.$name"
 
-  def ready() = simulationActor ! PiSimulationActor.Waiting(iname)
+  def virtualWait() = simulationActor ! PiSimulationActor.Waiting(iname)
+  def virtualResume() = simulationActor ! PiSimulationActor.Resuming(iname)
 
   override def simulate[T](
     gen: TaskGenerator,
@@ -26,7 +27,7 @@ trait SimulatedPiProcess extends AtomicProcess with SimulatedProcess {
     val id = java.util.UUID.randomUUID
     simulationActor ! PiSimulationActor.AddSource(id,iname)
     val f = simulate(id,gen,result,resources:_*)
-    ready()
+    virtualWait()
     f
   }
 
@@ -65,15 +66,18 @@ abstract class PiSimulationActor[T] (override val name: String, override val coo
     println(s"Check: $executorIsReady && $waiting && $taskWaiting = $check == ${executorIsReady & check}")
     if (executorIsReady && check) ready()
   }
-//  def wait(process: String) = {
- //   println(s"Wait: $process")
-  //  waiting += process
- // }
   
   def processWaiting(process: String) = {
-    println(s"Process waiting: $process")
+    //println(s"Process waiting: $process")
     if (!waiting.contains(process)) executorIsReady=false
     taskWaiting += process
+    readyCheck()
+  }
+
+  def processResuming(process: String) = {
+   // println(s"Process resuming: $process")
+    if (!waiting.contains(process)) executorIsReady=false
+    taskWaiting.dequeueFirst(_ == process)
     readyCheck()
   }
 
@@ -93,20 +97,11 @@ abstract class PiSimulationActor[T] (override val name: String, override val coo
     }
   }
 
-  /*
-  def processDone(process: String) = {
-    //println(s"DCheck: $waiting")
-    if (!waiting.contains(process)) println(s" ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR    $process     ERROR ERROR ERROR ERROR ERROR ERROR ERROR ")
-    else println(s"Done: $process")
-    taskWaiting.dequeueFirst( _ == process )
-    waiting.dequeueFirst(_ == process)
-    readyCheck()
-  }
-   */
   def executorBusy() = executorIsReady = false
 
   def piActorReceive: Receive = {
     case PiSimulationActor.Waiting(p) => processWaiting(p)
+    case PiSimulationActor.Resuming(p) => processResuming(p)
     case PiSimulationActor.AddSource(id,iname) => sources += id->iname
     case PiSimulationActor.ExecutorBusy => executorBusy()
     case PiSimulationActor.ExecutorReady(i) => executorReady(i)
@@ -116,6 +111,7 @@ abstract class PiSimulationActor[T] (override val name: String, override val coo
 }
 object PiSimulationActor {
   case class Waiting(process: String)
+  case class Resuming(process: String)
   case class AddSource(id: UUID, iname: String)
   case object ExecutorBusy
   case class ExecutorReady(i: PiInstance[_])
