@@ -63,7 +63,7 @@ abstract class PiSimulationActor[T] (override val name: String, override val coo
         case Some(_) => true
       }
     }
-    println(s"Check: $executorIsReady && $waiting && $taskWaiting = $check == ${executorIsReady & check}")
+    //println(s"[${self.path.name}] Check: $executorIsReady && $waiting && $taskWaiting = $check == ${executorIsReady & check}")
     if (executorIsReady && check) ready()
   }
   
