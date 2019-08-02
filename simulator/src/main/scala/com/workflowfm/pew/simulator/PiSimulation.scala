@@ -107,7 +107,7 @@ abstract class PiSimulationActor[T] (override val name: String, override val coo
     case PiSimulationActor.ExecutorReady(i) => executorReady(i)
   }
 
-  override def receive = piActorReceive orElse simulationActorReceive
+  override def receive = simulationActorReceive orElse piActorReceive
 }
 object PiSimulationActor {
   case class Waiting(process: String)
