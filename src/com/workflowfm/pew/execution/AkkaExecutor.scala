@@ -1,6 +1,7 @@
 package com.workflowfm.pew.execution
 
 import akka.actor._
+import akka.event.LoggingReceive
 import akka.pattern.{ask, pipe}
 import akka.util.Timeout
 import com.workflowfm.pew._
@@ -8,6 +9,7 @@ import com.workflowfm.pew.stream.{ PiObservable, PiStream, PiEventHandler, PiSwi
 
 import scala.concurrent._
 import scala.concurrent.duration._
+import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
 
 import java.util.UUID
@@ -22,11 +24,13 @@ class AkkaExecutor (
   implicit val timeout:FiniteDuration = 10.seconds
 ) extends SimulatorExecutor[UUID] with PiObservable[UUID] {
 
+  implicit val tag: ClassTag[UUID] = ClassTag(classOf[UUID])
+
   def this(store:PiInstanceStore[UUID], l:PiProcess*)
-    (implicit system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration) =
+    (implicit system: ActorSystem, context: ExecutionContext, timeout: FiniteDuration) =
     this(store,SimpleProcessStore(l :_*),system.actorOf(AkkaExecutor.atomicprops()))
 
-  def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration,l:PiProcess*) =
+  def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration, l:PiProcess*) =
     this(SimpleInstanceStore[UUID](),SimpleProcessStore(l :_*),system.actorOf(AkkaExecutor.atomicprops()))(system,context,timeout)
 
   def this(l:PiProcess*)(implicit system: ActorSystem) =
@@ -74,8 +78,8 @@ class AkkaExecActor(
   processes:PiProcessStore,
   atomicExecutor: ActorRef
 )(
-  override implicit val system: ActorSystem,
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
+  implicit val executionContext: ExecutionContext,
+  override implicit val tag: ClassTag[PiEvent[UUID]]
 ) extends Actor with PiStream[UUID] {
 
   def init(p:PiProcess,args:Seq[PiObject]):UUID = {
@@ -184,7 +188,7 @@ class AkkaExecActor(
   
   def simulationReady():Boolean = store.simulationReady
   
-  def receive = {
+  def akkaReceive: Receive = {
     case AkkaExecutor.Init(p,args) => sender() ! init(p,args)
     case AkkaExecutor.Start(id) => start(id)
     case AkkaExecutor.Result(id,ref,res) => postResult(id,ref,res)
@@ -199,6 +203,7 @@ class AkkaExecActor(
     case m => System.err.println("!!! Received unknown message: " + m)
   }
 
+  override def receive = LoggingReceive { publisherBehaviour orElse akkaReceive }
 }
 
 class AkkaAtomicProcessExecutor(implicit val exc: ExecutionContext = ExecutionContext.global) extends Actor { //(executor:ActorRef,p:PiProcess,args:Seq[PiObject])

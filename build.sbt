@@ -35,6 +35,9 @@ libraryDependencies += "org.mongodb.scala" %% "mongo-scala-driver" % "2.2.1"
 
 libraryDependencies += "junit" % "junit" % "4.8.2"
 
+libraryDependencies += "uk.ac.ed.inf" %% "subakka" % "0.1-SNAPSHOT"
+libraryDependencies += "uk.ac.ed.inf" %% "subakka" % "0.1-SNAPSHOT" % Test classifier "tests"
+
 lazy val skiexample = project
   .in(file("skiexample"))
   .settings(
