@@ -1,37 +1,14 @@
 package com.workflowfm.pew.simulator
 
 import akka.actor.{ ActorRef, Props }
-import com.workflowfm.pew.{ MetadataAtomicProcess, PiInstance, PiMetadata, PiObject }
 import com.workflowfm.pew.stream.{ PiEventHandler, PiEventHandlerFactory }
-import com.workflowfm.pew.{ AtomicProcess, PiProcess }
+import com.workflowfm.pew.{ PiProcess, PiInstance }
 import com.workflowfm.pew.execution.SimulatorExecutor
-import com.workflowfm.simulator.metrics.TaskMetrics
+import com.workflowfm.simulator.Task
 import com.workflowfm.simulator.{ SimulatedProcess, SimulationActor, TaskGenerator }
 import java.util.UUID
 import scala.collection.mutable.{ Map, Queue }
 import scala.concurrent.{ ExecutionContext, Future }
-
-trait SimulatedPiProcess extends AtomicProcess with SimulatedProcess {
-  override def isSimulatedProcess = true
-
-  override val iname = s"$simulationName.$name"
-
-  def virtualWait() = simulationActor ! PiSimulationActor.Waiting(iname)
-  def virtualResume() = simulationActor ! PiSimulationActor.Resuming(iname)
-
-  override def simulate[T](
-    gen: TaskGenerator,
-    result:TaskMetrics => T,
-    resources:String*
-  )(implicit executionContext: ExecutionContext):Future[T] = {
-    val id = java.util.UUID.randomUUID
-    simulationActor ! PiSimulationActor.AddSource(id,iname)
-    val f = simulate(id,gen,result,resources:_*)
-    virtualWait()
-    f
-  }
-
-}
 
 abstract class PiSimulationActor[T] (override val name: String, override val coordinator: ActorRef)
   (implicit executionContext: ExecutionContext)
@@ -81,11 +58,11 @@ abstract class PiSimulationActor[T] (override val name: String, override val coo
     readyCheck()
   }
 
-  override def complete(id: UUID, metrics: TaskMetrics) = {
-    sources.get(id).map { p =>
+  override def complete(task: Task, time: Long) = {
+    sources.get(task.id).map { p =>
       taskWaiting.dequeueFirst(_ == p)
     }
-    super.complete(id,metrics)
+    super.complete(task,time)
   }
 
   def executorReady(i: PiInstance[_]) = {
