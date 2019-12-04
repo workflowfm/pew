@@ -7,14 +7,18 @@ import com.workflowfm.pew.{ AtomicProcess, PiProcess }
 import com.workflowfm.simulator.{ SimulatedProcess, Task, TaskGenerator }
 import java.util.UUID
 import scala.concurrent.{ ExecutionContext, Future }
+import akka.pattern.ask
+import akka.util.Timeout
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration.Duration
 
 trait SimulatedPiProcess extends AtomicProcess with SimulatedProcess {
   override def isSimulatedProcess = true
 
   override val iname = s"$simulationName.$name"
 
-  def virtualWait() = simulationActor ! PiSimulationActor.Waiting(iname)
-  def virtualResume() = simulationActor ! PiSimulationActor.Resuming(iname)
+  def virtualWait() = (simulationActor ? PiSimulationActor.Waiting(iname))(Timeout(1, TimeUnit.DAYS))
+  def virtualResume() = (simulationActor ? PiSimulationActor.Resuming(iname))(Timeout(1, TimeUnit.DAYS))
 
   override def simulate[T](
     gen: TaskGenerator,

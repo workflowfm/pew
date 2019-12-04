@@ -4,11 +4,12 @@ import akka.actor.{ ActorRef, Props }
 import com.workflowfm.pew.stream.{ PiEventHandler, PiEventHandlerFactory }
 import com.workflowfm.pew.{ PiProcess, PiInstance }
 import com.workflowfm.pew.execution.SimulatorExecutor
-import com.workflowfm.simulator.Task
+import com.workflowfm.simulator.{ Coordinator, Task }
 import com.workflowfm.simulator.{ SimulatedProcess, SimulationActor, TaskGenerator }
 import java.util.UUID
 import scala.collection.mutable.{ Map, Queue }
 import scala.concurrent.{ ExecutionContext, Future }
+
 
 abstract class PiSimulationActor[T] (override val name: String, override val coordinator: ActorRef)
   (implicit executionContext: ExecutionContext)
@@ -77,18 +78,27 @@ abstract class PiSimulationActor[T] (override val name: String, override val coo
   def executorBusy() = executorIsReady = false
 
   def piActorReceive: Receive = {
-    case PiSimulationActor.Waiting(p) => processWaiting(p)
-    case PiSimulationActor.Resuming(p) => processResuming(p)
+    case PiSimulationActor.Waiting(p) => {
+      processWaiting(p)
+      sender() ! PiSimulationActor.Ack
+    }
+      
+    case PiSimulationActor.Resuming(p) => {
+      val actor = sender()
+      processResuming(p)
+      requestWait(actor)
+    }
     case PiSimulationActor.AddSource(id,iname) => sources += id->iname
     case PiSimulationActor.ExecutorBusy => executorBusy()
     case PiSimulationActor.ExecutorReady(i) => executorReady(i)
   }
 
-  override def receive = simulationActorReceive orElse piActorReceive
+  override def receive = LoggingReceive {simulationActorReceive orElse piActorReceive }
 }
 object PiSimulationActor {
   case class Waiting(process: String)
   case class Resuming(process: String)
+  case object Ack
   case class AddSource(id: UUID, iname: String)
   case object ExecutorBusy
   case class ExecutorReady(i: PiInstance[_])
