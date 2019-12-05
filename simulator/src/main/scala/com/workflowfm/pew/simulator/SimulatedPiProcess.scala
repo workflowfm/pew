@@ -17,6 +17,9 @@ trait SimulatedPiProcess extends AtomicProcess with SimulatedProcess {
 
   override val iname = s"$simulationName.$name"
 
+
+  // TODO We never actually wait for these asks, so there is still a chance the ordering will be messed up
+  // if the messages are delayed
   def virtualWait() = (simulationActor ? PiSimulationActor.Waiting(iname))(Timeout(1, TimeUnit.DAYS))
   def virtualResume() = (simulationActor ? PiSimulationActor.Resuming(iname))(Timeout(1, TimeUnit.DAYS))
 
