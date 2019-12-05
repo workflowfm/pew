@@ -16,28 +16,23 @@ import java.util.UUID
 
 class AkkaExecutor (
   store:PiInstanceStore[UUID],
-  processes:PiProcessStore,
   atomicExecutor: ActorRef
 )(
   implicit val system: ActorSystem,
-  override implicit val executionContext: ExecutionContext = ExecutionContext.global,
-  implicit val timeout:FiniteDuration = 10.seconds
+  implicit val timeout: FiniteDuration
 ) extends SimulatorExecutor[UUID] with PiObservable[UUID] {
 
   implicit val tag: ClassTag[UUID] = ClassTag(classOf[UUID])
+  override implicit val executionContext: ExecutionContext = system.dispatcher
 
-  def this(store:PiInstanceStore[UUID], l:PiProcess*)
-    (implicit system: ActorSystem, context: ExecutionContext, timeout: FiniteDuration) =
-    this(store,SimpleProcessStore(l :_*),system.actorOf(AkkaExecutor.atomicprops()))
+  def this(store: PiInstanceStore[UUID])
+    (implicit system: ActorSystem, timeout: FiniteDuration) =
+    this(store,system.actorOf(AkkaExecutor.atomicprops()))
 
-  def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration, l:PiProcess*) =
-    this(SimpleInstanceStore[UUID](),SimpleProcessStore(l :_*),system.actorOf(AkkaExecutor.atomicprops()))(system,context,timeout)
+  def this()(implicit system: ActorSystem, timeout: FiniteDuration = 10.seconds) =
+    this(SimpleInstanceStore[UUID](),system.actorOf(AkkaExecutor.atomicprops()))(system,timeout)
 
-  def this(l:PiProcess*)(implicit system: ActorSystem) =
-    this(SimpleInstanceStore[UUID](),SimpleProcessStore(l :_*),system.actorOf(AkkaExecutor.atomicprops()))(system,ExecutionContext.global,10.seconds)
-
-
-  val execActor = system.actorOf(AkkaExecutor.execprops(store,processes,atomicExecutor))
+  val execActor = system.actorOf(AkkaExecutor.execprops(store, atomicExecutor))
   implicit val tOut = Timeout(timeout)
   
   override def simulationReady = Await.result(execActor ? AkkaExecutor.SimReady,timeout).asInstanceOf[Boolean]
@@ -69,13 +64,14 @@ object AkkaExecutor {
 
   def atomicprops(implicit context: ExecutionContext = ExecutionContext.global): Props = Props(new AkkaAtomicProcessExecutor())
 
-  def execprops(store:PiInstanceStore[UUID], processes:PiProcessStore, atomicExecutor: ActorRef)
-    (implicit system: ActorSystem, exc: ExecutionContext): Props = Props(new AkkaExecActor(store,processes,atomicExecutor))
+  def execprops(store: PiInstanceStore[UUID], atomicExecutor: ActorRef)
+    (implicit system: ActorSystem): Props = Props(
+    new AkkaExecActor(store,atomicExecutor)(system.dispatcher, implicitly[ClassTag[PiEvent[UUID]]])
+  )
 }
 
 class AkkaExecActor(
   var store:PiInstanceStore[UUID],
-  processes:PiProcessStore,
   atomicExecutor: ActorRef
 )(
   implicit val executionContext: ExecutionContext,

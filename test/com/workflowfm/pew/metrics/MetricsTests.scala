@@ -37,7 +37,7 @@ class MetricsTests extends FlatSpec with Matchers with BeforeAndAfterAll with Pr
   it should "measure things" in {
     val handler = new MetricsHandler[UUID]
     
-    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val ex = new AkkaExecutor()
     val k1 = ex.subscribe(handler)
     
     val f1 = ex.execute(ri,Seq(11))
@@ -54,7 +54,7 @@ class MetricsTests extends FlatSpec with Matchers with BeforeAndAfterAll with Pr
   it should "output a D3 timeline of 3 Rexample workflows" in {
     val handler = new MetricsHandler[UUID]
     
-    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val ex = new AkkaExecutor()
     val k1 = ex.subscribe(handler)
     
     val f1 = ex.execute(ri,Seq(11))

@@ -25,7 +25,7 @@ class MultiStateExecutorTests extends FlatSpec with Matchers with ProcessExecuto
   val ri = new R(pai,pbi,pci)
 
   "MultiStateExecutor" should "execute atomic PbI once" in {
-    val ex = new MultiStateExecutor(pai,pbi,pci,ri)
+    val ex = new MultiStateExecutor()
     val f1 = ex.execute(pbi,Seq(2))
    
     val r1 = await(f1)
@@ -33,7 +33,7 @@ class MultiStateExecutorTests extends FlatSpec with Matchers with ProcessExecuto
 	}
 
   "MultiStateExecutor" should "execute atomic PbI twice concurrently" in {
-    val ex = new MultiStateExecutor(pai,pbi,pci,ri)
+    val ex = new MultiStateExecutor()
     val f1 = ex.execute(pbi,Seq(2))
     val f2 = ex.execute(pbi,Seq(1))
    
@@ -44,7 +44,7 @@ class MultiStateExecutorTests extends FlatSpec with Matchers with ProcessExecuto
 	}
   
   "MultiStateExecutor" should "execute Rexample once" in {
-    val ex = new MultiStateExecutor(pai,pbi,pci,ri)
+    val ex = new MultiStateExecutor()
     val f1 = ex.execute(ri,Seq(21))
    
     val r1 = await(f1)
@@ -52,7 +52,7 @@ class MultiStateExecutorTests extends FlatSpec with Matchers with ProcessExecuto
 	}
 	
   "MultiStateExecutor" should "execute Rexample twice concurrently" in {
-    val ex = new MultiStateExecutor(pai,pbi,pci,ri)
+    val ex = new MultiStateExecutor()
     val f1 = ex.execute(ri,Seq(31))
     val f2 = ex.execute(ri,Seq(12))
     
@@ -63,7 +63,7 @@ class MultiStateExecutorTests extends FlatSpec with Matchers with ProcessExecuto
 	}
 
   "MultiStateExecutor" should "execute Rexample twice with same timings concurrently" in {
-    val ex = new MultiStateExecutor(pai,pbi,pci,ri)
+    val ex = new MultiStateExecutor()
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri,Seq(11))
     
@@ -74,7 +74,7 @@ class MultiStateExecutorTests extends FlatSpec with Matchers with ProcessExecuto
 	}
   
   "MultiStateExecutor" should "execute Rexample thrice concurrently" in {
-    val ex = new MultiStateExecutor(pai,pbi,pci,ri)
+    val ex = new MultiStateExecutor()
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri,Seq(11))
     val f3 = ex.execute(ri,Seq(11))

@@ -32,7 +32,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   }
   
   it should "execute atomic PbI once" in {
-    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val ex = new AkkaExecutor()
     val f1 = ex.execute(pbi,Seq(1))
     
     val r1 = await(f1)
@@ -40,7 +40,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   }
 
   it should "execute atomic PbI twice concurrently" in {
-    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val ex = new AkkaExecutor()
     val f1 = ex.execute(pbi,Seq(2))
     val f2 = ex.execute(pbi,Seq(1))
     
@@ -51,7 +51,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   }
   
   it should "execute Rexample once" in {
-    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val ex = new AkkaExecutor()
     val f1 = ex.execute(ri,Seq(21))
     
     val r1 = await(f1)
@@ -59,7 +59,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   }
 
   it should "execute Rexample once with same timings" in {
-    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val ex = new AkkaExecutor()
     val f1 = ex.execute(ri,Seq(11))
     
     val r1 = await(f1)
@@ -67,7 +67,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   }
   
   it should "execute Rexample twice concurrently" in {
-    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val ex = new AkkaExecutor()
     val f1 = ex.execute(ri,Seq(31))
     val f2 = ex.execute(ri,Seq(12))
     
@@ -78,7 +78,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   }
 
   it should "execute Rexample twice with same timings concurrently" in {
-    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val ex = new AkkaExecutor()
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri,Seq(11))
     
@@ -89,7 +89,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   }
   
   it should "execute Rexample thrice concurrently" in {
-    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val ex = new AkkaExecutor()
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri,Seq(11))
     val f3 = ex.execute(ri,Seq(11))
@@ -103,7 +103,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   }
   
   it should "execute Rexample twice, each with a differnt component" in {
-    val ex = new AkkaExecutor(pai,pbi,pci,pci2,ri,ri2)
+    val ex = new AkkaExecutor()
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri2,Seq(11))
     
@@ -115,7 +115,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   
   it should "handle a failing atomic process" in {
     val p = new FailP
-    val ex = new AkkaExecutor(p)
+    val ex = new AkkaExecutor()
     val f1 = ex.execute(p,Seq(1))
     
     try {
@@ -129,7 +129,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   }
   
   it should "handle a failing composite process" in {
-    val ex = new AkkaExecutor(pai,pbi,pcif,rif)
+    val ex = new AkkaExecutor()
     val f1 = rif(21)(ex)//ex.execute(rif,Seq(21))
       
     try {
@@ -145,7 +145,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   }
 
   it should "execute Rexample with a CounterHandler" in {
-    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val ex = new AkkaExecutor()
     val factory = new CounterHandlerFactory[UUID]
     val kill = ex.subscribe(new PrintEventHandler)
 
@@ -157,8 +157,8 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   }
 
   it should "allow separate handlers per executor" in {
-    val ex = new AkkaExecutor(pai,pbi,pci,ri)
-    val ex2 = new AkkaExecutor(pai,pbi,pci,ri)
+    val ex = new AkkaExecutor()
+    val ex2 = new AkkaExecutor()
     val factory = new CounterHandlerFactory[UUID]
     val k1 = ex.subscribe(new PrintEventHandler)
     val k2 = ex2.subscribe(new PrintEventHandler)
@@ -177,7 +177,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   }
 
   it should "allow separate handlers for separate workflows" in {
-    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val ex = new AkkaExecutor()
     val factory = new CounterHandlerFactory[UUID]
 
     val f1 = ex.call(ri,Seq(55),factory) flatMap(_.future)
@@ -194,7 +194,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
   }
 
   it should "unsubscribe handlers successfully" in {
-    val ex = new AkkaExecutor(pai,pbi,pci,ri)
+    val ex = new AkkaExecutor()
     val factory = new CounterHandlerFactory[UUID]
     val kill = ex.subscribe(new PrintEventHandler)
     kill.map(_.stop)

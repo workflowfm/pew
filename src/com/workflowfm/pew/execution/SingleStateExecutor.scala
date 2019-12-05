@@ -14,11 +14,8 @@ import scala.util.{Failure, Success}
  * promises/futures from the first workflow can trigger changes on the state!
  */
 
-class SingleStateExecutor(processes:PiProcessStore)
-  (override implicit val executionContext: ExecutionContext = ExecutionContext.global)
+class SingleStateExecutor(override implicit val executionContext: ExecutionContext = ExecutionContext.global)
     extends ProcessExecutor[Int] with SimplePiObservable[Int] {
-
-  def this(l:PiProcess*) = this(SimpleProcessStore(l :_*))
   
   var ctr:Int = 0
   var instance:Option[PiInstance[Int]] = None
