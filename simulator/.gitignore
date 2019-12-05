@@ -1,0 +1,17 @@
+*.class
+*.log
+/bin/
+.cache*
+/target/
+/project/target/
+/project/project/target/
+/.settings/
+/.classpath
+/.idea
+/resources/data
+.ensime
+.ensime_cache/
+*~
+\#*\#
+.\#*
+.projectile

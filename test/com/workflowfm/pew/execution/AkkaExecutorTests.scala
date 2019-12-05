@@ -152,7 +152,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     val f1 = ex.call(ri,Seq(21),factory) flatMap(_.future)
     
     val r1 = await(f1)
-    r1 should be (8)
+    r1 should be (11)
     kill.map(_.stop)
   }
 
@@ -170,7 +170,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     //    r2 should be (("PbISleptFor2s","PcISleptFor1s"))
 
     val r1 = await(f1)
-    r1 should be (8)
+    r1 should be (11)
     
     k1.map(_.stop)
     k2.map(_.stop)
@@ -187,9 +187,9 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     //    r2 should be (("PbISleptFor2s","PcISleptFor1s"))
 
     val r1 = await(f1)
-    r1 should be (8)
+    r1 should be (11)
     val r2 = await(f2)
-    r2 should be (8)
+    r2 should be (11)
     
   }
 
@@ -206,9 +206,9 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     //    r2 should be (("PbISleptFor2s","PcISleptFor1s"))
 
     val r1 = await(f1)
-    r1 should be (8)
+    r1 should be (11)
     val r2 = await(f2)
-    r2 should be (8)
+    r2 should be (11)
   }
 }
 

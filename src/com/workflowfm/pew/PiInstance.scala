@@ -56,6 +56,8 @@ case class PiInstance[T](final val id:T, called:Seq[Int], process:PiProcess, sta
       }
     }
   }
+
+  def getCalledProcesses: Seq[PiProcess] = state.threads flatMap { f => getProc(f._2.fun) } toSeq
   
   /**
    * Should the simulator wait for the workflow?

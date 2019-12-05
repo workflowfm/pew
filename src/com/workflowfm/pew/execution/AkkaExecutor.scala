@@ -1,6 +1,7 @@
 package com.workflowfm.pew.execution
 
 import akka.actor._
+import akka.event.LoggingReceive
 import akka.pattern.{ask, pipe}
 import akka.util.Timeout
 import com.workflowfm.pew._
@@ -8,31 +9,35 @@ import com.workflowfm.pew.stream.{ PiObservable, PiStream, PiEventHandler, PiSwi
 
 import scala.concurrent._
 import scala.concurrent.duration._
+import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
 
 import java.util.UUID
 
 class AkkaExecutor (
   store:PiInstanceStore[UUID],
-  processes:PiProcessStore
+  processes:PiProcessStore,
+  atomicExecutor: ActorRef
 )(
   implicit val system: ActorSystem,
   override implicit val executionContext: ExecutionContext = ExecutionContext.global,
   implicit val timeout:FiniteDuration = 10.seconds
 ) extends SimulatorExecutor[UUID] with PiObservable[UUID] {
 
-  def this(store:PiInstanceStore[UUID], l:PiProcess*)
-    (implicit system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration) =
-    this(store,SimpleProcessStore(l :_*))
+  implicit val tag: ClassTag[UUID] = ClassTag(classOf[UUID])
 
-  def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration,l:PiProcess*) =
-    this(SimpleInstanceStore[UUID](),SimpleProcessStore(l :_*))(system,context,timeout)
+  def this(store:PiInstanceStore[UUID], l:PiProcess*)
+    (implicit system: ActorSystem, context: ExecutionContext, timeout: FiniteDuration) =
+    this(store,SimpleProcessStore(l :_*),system.actorOf(AkkaExecutor.atomicprops()))
+
+  def this(system: ActorSystem, context: ExecutionContext, timeout:FiniteDuration, l:PiProcess*) =
+    this(SimpleInstanceStore[UUID](),SimpleProcessStore(l :_*),system.actorOf(AkkaExecutor.atomicprops()))(system,context,timeout)
 
   def this(l:PiProcess*)(implicit system: ActorSystem) =
-    this(SimpleInstanceStore[UUID](),SimpleProcessStore(l :_*))(system,ExecutionContext.global,10.seconds)
+    this(SimpleInstanceStore[UUID](),SimpleProcessStore(l :_*),system.actorOf(AkkaExecutor.atomicprops()))(system,ExecutionContext.global,10.seconds)
 
 
-  val execActor = system.actorOf(AkkaExecutor.execprops(store,processes))
+  val execActor = system.actorOf(AkkaExecutor.execprops(store,processes,atomicExecutor))
   implicit val tOut = Timeout(timeout)
   
   override def simulationReady = Await.result(execActor ? AkkaExecutor.SimReady,timeout).asInstanceOf[Boolean]
@@ -63,15 +68,18 @@ object AkkaExecutor {
   case class Subscribe(handler:PiEventHandler[UUID])
 
   def atomicprops(implicit context: ExecutionContext = ExecutionContext.global): Props = Props(new AkkaAtomicProcessExecutor())
-  def execprops(store:PiInstanceStore[UUID], processes:PiProcessStore)(implicit system: ActorSystem, exc: ExecutionContext): Props = Props(new AkkaExecActor(store,processes))
+
+  def execprops(store:PiInstanceStore[UUID], processes:PiProcessStore, atomicExecutor: ActorRef)
+    (implicit system: ActorSystem, exc: ExecutionContext): Props = Props(new AkkaExecActor(store,processes,atomicExecutor))
 }
 
 class AkkaExecActor(
   var store:PiInstanceStore[UUID],
-  processes:PiProcessStore
+  processes:PiProcessStore,
+  atomicExecutor: ActorRef
 )(
-  override implicit val system: ActorSystem,
-  implicit val executionContext: ExecutionContext = ExecutionContext.global
+  implicit val executionContext: ExecutionContext,
+  override implicit val tag: ClassTag[PiEvent[UUID]]
 ) extends Actor with PiStream[UUID] {
 
   def init(p:PiProcess,args:Seq[PiObject]):UUID = {
@@ -101,6 +109,7 @@ class AkkaExecActor(
   		//System.err.println("*** [" + ctr + "] Updating state after init")
   		store = store.put(resi)
   		(toCall zip futureCalls) map runThread(resi)
+        publish(PiEventIdle(resi))
   	  }
     }
   }
@@ -129,6 +138,7 @@ class AkkaExecActor(
 		    //System.err.println("*** [" + i.id + "] Updating state after: " + ref)
 			store = store.put(resi)
 		    (toCall zip futureCalls) map runThread(resi)
+            publish(PiEventIdle(resi))
     	  }
         }
 	}
@@ -165,7 +175,7 @@ class AkkaExecActor(
           try {
             publish(PiEventCall(i.id,ref,p,objs))
             // TODO Change from ! to ? to require an acknowledgement
-            system.actorOf(AkkaExecutor.atomicprops()) ! AkkaExecutor.ACall(i.id,ref,p,objs,self)
+            atomicExecutor ! AkkaExecutor.ACall(i.id,ref,p,objs,self)
           } catch {
             case _:Throwable => Unit //TODO specify timeout exception here! - also print a warning
           }
@@ -178,7 +188,7 @@ class AkkaExecActor(
   
   def simulationReady():Boolean = store.simulationReady
   
-  def receive = {
+  def akkaReceive: Receive = {
     case AkkaExecutor.Init(p,args) => sender() ! init(p,args)
     case AkkaExecutor.Start(id) => start(id)
     case AkkaExecutor.Result(id,ref,res) => postResult(id,ref,res)
@@ -193,6 +203,7 @@ class AkkaExecActor(
     case m => System.err.println("!!! Received unknown message: " + m)
   }
 
+  override def receive = LoggingReceive { publisherBehaviour orElse akkaReceive }
 }
 
 class AkkaAtomicProcessExecutor(implicit val exc: ExecutionContext = ExecutionContext.global) extends Actor { //(executor:ActorRef,p:PiProcess,args:Seq[PiObject])

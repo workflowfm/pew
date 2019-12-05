@@ -78,6 +78,7 @@ object PiEvent {
     // PiInstance Level PiEvents
     case e: PiEventStart[KeyT] => e.copy( metadata = fn( e.metadata ) )
     case e: PiEventResult[KeyT] => e.copy( metadata = fn( e.metadata ) )
+    case e: PiEventIdle[KeyT] => e.copy( metadata = fn( e.metadata ) )
 
     // PiInstance Level PiFailures
     case e: PiFailureNoResult[KeyT] => e.copy( metadata = fn( e.metadata ) )
@@ -136,6 +137,25 @@ case class PiEventResult[KeyT](
   override def id: KeyT = i.id
   override def asString: String = s" === [$id] FINAL STATE === \n${i.state}\n === === === === === === === ===\n" +
     s" === [$id] RESULT: $res"
+}
+
+/** Denotes the completion of all reductions and process calls.
+  * We are waiting for at least one process call to complete.
+  * This is useful in simulations so we know when to progress in virtual time. 
+  *
+  * @note Not all executor implementations fire this event. 
+  * @param i PiInstance representing the current state.
+  * @param metadata Metadata object.
+  * @tparam KeyT The type used to identify PiInstances.
+  */
+case class PiEventIdle[KeyT](
+    i: PiInstance[KeyT],
+    override val metadata: PiMetadataMap = PiMetadata()
+
+  ) extends PiEvent[KeyT] with PiEventFinish[KeyT] {
+
+  override def id: KeyT = i.id
+  override def asString: String = s" === [$id] Idling... "
 }
 
 
