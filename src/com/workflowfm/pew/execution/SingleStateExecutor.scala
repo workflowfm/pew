@@ -20,11 +20,13 @@ class SingleStateExecutor(override implicit val executionContext: ExecutionConte
   var ctr:Int = 0
   var instance:Option[PiInstance[Int]] = None
   
-  override protected def init(p:PiProcess,args:Seq[PiObject]):Future[Int] = Future {
-    if (instance.isDefined) throw new ProcessExecutor.AlreadyExecutingException()
+  override protected def init(p:PiProcess,args:Seq[PiObject]):Future[Int] =
+    init(PiInstance(ctr,p,args:_*))
+
+  override protected def init(instance: PiInstance[_]): Future[Int] = Future {
+    if (this.instance.isDefined) throw new ProcessExecutor.AlreadyExecutingException()
     else {
-      val inst = PiInstance(ctr,p,args:_*)
-      instance = Some(inst)
+      this.instance = Some(instance.copy(id = ctr))
       ctr = ctr + 1
       ctr - 1
     }
