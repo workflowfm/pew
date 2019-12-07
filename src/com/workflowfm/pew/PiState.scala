@@ -47,6 +47,9 @@ case class PiState(inputs:Map[Chan,Input], outputs:Map[Chan,Output], calls:List[
     def withProc(p:PiProcess) = copy(processes = processes + (p.name->p))
     def withProcs(l:PiProcess*) = (this /: l)(_ withProc _)
 
+    def updateProcs(m: Map[String,PiProcess]) = copy(processes = m)
+    def updateProcs(f: PiProcess => PiProcess) = copy(processes = processes.mapValues(f))
+
     def withCalls(l:PiFuture*) = copy(calls = l.toList ++ calls)
     
     def withThread(ref:Int, name:String, chan:String, args:Seq[PiResource]) = withThreads((ref,PiFuture(name,Chan(chan),args)))
