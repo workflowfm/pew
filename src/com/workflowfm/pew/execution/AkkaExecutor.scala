@@ -20,7 +20,7 @@ class AkkaExecutor (
 )(
   implicit val system: ActorSystem,
   implicit val timeout: FiniteDuration
-) extends SimulatorExecutor[UUID] with PiObservable[UUID] {
+) extends ProcessExecutor[UUID] with PiObservable[UUID] {
 
   implicit val tag: ClassTag[UUID] = ClassTag(classOf[UUID])
   override implicit val executionContext: ExecutionContext = system.dispatcher
@@ -34,8 +34,6 @@ class AkkaExecutor (
 
   val execActor = system.actorOf(AkkaExecutor.execprops(store, atomicExecutor))
   implicit val tOut = Timeout(timeout)
-  
-  override def simulationReady = Await.result(execActor ? AkkaExecutor.SimReady,timeout).asInstanceOf[Boolean]
 
   override protected def init(instance: PiInstance[_]): Future[UUID] =
     execActor ? AkkaExecutor.Init(instance) map (_.asInstanceOf[UUID])
@@ -58,7 +56,6 @@ object AkkaExecutor {
   case class AFuture(f:Future[Any])
   
   case object Ping
-  case object SimReady
   
   case class Subscribe(handler:PiEventHandler[UUID])
 
@@ -180,9 +177,7 @@ class AkkaExecActor(
         }
       }
     } }
-  
-  def simulationReady():Boolean = store.simulationReady
-  
+
   def akkaReceive: Receive = {
     case AkkaExecutor.Init(inst) => sender() ! init(inst)
     case AkkaExecutor.Start(id) => start(id)
@@ -193,7 +188,6 @@ class AkkaExecActor(
     }
     case AkkaExecutor.Ping => sender() ! AkkaExecutor.Ping
     case AkkaExecutor.AckCall => Unit
-    case AkkaExecutor.SimReady => sender() ! simulationReady()
     case AkkaExecutor.Subscribe(h) => subscribe(h) pipeTo sender()
     case m => System.err.println("!!! Received unknown message: " + m)
   }

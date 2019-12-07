@@ -55,13 +55,6 @@ sealed trait PiProcess {
    * * Shortcut to create entries in name->PiProcess maps using the instance name	
    */
 	def toIEntry:(String,PiProcess) = iname->this 
-	
-	/**
-   * This is used to identify simulation processes that need (virtual) time to complete. 
-   * If a process is not a simulation process, then the simulator needs to wait for it to complete before 
-   * the next virtual tick.
-   */
-  def isSimulatedProcess = false
 }
 object PiProcess {
   def allDependenciesOf(p:PiProcess):Seq[PiProcess] =

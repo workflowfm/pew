@@ -16,7 +16,7 @@ import scala.util.{Failure, Success}
 
 class MultiStateExecutor(var store: PiInstanceStore[Int])
   (override implicit val executionContext: ExecutionContext = ExecutionContext.global)
-    extends SimulatorExecutor[Int] with SimplePiObservable[Int] {
+    extends ProcessExecutor[Int] with SimplePiObservable[Int] {
 
   def this() = this(SimpleInstanceStore[Int]())
   
@@ -102,6 +102,4 @@ class MultiStateExecutor(var store: PiInstanceStore[Int])
     System.err.println("*** [" + id + "] Received result for thread " + ref + " : " + res)
     run(id,{x => x.postResult(ref, res)})
   }
-
-  override def simulationReady: Boolean = store.simulationReady
 }

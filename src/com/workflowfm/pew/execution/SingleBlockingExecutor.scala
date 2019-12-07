@@ -48,8 +48,6 @@ case class SingleBlockingExecutor(implicit val context:ExecutionContext) { // ex
     }
   }
   
-  //override def simulationReady:Boolean = true
-  
   def execute(process:PiProcess,args:Seq[Any]):Option[Any] =
     call(process,args map PiObject.apply)
 }

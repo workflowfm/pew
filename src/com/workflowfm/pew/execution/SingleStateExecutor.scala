@@ -104,10 +104,5 @@ class SingleStateExecutor(override implicit val executionContext: ExecutionConte
         }
     }
   }
- 
-  def simulationReady:Boolean = instance match {
-    case None => true
-    case Some(i) => i.simulationReady
-  }
   
 }

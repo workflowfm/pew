@@ -12,11 +12,8 @@ import akka.util.Timeout
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 
-trait SimulatedPiProcess extends AtomicProcess with SimulatedProcess {
-  override def isSimulatedProcess = true
-
+trait PiSimulatedProcess extends AtomicProcess with SimulatedProcess {
   override val iname = s"$simulationName.$name"
-
 
   // TODO We never actually wait for these asks, so there is still a chance the ordering will be messed up
   // if the messages are delayed

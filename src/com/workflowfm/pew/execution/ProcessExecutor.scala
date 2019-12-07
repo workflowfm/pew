@@ -146,27 +146,3 @@ object ProcessExecutor {
   final case class AlreadyExecutingException(private val cause: Throwable = None.orNull)
                     extends Exception("Unable to execute more than one process at a time", cause)
 }
-
-trait SimulatorExecutor[KeyT] extends ProcessExecutor[KeyT] { this:PiObservable[KeyT] =>
-  /**
-    *  This should check all executing PiInstances if they are simulationReady.
-    *  This means that all possible execution has been performed and they are all
-    *  waiting for simulation time to pass.
-    *  @return true if all PiInstances are simulationReady
-    */
-  def simulationReady:Boolean
-
-  /**
-    * Executes a process with a ResultHandler
-    * Same as ProcessExecutor.execute but blocks until call has been initiated.
-    * The simulator needs to ensure this has happened before continuing.
-    * @param process The (atomic or composite) PiProcess to be executed
-    * @param args The (real) arguments to be passed to the process
-    * @return A Future with the result of the executed process
-    */
-  def simulate(process:PiProcess,args:Seq[Any],timeout:FiniteDuration=10.seconds):Future[Any] = {
-    val f = call(process,args,new ResultHandlerFactory[KeyT])
-    val handler = Await.result(f, timeout)
-    handler.future
-  }
-}

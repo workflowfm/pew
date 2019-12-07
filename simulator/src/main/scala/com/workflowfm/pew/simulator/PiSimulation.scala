@@ -3,7 +3,7 @@ package com.workflowfm.pew.simulator
 import akka.actor.{ ActorRef, Props }
 import com.workflowfm.pew.stream.{ PiEventHandler, PiEventHandlerFactory }
 import com.workflowfm.pew.{ PiProcess, PiInstance }
-import com.workflowfm.pew.execution.SimulatorExecutor
+import com.workflowfm.pew.execution.ProcessExecutor
 import com.workflowfm.simulator.{ Coordinator, Task }
 import com.workflowfm.simulator.{ SimulatedProcess, SimulationActor, TaskGenerator }
 import java.util.UUID
@@ -25,7 +25,7 @@ abstract class PiSimulationActor[T] (override val name: String, override val coo
 
   def getProcesses(): Seq[PiProcess] = rootProcess :: rootProcess.allDependencies.toList
 
-  def executor: SimulatorExecutor[T]
+  def executor: ProcessExecutor[T]
   val factory = new PiSimHandlerFactory[T](self)
 
   override def run(): Future[Any] = {
@@ -68,7 +68,7 @@ abstract class PiSimulationActor[T] (override val name: String, override val coo
 
   def executorReady(i: PiInstance[_]) = {
     val procs = i.getCalledProcesses
-    if (procs.forall(_.isSimulatedProcess)) {
+    if (procs.forall(_.isInstanceOf[PiSimulatedProcess])) {
       waiting = procs map (_.iname)
       executorIsReady = true
       readyCheck()
