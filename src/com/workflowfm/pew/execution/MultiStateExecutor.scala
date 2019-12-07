@@ -21,8 +21,6 @@ class MultiStateExecutor(var store: PiInstanceStore[Int])
   def this() = this(SimpleInstanceStore[Int]())
   
   var ctr:Int = 0
-  
-  override protected def init(p: PiProcess, args: Seq[PiObject]): Future[Int] = init(PiInstance(ctr,p,args:_*))
 
   override protected def init(instance: PiInstance[_]): Future[Int] = store.synchronized {
     store = store.put(instance.copy(id = ctr))

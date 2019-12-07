@@ -37,7 +37,7 @@ trait ProcessExecutor[KeyT] { this: PiObservable[KeyT] =>
     * @param args The PiObject arguments to be passed to the process
     * @return A Future with the new unique ID that was generated
     */
-  protected def init(process: PiProcess, args: Seq[PiObject]): Future[KeyT]
+  protected def init(process: PiProcess, args: Seq[PiObject]): Future[KeyT] = init(PiInstance(0, process, args: _*))
 
   /**
     * Initializes a PiInstance for a process execution.
@@ -128,7 +128,7 @@ trait ProcessExecutor[KeyT] { this: PiObservable[KeyT] =>
     * @param instance The PiInstance to be executed
     * @return A Future with the result of the executed process
     */
-  def execute(process:PiProcess,args:Seq[Any]):Future[Any] =
+  def execute(process: PiProcess, args: Seq[Any]): Future[Any] =
     call(process, args, new ResultHandlerFactory[KeyT]) flatMap (_.future)
 
   /**

@@ -102,7 +102,7 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     r3 should be (("PbISleptFor1s","PcISleptFor1s"))
   }
   
-  it should "execute Rexample twice, each with a differnt component" in {
+  it should "execute Rexample twice, each with a different component" in {
     val ex = new AkkaExecutor()
     val f1 = ex.execute(ri,Seq(11))
     val f2 = ex.execute(ri2,Seq(11))
@@ -209,6 +209,17 @@ class AkkaExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll wi
     r1 should be (11)
     val r2 = await(f2)
     r2 should be (11)
+  }
+
+
+  it should "execute a reduced Rexample instance" in {
+    val ex = new AkkaExecutor()
+
+    val instance = PiInstance(0,ri,PiObject(11)).reduce.postResult(0, PiObject((1,2))).reduce
+    val f1 = ex.execute(instance)
+    
+    val r1 = await(f1)
+    r1 should be (("PbISleptFor1s","PcISleptFor2s"))
   }
 }
 
