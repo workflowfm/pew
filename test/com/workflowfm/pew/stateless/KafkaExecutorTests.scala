@@ -289,7 +289,7 @@ class KafkaExecutorTests
   }
 
   def baremetalCall( ex: CustomKafkaExecutor, p: PiProcess, args: PiObject*  ): Future[Any] = {
-    val piiId = await( ex.init( p, args.toSeq ) )
+    val piiId = await( ex.init( PiInstance(0, p, args:_* ) ) )
     val handler = new ResultHandler(piiId)
     ex.subscribe(handler)
 

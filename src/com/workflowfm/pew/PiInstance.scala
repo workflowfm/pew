@@ -58,7 +58,10 @@ case class PiInstance[T](final val id:T, called:Seq[Int], process:PiProcess, sta
   }
 
   def getCalledProcesses: Seq[PiProcess] = state.threads flatMap { f => getProc(f._2.fun) } toSeq
-  
+
+  def updateProcs(m: Map[String,PiProcess]) = copy(state = state.updateProcs(m))
+  def updateProcs(f: PiProcess => PiProcess) = copy(state = state.updateProcs(f))
+
   /**
    * Should the simulator wait for the workflow?
    */

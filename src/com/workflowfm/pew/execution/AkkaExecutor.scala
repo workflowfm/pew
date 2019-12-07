@@ -36,18 +36,18 @@ class AkkaExecutor (
   implicit val tOut = Timeout(timeout)
   
   override def simulationReady = Await.result(execActor ? AkkaExecutor.SimReady,timeout).asInstanceOf[Boolean]
-  
-  override protected def init(process:PiProcess,args:Seq[PiObject]):Future[UUID] =
-    execActor ? AkkaExecutor.Init(process,args) map (_.asInstanceOf[UUID])
-  
-  override protected def start(id:UUID) = execActor ! AkkaExecutor.Start(id)
 
-  override def subscribe(handler:PiEventHandler[UUID]):Future[PiSwitch] = (execActor ? AkkaExecutor.Subscribe(handler)).mapTo[PiSwitch]
+  override protected def init(instance: PiInstance[_]): Future[UUID] =
+    execActor ? AkkaExecutor.Init(instance) map (_.asInstanceOf[UUID])
+
+  override protected def start(id: UUID) = execActor ! AkkaExecutor.Start(id)
+
+  override def subscribe(handler: PiEventHandler[UUID]): Future[PiSwitch] = (execActor ? AkkaExecutor.Subscribe(handler)).mapTo[PiSwitch]
 
 }
 
 object AkkaExecutor {
-  case class Init(p:PiProcess,args:Seq[PiObject])
+  case class Init(instance: PiInstance[_])
   case class Start(id:UUID)
   case class Result(id:UUID,ref:Int,res:MetadataAtomicProcess.MetadataAtomicResult)
   case class Error(id:UUID,ref:Int,ex:Throwable)
@@ -78,11 +78,10 @@ class AkkaExecActor(
   override implicit val tag: ClassTag[PiEvent[UUID]]
 ) extends Actor with PiStream[UUID] {
 
-  def init(p:PiProcess,args:Seq[PiObject]):UUID = {
+  def init(instance: PiInstance[_]): UUID = {
     val id = java.util.UUID.randomUUID
-	val inst = PiInstance(id,p,args:_*)
-	store = store.put(inst)
-	id
+    store = store.put(instance.copy(id = id))
+    id
   }
   
   def start(id:UUID):Unit = store.get(id) match {
@@ -185,7 +184,7 @@ class AkkaExecActor(
   def simulationReady():Boolean = store.simulationReady
   
   def akkaReceive: Receive = {
-    case AkkaExecutor.Init(p,args) => sender() ! init(p,args)
+    case AkkaExecutor.Init(inst) => sender() ! init(inst)
     case AkkaExecutor.Start(id) => start(id)
     case AkkaExecutor.Result(id,ref,res) => postResult(id,ref,res)
     case AkkaExecutor.Error(id,ref,ex) => {
@@ -205,7 +204,6 @@ class AkkaExecActor(
 class AkkaAtomicProcessExecutor(implicit val exc: ExecutionContext = ExecutionContext.global) extends Actor { //(executor:ActorRef,p:PiProcess,args:Seq[PiObject])
   def receive = {
     case AkkaExecutor.ACall(id,ref,p,args,actor) => {
-      //System.err.println("*** [" + id + "] Calling atomic process: " + p.name + " ref:" + ref)
       p.runMeta(args).onComplete{
         case Success(res) => actor ! AkkaExecutor.Result(id,ref,res)
         case Failure(ex) => actor ! AkkaExecutor.Error(id,ref,ex)
