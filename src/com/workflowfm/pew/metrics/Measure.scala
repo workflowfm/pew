@@ -203,6 +203,7 @@ class MetricsHandler[KeyT](timeFn: PiMetadata.Key[Long] = PiMetadata.SystemTime 
       case PiEventCall(i,r,p,_,t) => procCall( i, r, p.iname, timeFn(t) )
       case PiEventReturn(i,r,s,t) => procReturn( i, r, s, timeFn(t) )
       case PiFailureAtomicProcessException(i,r,m,_,t) => processFailure( i, r, m, timeFn(t) )
+      case PiEventIdle(_, _) => Unit
 
       case ev: PiFailure[KeyT] =>
         workflowException( ev.id, ev.exception, timeFn(ev.metadata) )

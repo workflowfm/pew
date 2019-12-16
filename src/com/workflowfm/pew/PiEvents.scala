@@ -364,7 +364,7 @@ case class PiEventCall[KeyT](
   *
   * @tparam KeyT The type used to identify PiInstances.
   */
-trait PiEventCallEnd[KeyT] extends PiAtomicProcessEvent[KeyT]
+sealed trait PiEventCallEnd[KeyT] extends PiAtomicProcessEvent[KeyT]
 
 /** Denotes the successful completion of execution of a AtomicProcess.
   *
