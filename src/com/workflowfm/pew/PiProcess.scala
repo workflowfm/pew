@@ -20,9 +20,9 @@ sealed trait PiProcess {
   def inputs:Seq[(PiObject,String)] // List of (type,channel) for each input.
   def channels:Seq[String] = output._2 +: (inputs map (_._2)) // order of channels is important for correct process calls!
       
-  def dependencies:Seq[PiProcess] // dependencies of composite processes
+  val dependencies:Seq[PiProcess] // dependencies of composite processes
   
-  def allDependencies:Seq[PiProcess] = PiProcess.allDependenciesOf(this) // all ancestors (i.e. including dependencies of dependencies
+  lazy val allDependencies:Seq[PiProcess] = PiProcess.allDependenciesOf(this) // all ancestors (i.e. including dependencies of dependencies
   
   /**
    * Initializes a PiState that executes this process with a given list of PiObject arguments.
