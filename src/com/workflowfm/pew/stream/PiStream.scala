@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import akka.stream.KillSwitch
 import com.workflowfm.pew.{ PiEvent, PiEventResult }
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import uk.ac.ed.inf.ppapapan.subakka.{ HashSetPublisher, Subscriber, SubscriptionSwitch }
 
@@ -21,9 +22,12 @@ class PiSubscriber[T](handler: PiEventHandler[T]) extends Subscriber[PiEvent[T]]
 trait PiStream[T] extends PiPublisher[T] with HashSetPublisher[PiEvent[T]] with PiObservable[T] {
   implicit val tag: ClassTag[PiEvent[T]]
   implicit val executionContext: ExecutionContext
+  implicit val timeout: FiniteDuration
 
   override def subscribe(handler:PiEventHandler[T]):Future[PiSwitch] = {
-    new PiSubscriber[T](handler).subscribeTo(self)(context.system,tag) map { i => PiKillSwitch(i.killSwitch) }
+    new PiSubscriber[T](handler).subscribeTo(self, None, timeout)(context.system,tag) map {
+      i => PiKillSwitch(i.killSwitch)
+    }
   }
 }
 

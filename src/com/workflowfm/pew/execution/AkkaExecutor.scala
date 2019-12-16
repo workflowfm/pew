@@ -62,8 +62,8 @@ object AkkaExecutor {
   def atomicprops(implicit context: ExecutionContext = ExecutionContext.global): Props = Props(new AkkaAtomicProcessExecutor())
 
   def execprops(store: PiInstanceStore[UUID], atomicExecutor: ActorRef)
-    (implicit system: ActorSystem): Props = Props(
-    new AkkaExecActor(store,atomicExecutor)(system.dispatcher, implicitly[ClassTag[PiEvent[UUID]]])
+    (implicit system: ActorSystem, timeout: FiniteDuration): Props = Props(
+    new AkkaExecActor(store,atomicExecutor)(system.dispatcher, implicitly[ClassTag[PiEvent[UUID]]], timeout)
   )
 }
 
@@ -72,7 +72,8 @@ class AkkaExecActor(
   atomicExecutor: ActorRef
 )(
   implicit val executionContext: ExecutionContext,
-  override implicit val tag: ClassTag[PiEvent[UUID]]
+  override implicit val tag: ClassTag[PiEvent[UUID]],
+  override implicit val timeout: FiniteDuration
 ) extends Actor with PiStream[UUID] {
 
   def init(instance: PiInstance[_]): UUID = {
