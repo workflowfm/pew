@@ -51,7 +51,7 @@ lazy val simulator = project
   .settings(
     commonSettings,
     name := "pew-simulator",
-    libraryDependencies += "com.workflowfm" %% "wfm-simulator" % "0.2"
+    libraryDependencies += "com.workflowfm" %% "wfm-simulator" % "0.2.1"
   ).dependsOn(rootRef)
 
 
