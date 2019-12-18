@@ -15,8 +15,7 @@ import scala.util.{Failure, Success}
 import java.util.UUID
 
 class AkkaExecutor (
-  store:PiInstanceStore[UUID],
-  atomicExecutor: ActorRef
+  store:PiInstanceStore[UUID]
 )(
   implicit val system: ActorSystem,
   implicit val timeout: FiniteDuration
@@ -25,14 +24,10 @@ class AkkaExecutor (
   implicit val tag: ClassTag[UUID] = ClassTag(classOf[UUID])
   override implicit val executionContext: ExecutionContext = system.dispatcher
 
-  def this(store: PiInstanceStore[UUID])
-    (implicit system: ActorSystem, timeout: FiniteDuration) =
-    this(store,system.actorOf(AkkaExecutor.atomicprops()))
-
   def this()(implicit system: ActorSystem, timeout: FiniteDuration = 10.seconds) =
-    this(SimpleInstanceStore[UUID](),system.actorOf(AkkaExecutor.atomicprops()))(system,timeout)
+    this(SimpleInstanceStore[UUID]())(system,timeout)
 
-  val execActor = system.actorOf(AkkaExecutor.execprops(store, atomicExecutor))
+  val execActor = system.actorOf(AkkaExecutor.execprops(store))
   implicit val tOut = Timeout(timeout)
 
   override protected def init(instance: PiInstance[_]): Future[UUID] =
@@ -59,17 +54,14 @@ object AkkaExecutor {
   
   case class Subscribe(handler:PiEventHandler[UUID])
 
-  def atomicprops(implicit context: ExecutionContext = ExecutionContext.global): Props = Props(new AkkaAtomicProcessExecutor())
-
-  def execprops(store: PiInstanceStore[UUID], atomicExecutor: ActorRef)
+  def execprops(store: PiInstanceStore[UUID])
     (implicit system: ActorSystem, timeout: FiniteDuration): Props = Props(
-    new AkkaExecActor(store,atomicExecutor)(system.dispatcher, implicitly[ClassTag[PiEvent[UUID]]], timeout)
+    new AkkaExecActor(store)(system.dispatcher, implicitly[ClassTag[PiEvent[UUID]]], timeout)
   )
 }
 
 class AkkaExecActor(
   var store:PiInstanceStore[UUID],
-  atomicExecutor: ActorRef
 )(
   implicit val executionContext: ExecutionContext,
   override implicit val tag: ClassTag[PiEvent[UUID]],
@@ -167,8 +159,10 @@ class AkkaExecActor(
           val objs = args map (_.obj)
           try {
             publish(PiEventCall(i.id,ref,p,objs))
-            // TODO Change from ! to ? to require an acknowledgement
-            atomicExecutor ! AkkaExecutor.ACall(i.id,ref,p,objs,self)
+            p.runMeta(objs).onComplete{
+              case Success(res) => self ! AkkaExecutor.Result(i.id,ref,res)
+              case Failure(ex) => self ! AkkaExecutor.Error(i.id,ref,ex)
+            }
           } catch {
             case _:Throwable => Unit //TODO specify timeout exception here! - also print a warning
           }
@@ -194,17 +188,4 @@ class AkkaExecActor(
   }
 
   override def receive = LoggingReceive { publisherBehaviour orElse akkaReceive }
-}
-
-class AkkaAtomicProcessExecutor(implicit val exc: ExecutionContext = ExecutionContext.global) extends Actor { //(executor:ActorRef,p:PiProcess,args:Seq[PiObject])
-  def receive = {
-    case AkkaExecutor.ACall(id,ref,p,args,actor) => {
-      p.runMeta(args).onComplete{
-        case Success(res) => actor ! AkkaExecutor.Result(id,ref,res)
-        case Failure(ex) => actor ! AkkaExecutor.Error(id,ref,ex)
-      }
-      actor ! AkkaExecutor.AckCall
-    }
-    case m => System.err.println("!! Received unknown message: " + m)
-  }
 }
