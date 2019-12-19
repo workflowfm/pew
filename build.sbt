@@ -19,15 +19,15 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.0-SNAP10" % "test"
 libraryDependencies += "org.scalamock" %% "scalamock" % "4.1.0" % Test
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.4.12"
-libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.5.16" % "test"
+libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.6.1"
+libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % "2.6.1" % "test"
 
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.3.2"
 
-libraryDependencies += "com.typesafe.akka" %% "akka-stream-kafka" % "0.21.1"
-libraryDependencies += "com.typesafe.akka" %% "akka-stream"       % "2.5.13"
-libraryDependencies += "com.typesafe.akka" %% "akka-http"         % "10.1.3"
-libraryDependencies += "de.heikoseeberger" %% "akka-http-jackson" % "1.21.0"
+libraryDependencies += "com.typesafe.akka" %% "akka-stream-kafka" % "1.1.0"
+libraryDependencies += "com.typesafe.akka" %% "akka-stream"       % "2.6.1"
+libraryDependencies += "com.typesafe.akka" %% "akka-http"         % "10.1.11"
+libraryDependencies += "de.heikoseeberger" %% "akka-http-jackson" % "1.27.0"
 libraryDependencies += "org.apache.kafka"  %% "kafka"             % "1.1.0"
 libraryDependencies += "org.apache.kafka"  %  "kafka-streams"     % "1.1.0"
 

@@ -9,7 +9,6 @@ import akka.{Done, NotUsed}
 import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorEnvironment
 import com.workflowfm.pew.util.ClassLoaderUtil.withClassLoader
-import org.apache.kafka.clients.producer.KafkaProducer
 import org.bson.types.ObjectId
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -147,9 +146,10 @@ object Tracked {
     *
     * (Note: Use `lazyProducer` to minimize the number of new Producers which are created,
     * this reduces the number of system resources used (such as file handles))
+    * Note on the note: lazyProducer is no longer available in the latest version
     */
-  def createProducer[K, V]( settings: ProducerSettings[K, V] ): KafkaProducer[K, V]
-    = withClassLoader( null ) { settings.lazyProducer }
+  def createProducer[K, V]( settings: ProducerSettings[K, V] ): org.apache.kafka.clients.producer.Producer[K, V]
+    = withClassLoader( null ) { settings.createKafkaProducer() }
 }
 
 /** A Tracked type which uses a `Committable` as tracking information.
