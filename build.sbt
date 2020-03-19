@@ -3,7 +3,7 @@ sbtVersion := "1.2.6"
 lazy val commonSettings = Seq (
 	version := "1.4.0-SNAPSHOT",
 	organization := "com.workflowfm",
-	scalaVersion := "2.12.6"
+	scalaVersion := "2.12.10"
 )
 
 autoAPIMappings := true
