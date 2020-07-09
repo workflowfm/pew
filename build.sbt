@@ -1,7 +1,7 @@
 sbtVersion := "1.2.6"
 
 lazy val commonSettings = Seq (
-	version := "1.4.0-SNAPSHOT",
+	version := "1.4.0",
 	organization := "com.workflowfm",
 	scalaVersion := "2.12.10"
 )
