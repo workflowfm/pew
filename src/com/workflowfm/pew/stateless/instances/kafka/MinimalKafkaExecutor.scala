@@ -4,6 +4,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.workflowfm.pew._
+import com.workflowfm.pew.stream.{ PiObservable, DelegatedPiObservable }
 import com.workflowfm.pew.stateless._
 import com.workflowfm.pew.stateless.components.ResultListener
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
@@ -33,19 +34,13 @@ class MinimalKafkaExecutor( implicit val environment: KafkaExecutorEnvironment )
 
   protected var piiStore: PiInstanceStore[ObjectId] = SimpleInstanceStore()
 
-  /**
-    * Initializes a PiInstance for a process execution.
-    * This is always and only invoked before a {@code start}, hence why it is protected.
-    * This separation gives a chance to PiEventHandlers to subscribe before execution starts.
-    * @param process The (atomic or composite) PiProcess to be executed
-    * @param args The PiObject arguments to be passed to the process
-    * @return A Future with the new unique ID that was generated
-    */
-  override def init( process: PiProcess, args: Seq[PiObject] ): Future[ObjectId] = {
+
+
+  override def init( instance: PiInstance[_] ): Future[ObjectId] = {
     if (isShutdown) throw new ShutdownExecutorException( "`init` was called." )
 
     val piiId = ObjectId.get
-    piiStore = piiStore.put( PiInstance( piiId, process, args:_* ) )
+    piiStore = piiStore.put( instance.copy(id = piiId) )
     Future.successful( piiId )
   }
 

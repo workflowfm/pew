@@ -78,6 +78,7 @@ object PiEvent {
     // PiInstance Level PiEvents
     case e: PiEventStart[KeyT] => e.copy( metadata = fn( e.metadata ) )
     case e: PiEventResult[KeyT] => e.copy( metadata = fn( e.metadata ) )
+    case e: PiEventIdle[KeyT] => e.copy( metadata = fn( e.metadata ) )
 
     // PiInstance Level PiFailures
     case e: PiFailureNoResult[KeyT] => e.copy( metadata = fn( e.metadata ) )
@@ -136,6 +137,25 @@ case class PiEventResult[KeyT](
   override def id: KeyT = i.id
   override def asString: String = s" === [$id] FINAL STATE === \n${i.state}\n === === === === === === === ===\n" +
     s" === [$id] RESULT: $res"
+}
+
+/** Denotes the completion of all reductions and process calls.
+  * We are waiting for at least one process call to complete.
+  * This is useful in simulations so we know when to progress in virtual time. 
+  *
+  * @note Not all executor implementations fire this event. 
+  * @param i PiInstance representing the current state.
+  * @param metadata Metadata object.
+  * @tparam KeyT The type used to identify PiInstances.
+  */
+case class PiEventIdle[KeyT](
+    i: PiInstance[KeyT],
+    override val metadata: PiMetadataMap = PiMetadata()
+
+  ) extends PiEvent[KeyT] with PiEventFinish[KeyT] {
+
+  override def id: KeyT = i.id
+  override def asString: String = s" === [$id] Idling... "
 }
 
 
@@ -344,7 +364,7 @@ case class PiEventCall[KeyT](
   *
   * @tparam KeyT The type used to identify PiInstances.
   */
-trait PiEventCallEnd[KeyT] extends PiAtomicProcessEvent[KeyT]
+sealed trait PiEventCallEnd[KeyT] extends PiAtomicProcessEvent[KeyT]
 
 /** Denotes the successful completion of execution of a AtomicProcess.
   *
@@ -407,114 +427,4 @@ case class PiFailureAtomicProcessException[KeyT](
 object PiFailureAtomicProcessException {
   def apply[KeyT]( id: KeyT, ref: Int, ex: Throwable, metadata: PiMetadataMap = PiMetadata() ): PiFailureAtomicProcessException[KeyT]
     = PiFailureAtomicProcessException[KeyT]( id, ref, ex.getLocalizedMessage, ex.getStackTrace, metadata )
-}
-
-
-////////////////////
-// PiEventHanders //
-////////////////////
-
-// Return true if the handler is done and needs to be unsubscribed.
-
-trait PiEventHandler[KeyT] extends (PiEvent[KeyT]=>Boolean) {
-  def name:String
-  def and(h:PiEventHandler[KeyT]) = MultiPiEventHandler(this,h)
-}
-
-trait PiEventHandlerFactory[T,H <: PiEventHandler[T]] {
-  def build(id:T):H
-}
-
-class PrintEventHandler[T](override val name:String) extends PiEventHandler[T] {
-  val formatter = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss.SSS")
-  override def apply(e:PiEvent[T]) = {
-    val time = formatter.format(e.rawTime)
-    System.err.println("["+time+"]" + e.asString)
-    false
-  }
-}
-
-
-class PromiseHandler[T](override val name:String, val id:T) extends PiEventHandler[T] {
-  val promise = Promise[Any]()
-  def future = promise.future
-
-  // class PromiseException(message:String) extends Exception(message)
-
-  override def apply(e:PiEvent[T]) = if (e.id == this.id) e match {
-    case PiEventResult(i,res,_) => promise.success(res); true
-    case ex: PiFailure[T] => promise.failure( ex.exception ); true
-    case _ => false
-  } else false
-}
-
-class PromiseHandlerFactory[T](name:T=>String) extends PiEventHandlerFactory[T,PromiseHandler[T]] {
-  def this(name:String) = this { _:T => name }
-  override def build(id:T) = new PromiseHandler[T](name(id),id)
-}
-
-
-
-class CounterHandler[T](override val name:String, val id:T) extends PiEventHandler[T] {
-  private var counter:Int = 0
-  def count = counter
-  val promise = Promise[Int]()
-  def future = promise.future
-
-  override def apply(e:PiEvent[T]) = if (e.id == this.id) e match {
-    case PiEventResult(i,res,_) => counter += 1 ; promise.success(counter) ; true
-    case ex: PiFailure[T] => counter += 1; promise.success(counter) ; true
-    case _ => counter += 1 ; false
-  } else false 
-}
-
-class CounterHandlerFactory[T](name:T=>String) extends PiEventHandlerFactory[T,CounterHandler[T]] {
-  def this(name:String) = this { _:T => name }
-  override def build(id:T) = new CounterHandler[T](name(id),id)
-}
-
-
-case class MultiPiEventHandler[T](handlers:Queue[PiEventHandler[T]]) extends PiEventHandler[T] {
-  override def name = handlers map (_.name) mkString(",")
-  override def apply(e:PiEvent[T]) = handlers map (_(e)) forall (_ == true)
-  override def and(h:PiEventHandler[T]) = MultiPiEventHandler(handlers :+ h)
-}
-  
-object MultiPiEventHandler {
-  def apply[T](handlers:PiEventHandler[T]*):MultiPiEventHandler[T] = MultiPiEventHandler[T](Queue[PiEventHandler[T]]() ++ handlers)
-}
-
-
-trait PiObservable[T] {
-  def subscribe(handler:PiEventHandler[T]):Future[Boolean]
-  def unsubscribe(handlerName:String):Future[Boolean]
-}
-
-trait SimplePiObservable[T] extends PiObservable[T] {
-  import collection.mutable.Map
-
-  implicit val executionContext:ExecutionContext
-
-  val handlers:Map[String,PiEventHandler[T]] = Map[String,PiEventHandler[T]]()
-  
-  override def subscribe(handler:PiEventHandler[T]):Future[Boolean] = Future {
-    //System.err.println("Subscribed: " + handler.name)
-    handlers += (handler.name -> handler)
-    true
-  }
-  
-  override def unsubscribe(handlerName:String):Future[Boolean] = Future {
-    handlers.remove(handlerName).isDefined
-  }
-  
-  def publish(evt:PiEvent[T]) = {
-    handlers.retain((k,v) => !v(evt))
-  }
-}
-
-trait DelegatedPiObservable[T] extends PiObservable[T] {
-  val worker: PiObservable[T]
-
-  override def subscribe( handler: PiEventHandler[T] ): Future[Boolean] = worker.subscribe( handler )
-  override def unsubscribe( handlerName: String ): Future[Boolean] = worker.unsubscribe( handlerName )
 }

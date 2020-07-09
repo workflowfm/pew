@@ -12,7 +12,7 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 import com.workflowfm.pew._
-
+import com.workflowfm.pew.stream._
 
 
 @RunWith(classOf[JUnitRunner])
@@ -28,20 +28,20 @@ class SingleStateExecutorTests extends FlatSpec with Matchers with ProcessExecut
   val rif = new R(pai,pbi,pcif)
   
   "SingleStateExecutor" should "execute Rexample concurrently" in {
-    val executor = new SingleStateExecutor(pai,pbi,pci,ri)
-    executor.subscribe(new PrintEventHandler("printer"))
+    val executor = new SingleStateExecutor()
+    executor.subscribe(new PrintEventHandler)
 		exe(executor,ri,13)//.isEmpty should be( false )
-		//exe(new SingleStateExecutor(pai,pbi,pci,ri),ri,31)//.isEmpty should be( false )
+		//exe(new SingleStateExecutor(),ri,31)//.isEmpty should be( false )
 	}
 	
   "SingleStateExecutor" should "handle a failing component process" in {
-    val ex = new SingleStateExecutor(pai,pbi,pcif,rif)
+    val ex = new SingleStateExecutor()
     val f1 = rif(21)(ex)//ex.execute(rif,Seq(21)) 
    
     try {
       await(f1)
     } catch {
-      case (e:Exception) => e.getMessage.contains("Exception: Fail") should be (true)
+      case (e:Exception) => e.getMessage.contains("Fail") should be (true)
     }
 	}
   
@@ -54,7 +54,7 @@ class SingleStateExecutorTests extends FlatSpec with Matchers with ProcessExecut
 //	}
   
 	"SingleStateExecutor" should "execute C1" in {
-	  val executor = new SingleStateExecutor(P1,C1)
+	  val executor = new SingleStateExecutor()
 		exe(executor,C1,("OH","HAI!")) should be( "OH++HAI!" )
 	}
 	
@@ -78,7 +78,7 @@ class SingleStateExecutorTests extends FlatSpec with Matchers with ProcessExecut
 	
 	
 	"SingleStateExecutor" should "execute C2" in {
-		exe(new SingleStateExecutor(P2A,P2B,C2),C2,"HI:") should be( "HI:AABB" )
+		exe(new SingleStateExecutor(),C2,"HI:") should be( "HI:AABB" )
 	}
 	
 	object P2A extends AtomicProcess { // X -> XAA
@@ -111,7 +111,7 @@ class SingleStateExecutorTests extends FlatSpec with Matchers with ProcessExecut
 	
 	
   "SingleStateExecutor" should "execute C3" in {
-		exe(new SingleStateExecutor(P3A,P3B,C3),C3,"HI:") should be( ("HI:AARR","HI:BB") )
+		exe(new SingleStateExecutor(),C3,"HI:") should be( ("HI:AARR","HI:BB") )
 	}
 	
 	object P3A extends AtomicProcess { // X -> (XAA,XBB)

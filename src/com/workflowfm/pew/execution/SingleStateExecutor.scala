@@ -1,6 +1,7 @@
 package com.workflowfm.pew.execution
 
 import com.workflowfm.pew._
+import com.workflowfm.pew.stream.SimplePiObservable
 
 import scala.concurrent._
 import scala.util.{Failure, Success}
@@ -13,20 +14,16 @@ import scala.util.{Failure, Success}
  * promises/futures from the first workflow can trigger changes on the state!
  */
 
-class SingleStateExecutor(processes:PiProcessStore)
-  (override implicit val executionContext: ExecutionContext = ExecutionContext.global)
+class SingleStateExecutor(override implicit val executionContext: ExecutionContext = ExecutionContext.global)
     extends ProcessExecutor[Int] with SimplePiObservable[Int] {
-
-  def this(l:PiProcess*) = this(SimpleProcessStore(l :_*))
   
   var ctr:Int = 0
   var instance:Option[PiInstance[Int]] = None
-  
-  override protected def init(p:PiProcess,args:Seq[PiObject]):Future[Int] = Future {
-    if (instance.isDefined) throw new ProcessExecutor.AlreadyExecutingException()
+
+  override protected def init(instance: PiInstance[_]): Future[Int] = Future {
+    if (this.instance.isDefined) throw new ProcessExecutor.AlreadyExecutingException()
     else {
-      val inst = PiInstance(ctr,p,args:_*)
-      instance = Some(inst)
+      this.instance = Some(instance.copy(id = ctr))
       ctr = ctr + 1
       ctr - 1
     }
@@ -106,11 +103,6 @@ class SingleStateExecutor(processes:PiProcessStore)
           run
         }
     }
-  }
- 
-  def simulationReady:Boolean = instance match {
-    case None => true
-    case Some(i) => i.simulationReady
   }
   
 }

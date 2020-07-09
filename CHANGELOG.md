@@ -11,6 +11,15 @@ Includes feature updates, bug fixes, and open issues.
 * [AkkaExecutor.Call may timeout #4](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/4) - since v0.1
 
 
+## [v1.4.0](https://github.com/PetrosPapapa/WorkflowFM-PEW/releases/tag/v1.4.0) - 2019-07-01
+
+### Features
+
+* Improved `PiEventHandlers`. The `PromiseHandler` is now generalized to return a single object at the end of the workflow. The old `PromiseHandler` is an instance called `ResultHandler` (see also [#26](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/26)).
+* Implemented `PiStream` using Akka's `BroadcastHub` to enable more flexible event handling (see also [#34](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/34)). Executors can now be mixed in with (at least) either of the two default observables, namely `SimplePiObservable` and `PiStream`.
+* `SimMetricsActor` no longer keeps a reference to the `Coordinator`. This makes for a cleaner, more flexible implementation, allowing multiple simulations across multiple `Coordinator`s. The downside is that simulations can be run asynchronously, making it hard to disambiguate which results came from which `Coordinator`. We leave that problem to the user for now.
+
+
 ## [v1.3.0](https://github.com/PetrosPapapa/WorkflowFM-PEW/releases/tag/v1.3.0) - 2019-06-19
 
 For some unknown reason, the version number was increased in `build.sbt` back in December without actually merging the intended changes or creating a new tag. In the meantime, [#45](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/45)) was merged with various bug fixes and minor changes, the Ski example was updated and some documentation was added. I decided to create the tag now and push the stream changes to 1.4.0.

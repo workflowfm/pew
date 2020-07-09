@@ -56,18 +56,11 @@ case class PiInstance[T](final val id:T, called:Seq[Int], process:PiProcess, sta
       }
     }
   }
-  
-  /**
-   * Should the simulator wait for the workflow?
-   */
-  def simulationReady:Boolean = 
-    if (completed) true // workflow is done
-    else {
-      val procs = state.threads flatMap { f => getProc(f._2.fun) }
-      if (procs.isEmpty) false // workflow is not completed, so we either couldn't find a process with getProc or 
-                               // calls have not been converted to threads yet (so no fullreduce) for whatever reason
-      else procs.forall(_.isSimulatedProcess) // are all open threads simulated processes?
-    }
+
+  def getCalledProcesses: Seq[PiProcess] = state.threads flatMap { f => getProc(f._2.fun) } toSeq
+
+  def updateProcs(m: Map[String,PiProcess]) = copy(state = state.updateProcs(m))
+  def updateProcs(f: PiProcess => PiProcess) = copy(state = state.updateProcs(f))
 }
 object PiInstance {
   def apply[T](id:T,p:PiProcess,args:PiObject*):PiInstance[T] = PiInstance(id, Seq(), p, p.execState(args))
@@ -85,14 +78,12 @@ trait PiInstanceStore[T] {
   def get(id:T):Option[PiInstance[T]]
   def put(i:PiInstance[T]):PiInstanceStore[T]
   def del(id:T):PiInstanceStore[T]
-  def simulationReady:Boolean
 }
 
 trait PiInstanceMutableStore[T] {
   def get(id:T):Option[PiInstance[T]]
   def put(i:PiInstance[T]):Unit
   def del(id:T):Unit
-  def simulationReady:Boolean
 }
 
 case class SimpleInstanceStore[T](m: Map[T,PiInstance[T]]) extends PiInstanceStore[T] {
@@ -100,8 +91,7 @@ case class SimpleInstanceStore[T](m: Map[T,PiInstance[T]]) extends PiInstanceSto
   override def get(id: T): Option[PiInstance[T]] = m.get(id)
   override def put(i: PiInstance[T]): SimpleInstanceStore[T] = copy(m = m + (i.id->i))
   override def del(id: T): SimpleInstanceStore[T] = copy(m = m - id)
-  
-  override def simulationReady: Boolean = m.values.forall(_.simulationReady)
+
   /*{
     m.values.foreach { i => {
       val procs = i.state.threads.values.map(_.fun).mkString(", ")

@@ -20,9 +20,9 @@ sealed trait PiProcess {
   def inputs:Seq[(PiObject,String)] // List of (type,channel) for each input.
   def channels:Seq[String] = output._2 +: (inputs map (_._2)) // order of channels is important for correct process calls!
       
-  def dependencies:Seq[PiProcess] // dependencies of composite processes
+  val dependencies:Seq[PiProcess] // dependencies of composite processes
   
-  def allDependencies:Seq[PiProcess] = PiProcess.allDependenciesOf(this) // all ancestors (i.e. including dependencies of dependencies
+  lazy val allDependencies:Seq[PiProcess] = PiProcess.allDependenciesOf(this) // all ancestors (i.e. including dependencies of dependencies
   
   /**
    * Initializes a PiState that executes this process with a given list of PiObject arguments.
@@ -55,13 +55,6 @@ sealed trait PiProcess {
    * * Shortcut to create entries in name->PiProcess maps using the instance name	
    */
 	def toIEntry:(String,PiProcess) = iname->this 
-	
-	/**
-   * This is used to identify simulation processes that need (virtual) time to complete. 
-   * If a process is not a simulation process, then the simulator needs to wait for it to complete before 
-   * the next virtual tick.
-   */
-  def isSimulatedProcess = false
 }
 object PiProcess {
   def allDependenciesOf(p:PiProcess):Seq[PiProcess] =
@@ -99,7 +92,7 @@ trait AtomicProcess extends MetadataAtomicProcess {
 
   /** Implements the standard AtomicProcess interface for unsupporting ProcessExecutors.
     */
-  final override def runMeta( args: Seq[PiObject] )( implicit ec: ExecutionContext ): Future[MetadataAtomicResult]
+  override def runMeta( args: Seq[PiObject] )( implicit ec: ExecutionContext ): Future[MetadataAtomicResult]
     = run( args ).map(MetadataAtomicProcess.result(_))
 
   def run(args:Seq[PiObject])(implicit ec:ExecutionContext):Future[PiObject]

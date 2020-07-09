@@ -2,6 +2,7 @@ package com.workflowfm.pew.mongodb
 
 import com.workflowfm.pew._
 import com.workflowfm.pew.execution._
+import com.workflowfm.pew.stream.SimplePiObservable
 import com.workflowfm.pew.mongodb.bson.PiCodecProvider
 
 import scala.concurrent._
@@ -31,11 +32,11 @@ import org.mongodb.scala.ReadConcern
 import org.mongodb.scala.WriteConcern
 
 class MongoExecutor
-  (client:MongoClient, db:String, collection:String, processes:PiProcessStore)
+  (client: MongoClient, db: String, collection: String, processes: PiProcessStore)
   (implicit val executionContext: ExecutionContext = ExecutionContext.global)
     extends ProcessExecutor[ObjectId] with SimplePiObservable[ObjectId] {
 
-  def this(client:MongoClient, db:String, collection:String, l:PiProcess*) = this(client,db,collection,SimpleProcessStore(l :_*))
+  def this(client: MongoClient, db: String, collection: String, l: PiProcess*) = this(client,db,collection,SimpleProcessStore(l :_*))
   
   final val CAS_MAX_ATTEMPTS = 10
   final val CAS_WAIT_MS = 1
@@ -45,11 +46,11 @@ class MongoExecutor
     withCodecRegistry(codecRegistry).
     //withReadConcern(ReadConcern.LINEARIZABLE).
     withWriteConcern(WriteConcern.MAJORITY);
-  val col:MongoCollection[PiInstance[ObjectId]] = database.getCollection(collection)
+  val col: MongoCollection[PiInstance[ObjectId]] = database.getCollection(collection)
 
-  override def init(p:PiProcess,args:Seq[PiObject]):Future[ObjectId] = {
+  override def init(instance: PiInstance[_]): Future[ObjectId] = {
     val oid = new ObjectId
-	  val inst = PiInstance(oid,p,args:_*)
+	val inst = instance.copy(id = oid)
     col.insertOne(inst).toFuture() map (_=>oid)
   }
   

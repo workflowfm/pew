@@ -97,7 +97,7 @@ function workflow(datum) {
 function newWorkflow(datum) {
 	var selection = d3.select(this);
 	selection.append("p").text(datum.id);
-	selection.append("svg")
+	selection.append("svg").attr("class","timeline")
 		//.attr("width", '100%')
 		//.attr("width", totalTicks*widthPerTick);
 	displayResults(selection,datum.data);
@@ -117,7 +117,7 @@ function displayAll(tag,workflowData) {
 function displayOne(tag,workflowData) {
 	var div = d3.select(tag)//.data(workflowData)
 	div.selectAll("svg").remove()
-	div.append("svg")
+	div.append("svg").attr("class","timeline")
 	displayResults(div,workflowData)
 }
 

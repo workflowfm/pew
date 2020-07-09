@@ -2,6 +2,7 @@ package com.workflowfm.pew.mongodb
 
 import akka.actor.ActorSystem
 import com.workflowfm.pew._
+import com.workflowfm.pew.stream._
 import com.workflowfm.pew.execution.RexampleTypes._
 import com.workflowfm.pew.execution._
 import org.bson.types.ObjectId
@@ -115,7 +116,7 @@ class MongoExecutorTests extends FlatSpec with Matchers with BeforeAndAfterAll w
   it should "fail properly when a workflow doesn't exist" in {
     val ex = new MongoExecutor(client, "pew", "test_exec_insts",pai,pbi,pci,pci2,ri,ri2)
     val id = new ObjectId()
-    val handler = new PromiseHandler("unitHandler",id)
+    val handler = new ResultHandler(id)
     ex.subscribe(handler)
     ex.postResult(id, 0, MetadataAtomicProcess.result(PiItem(0)))
       
