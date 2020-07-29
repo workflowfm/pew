@@ -1,7 +1,7 @@
 sbtVersion := "1.2.6"
 
 lazy val commonSettings = Seq (
-	version := "1.4.0",
+	version := "1.4.1-SNAPSHOT",
 	organization := "com.workflowfm",
 	scalaVersion := "2.12.10"
 )
@@ -51,7 +51,7 @@ lazy val simulator = project
   .settings(
     commonSettings,
     name := "pew-simulator",
-    libraryDependencies += "com.workflowfm" %% "wfm-simulator" % "0.2.1"
+    libraryDependencies += "com.workflowfm" %% "wfm-simulator" % "0.3-SNAPSHOT"
   ).dependsOn(rootRef)
 
 
