@@ -35,7 +35,7 @@ object GetSkiMain {
     val procs: Seq[PiProcess] = Seq( selectModel, selectLength, cM2Inch, uSD2NOK, selectSki, getSki )
 
    	//implicit val executor:ProcessExecutor[_] = new MultiStateExecutor(procs:_*)
-	implicit val executor:AkkaExecutor =  new AkkaExecutor(procs:_*)
+	implicit val executor:AkkaExecutor =  new AkkaExecutor()
 
 	//val client = MongoClient()
     //implicit val executor = new MongoDBExecutor(client, "pew", "test_exec_insts", selectModel, selectLength, cM2Inch, uSD2NOK, selectSki, getSki)
