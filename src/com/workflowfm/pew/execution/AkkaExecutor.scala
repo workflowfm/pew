@@ -15,17 +15,14 @@ import scala.util.{Failure, Success}
 import java.util.UUID
 
 class AkkaExecutor (
-  store:PiInstanceStore[UUID]
+  store: PiInstanceStore[UUID] = SimpleInstanceStore[UUID]()
 )(
   implicit val system: ActorSystem,
-  implicit val timeout: FiniteDuration
+  implicit val timeout: FiniteDuration = 10.seconds
 ) extends ProcessExecutor[UUID] with PiObservable[UUID] {
 
   implicit val tag: ClassTag[UUID] = ClassTag(classOf[UUID])
   override implicit val executionContext: ExecutionContext = system.dispatcher
-
-  def this()(implicit system: ActorSystem, timeout: FiniteDuration = 10.seconds) =
-    this(SimpleInstanceStore[UUID]())(system,timeout)
 
   val execActor = system.actorOf(AkkaExecutor.execprops(store))
   implicit val tOut = Timeout(timeout)
@@ -56,25 +53,32 @@ object AkkaExecutor {
 
   def execprops(store: PiInstanceStore[UUID])
     (implicit system: ActorSystem, timeout: FiniteDuration): Props = Props(
-    new AkkaExecActor(store)(system.dispatcher, implicitly[ClassTag[PiEvent[UUID]]], timeout)
+    new AkkaExecActor(store)(system.dispatcher, timeout)
   )
 }
 
-class AkkaExecActor(
-  var store:PiInstanceStore[UUID],
+class AkkaExecActor (
+  override var store: PiInstanceStore[UUID],
 )(
-  implicit val executionContext: ExecutionContext,
-  override implicit val tag: ClassTag[PiEvent[UUID]],
+  override implicit val executionContext: ExecutionContext,
   override implicit val timeout: FiniteDuration
-) extends Actor with PiStream[UUID] {
+) extends AkkaExecutorActor
 
-  def init(instance: PiInstance[_]): UUID = {
+
+trait AkkaExecutorActor extends Actor with ProcessExecutor[UUID] with PiStream[UUID] {
+  var store: PiInstanceStore[UUID]
+  implicit val executionContext: ExecutionContext
+
+  override implicit val tag: ClassTag[PiEvent[UUID]] = ClassTag(classOf[PiEvent[UUID]]) 
+  override implicit val timeout: FiniteDuration
+
+  override def init(instance: PiInstance[_]): Future[UUID] = Future {
     val id = java.util.UUID.randomUUID
     store = store.put(instance.copy(id = id))
     id
   }
   
-  def start(id:UUID):Unit = store.get(id) match {
+  override def start(id: UUID): Unit = store.get(id) match {
     case None => publish(PiFailureNoSuchInstance(id))
     case Some(inst) => {
       publish(PiEventStart(inst))
@@ -91,7 +95,7 @@ class AkkaExecActor(
   	  } else {
   		val (toCall,resi) = ni.handleThreads(handleThread(ni))
   		val futureCalls = toCall flatMap (resi.piFutureOf)
-  		//System.err.println("*** [" + ctr + "] Updating state after init")
+
   		store = store.put(resi)
   		(toCall zip futureCalls) map runThread(resi)
         publish(PiEventIdle(resi))
@@ -104,9 +108,9 @@ class AkkaExecActor(
     store.get(id) match {
       case None => publish(PiFailureNoSuchInstance(id))
       case Some(i) =>
-        if (i.id != id) System.err.println("*** [" + id + "] Different instance ID encountered: " + i.id) // This should never happen. We trust the Instance Store!
+        if (i.id != id) System.err.println(s"*** [$id] Different instance ID encountered: ${i.id}") // This should never happen. We trust the Instance Store!
         else {
-          //System.err.println("*** [" + id + "] Running!")
+
           val ni = i.postResult(ref, res._1).reduce
     	  if (ni.completed) ni.result match {
       		case None => {
@@ -120,7 +124,7 @@ class AkkaExecActor(
     	  } else {
     		val (toCall,resi) = ni.handleThreads(handleThread(ni))
 		    val futureCalls = toCall flatMap (resi.piFutureOf)
-		    //System.err.println("*** [" + i.id + "] Updating state after: " + ref)
+
 			store = store.put(resi)
 		    (toCall zip futureCalls) map runThread(resi)
             publish(PiEventIdle(resi))
@@ -130,7 +134,6 @@ class AkkaExecActor(
   }
   
   def handleThread(i:PiInstance[UUID])(ref:Int,f:PiFuture):Boolean = {
-    //System.err.println("*** [" + id + "] Checking thread: " + ref + " (" + f.fun + ")")
     f match {
       case PiFuture(name, outChan, args) => i.getProc(name) match {
         case None => {
@@ -147,12 +150,11 @@ class AkkaExecActor(
   //
   
   def runThread(i:PiInstance[UUID])(t:(Int,PiFuture)):Unit = {
-    //System.err.println("*** [" + id + "] Running thread: " + t._1 + " (" + t._2.fun + ")")
     t match {
       case (ref,PiFuture(name, outChan, args)) => i.getProc(name) match {
         case None => {
           // This should never happen! We already checked!
-          System.err.println("*** [" + i.id + "] ERROR *** Unable to find process: " + name + " even though we checked already")
+          System.err.println(s"*** [${i.id}] ERROR *** Unable to find process: $name even though we checked already")
         }
         case Some(p:MetadataAtomicProcess) => {
           implicit val tOut = Timeout(1.second)
@@ -174,7 +176,7 @@ class AkkaExecActor(
     } }
 
   def akkaReceive: Receive = {
-    case AkkaExecutor.Init(inst) => sender() ! init(inst)
+    case AkkaExecutor.Init(inst) => init(inst) pipeTo sender()
     case AkkaExecutor.Start(id) => start(id)
     case AkkaExecutor.Result(id,ref,res) => postResult(id,ref,res)
     case AkkaExecutor.Error(id,ref,ex) => {
@@ -184,7 +186,6 @@ class AkkaExecActor(
     case AkkaExecutor.Ping => sender() ! AkkaExecutor.Ping
     case AkkaExecutor.AckCall => Unit
     case AkkaExecutor.Subscribe(h) => subscribe(h) pipeTo sender()
-    case m => System.err.println("!!! Received unknown message: " + m)
   }
 
   override def receive = LoggingReceive { publisherBehaviour orElse akkaReceive }
