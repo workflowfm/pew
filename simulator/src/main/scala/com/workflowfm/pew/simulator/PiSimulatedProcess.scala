@@ -17,18 +17,18 @@ trait PiSimulatedProcess extends AtomicProcess with SimulatedProcess {
 
   // TODO We never actually wait for these asks, so there is still a chance the ordering will be messed up
   // if the messages are delayed
-  def virtualWait() = (simulationActor ? PiSimulationActor.Waiting(iname))(Timeout(1, TimeUnit.DAYS))
-  def virtualResume() = (simulationActor ? PiSimulationActor.Resuming(iname))(Timeout(1, TimeUnit.DAYS))
+  override def simWait() = (simulationActor ? PiSimulation.Waiting(iname))(Timeout(1, TimeUnit.DAYS))
+  def simResume() = (simulationActor ? PiSimulation.Resuming(iname))(Timeout(1, TimeUnit.DAYS))
 
   override def simulate[T](
     gen: TaskGenerator,
     result: (Task, Long) => T,
     resources: String*
   )(implicit executionContext: ExecutionContext): Future[T] = {
-    val id = java.util.UUID.randomUUID
-    simulationActor ! PiSimulationActor.AddSource(id,iname)
-    val f = simulate(id,gen,result,resources:_*)
-    virtualWait()
+    val f = (simulationActor ? PiSimulation.AddTask(iname, gen, resources))(Timeout(1, TimeUnit.DAYS)).
+      mapTo[(Task,Long)].
+      map { case (task, time) => result(task,time) }
+    simWait()
     f
   }
 
