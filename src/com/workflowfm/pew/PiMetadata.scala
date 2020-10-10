@@ -22,30 +22,28 @@ object PiMetadata {
     * @param id The String key of the type of meta-data.
     * @tparam T The Scala-type of the type of meta-data.
     */
-  case class Key[T]( val id: String ) extends (PiMetadataMap => T) {
-    override def apply( meta: PiMetadataMap ): T
-      = meta(id).asInstanceOf[T]
+  case class Key[T](val id: String) extends (PiMetadataMap => T) {
+    override def apply(meta: PiMetadataMap): T = meta(id).asInstanceOf[T]
 
-    def get( meta: PiMetadataMap ): Option[T]
-      = meta.get(id).map( _.asInstanceOf[T] )
+    def get(meta: PiMetadataMap): Option[T] = meta.get(id).map(_.asInstanceOf[T])
   }
 
   /** The system time (in milliseconds) when a PiEvent
     * actually occured during computation.
     */
-  object SystemTime extends Key[Long]( "SysTime" )
+  object SystemTime extends Key[Long]("SysTime")
 
   /** The simulated time (in its own units) when the real-life
     * event that is represented by this PiEvent occured.
     */
-  object SimulatedTime extends Key[Long]( "SimTime" )
+  object SimulatedTime extends Key[Long]("SimTime")
 
   /** Construct a PiMetadataMap with the given meta-data.
     */
-  def apply( data: PiMetadataElem[_]* ): PiMetadataMap = {
+  def apply(data: PiMetadataElem[_]*): PiMetadataMap = {
     // Jev, ensure there's at least a SystemPiTime.
     lazy val current = SystemTime -> System.currentTimeMillis()
-    (current +: data).map( elem => (elem._1.id, elem._2) ).toMap
+    (current +: data).map(elem => (elem._1.id, elem._2)).toMap
   }
 
 }

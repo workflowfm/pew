@@ -1,9 +1,12 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson
 
 import akka.actor.ActorSystem
-import akka.kafka.{ConsumerSettings, ProducerSettings}
-import akka.stream.{ActorMaterializer, Materializer}
-import com.workflowfm.pew.stateless.instances.kafka.settings.{KafkaExecutorEnvironment, KafkaExecutorSettings}
+import akka.kafka.{ ConsumerSettings, ProducerSettings }
+import akka.stream.{ ActorMaterializer, Materializer }
+import com.workflowfm.pew.stateless.instances.kafka.settings.{
+  KafkaExecutorEnvironment,
+  KafkaExecutorSettings
+}
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_OFFSET_RESET_CONFIG
 import org.apache.kafka.clients.producer.ProducerRecord
@@ -13,8 +16,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
-class BsonKafkaExecutorSettings( val reg: CodecRegistry )
-  extends KafkaExecutorSettings {
+class BsonKafkaExecutorSettings(val reg: CodecRegistry) extends KafkaExecutorSettings {
 
   import KafkaExecutorSettings._
   import com.workflowfm.pew.stateless.StatelessMessages._
@@ -28,25 +30,31 @@ class BsonKafkaExecutorSettings( val reg: CodecRegistry )
   override val serverAndPort: String = "localhost:9092"
   override val defaultGroupId: String = "Default-Group"
 
-  def consSettings[K, V]( implicit ctK: ClassTag[K], ctV: ClassTag[V], actorSys: ActorSystem )
-    : ConsumerSettings[K, V] = {
+  def consSettings[K, V](
+      implicit ctK: ClassTag[K],
+      ctV: ClassTag[V],
+      actorSys: ActorSystem
+  ): ConsumerSettings[K, V] = {
 
     import ConsumerConfig._
 
     ConsumerSettings
-    .create( actorSys, CodecWrapper[K](ctK, reg), CodecWrapper[V](ctV, reg) )
-    .withBootstrapServers( serverAndPort )
-    .withGroupId( defaultGroupId )
-    .withProperty( AUTO_OFFSET_RESET_CONFIG, "earliest" )
-    .withWakeupTimeout( 10.seconds )
+      .create(actorSys, CodecWrapper[K](ctK, reg), CodecWrapper[V](ctV, reg))
+      .withBootstrapServers(serverAndPort)
+      .withGroupId(defaultGroupId)
+      .withProperty(AUTO_OFFSET_RESET_CONFIG, "earliest")
+      .withWakeupTimeout(10.seconds)
   }
 
-  def prodSettings[K, V]( implicit ctK: ClassTag[K], ctV: ClassTag[V], actorSys: ActorSystem )
-    : ProducerSettings[K, V] = {
+  def prodSettings[K, V](
+      implicit ctK: ClassTag[K],
+      ctV: ClassTag[V],
+      actorSys: ActorSystem
+  ): ProducerSettings[K, V] = {
 
     ProducerSettings
-    .create( actorSys, CodecWrapper[K](ctK, reg), CodecWrapper[V](ctV, reg) )
-    .withBootstrapServers( serverAndPort )
+      .create(actorSys, CodecWrapper[K](ctK, reg), CodecWrapper[V](ctV, reg))
+      .withBootstrapServers(serverAndPort)
   }
 
   override def createEnvironment(): KafkaExecutorEnvironment = {
@@ -55,8 +63,8 @@ class BsonKafkaExecutorSettings( val reg: CodecRegistry )
       override val settings: KafkaExecutorSettings = BsonKafkaExecutorSettings.this
 
       override val context: ExecutionContext = ExecutionContext.global
-      implicit override val actors: ActorSystem = ActorSystem( s"ActorSys" )
-      override val materializer: Materializer = ActorMaterializer.create( actors )
+      implicit override val actors: ActorSystem = ActorSystem(s"ActorSys")
+      override val materializer: Materializer = ActorMaterializer.create(actors)
 
       // Kafka - PiiId keyed consumer topic settings
       override val csPiiHistory: ConsumerSettings[KeyPiiId, PiiHistory] = consSettings
@@ -78,12 +86,12 @@ class BsonKafkaExecutorSettings( val reg: CodecRegistry )
   }
 
   override def record: AnyMsg => ProducerRecord[AnyKey, AnyMsg] = {
-    case m: PiiUpdate           => new ProducerRecord( tnPiiHistory, KeyPiiId(m.pii.id), m )
-    case m: SequenceRequest     => new ProducerRecord( tnPiiHistory, KeyPiiId(m.piiId), m )
-    case m: SequenceFailure     => new ProducerRecord( tnPiiHistory, KeyPiiId(m.piiId), m )
-    case m: ReduceRequest       => new ProducerRecord( tnReduceRequest, KeyPiiId(m.pii.id), m )
-    case m: Assignment          => new ProducerRecord( tnAssignment, KeyPiiIdCall(m.pii.id, m.callRef), m )
-    case m: PiiLog              => new ProducerRecord( tnResult, KeyPiiId(m.piiId), m )
+    case m: PiiUpdate => new ProducerRecord(tnPiiHistory, KeyPiiId(m.pii.id), m)
+    case m: SequenceRequest => new ProducerRecord(tnPiiHistory, KeyPiiId(m.piiId), m)
+    case m: SequenceFailure => new ProducerRecord(tnPiiHistory, KeyPiiId(m.piiId), m)
+    case m: ReduceRequest => new ProducerRecord(tnReduceRequest, KeyPiiId(m.pii.id), m)
+    case m: Assignment => new ProducerRecord(tnAssignment, KeyPiiIdCall(m.pii.id, m.callRef), m)
+    case m: PiiLog => new ProducerRecord(tnResult, KeyPiiId(m.piiId), m)
   }
 
 }

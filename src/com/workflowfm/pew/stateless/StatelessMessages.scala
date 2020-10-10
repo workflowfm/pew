@@ -7,7 +7,6 @@ import org.bson.types.ObjectId
   * When a new message is sent with the same indexes, the message is considered to update the value
   * of any previous messages. This behaviour allows us to create "mutable" databases from the persistent
   * message logs, which in turn offer reliability and scalability.
-  *
   */
 object StatelessMessages {
 
@@ -38,13 +37,12 @@ object StatelessMessages {
     * @param args A collection of result objects for open threads that need to be posted.
     */
   case class ReduceRequest(
-    pii:  PiInstance[ObjectId],
-    args: Seq[CallResult]
+      pii: PiInstance[ObjectId],
+      args: Seq[CallResult]
+  ) extends AnyMsg
+      with HasPii {
 
-  ) extends AnyMsg with HasPii {
-
-    override def toString: String
-      = s"ReduceRequest($piiId, $args)"
+    override def toString: String = s"ReduceRequest($piiId, $args)"
   }
 
   /** Emitted by a AtomicProcess executors to sequence their results into a common timeline.
@@ -56,9 +54,8 @@ object StatelessMessages {
     *                PiObject representing the result.
     */
   case class SequenceRequest(
-    piiId: ObjectId,
-    request: CallResult
-
+      piiId: ObjectId,
+      request: CallResult
   ) extends PiiHistory
 
   /** A PiiHistory message which helps collect outstanding SequenceRequests after a failure.
@@ -72,20 +69,17 @@ object StatelessMessages {
     * @param errors All the known exceptions encountered during the execution of this PiInstance.
     */
   case class SequenceFailure(
-    pii:  Either[ObjectId, PiInstance[ObjectId]],
-    returns: Seq[CallResult],
-    errors: Seq[PiFailure[ObjectId]]
-
+      pii: Either[ObjectId, PiInstance[ObjectId]],
+      returns: Seq[CallResult],
+      errors: Seq[PiFailure[ObjectId]]
   ) extends PiiHistory {
 
-    override def piiId: ObjectId
-      = pii match {
-        case Left( _piiId ) => _piiId
-        case Right( _pii ) => _pii.id
-      }
+    override def piiId: ObjectId = pii match {
+      case Left(_piiId) => _piiId
+      case Right(_pii) => _pii.id
+    }
 
-    override def toString: String
-      = s"SequenceFailure($piiId, $returns, $errors)"
+    override def toString: String = s"SequenceFailure($piiId, $returns, $errors)"
   }
 
   object SequenceFailure {
@@ -97,8 +91,8 @@ object StatelessMessages {
       * @param piEx The exception which was encountered.
       * @return A Sequence failure object containing a single CallRef and ExceptionEvent.
       */
-    def apply( id: ObjectId, ref: CallRef, piEx: PiException[ObjectId] ): SequenceFailure
-      = SequenceFailure( Left(id), Seq((ref, null)), Seq( piEx.event ) )
+    def apply(id: ObjectId, ref: CallRef, piEx: PiException[ObjectId]): SequenceFailure =
+      SequenceFailure(Left(id), Seq((ref, null)), Seq(piEx.event))
   }
 
   /** Emitted by the Reducer component to log the latest PiInstance state to the PiHistory.
@@ -107,9 +101,9 @@ object StatelessMessages {
     * @param pii The latest state of the PiInstance.
     */
   case class PiiUpdate(
-    pii:      PiInstance[ObjectId]
-
-  ) extends PiiHistory with HasPii
+      pii: PiInstance[ObjectId]
+  ) extends PiiHistory
+      with HasPii
 
   /** Emitted by the Reducer to the AtomicProcess executors, assigns responsibility for
     * executing an AtomicProcess to an AtomicProcessExecutor. Uniquely identified by the
@@ -121,15 +115,15 @@ object StatelessMessages {
     * @param args The value of each of the arguments to the AtomicProcess.
     */
   case class Assignment(
-    pii:      PiInstance[ObjectId],
-    callRef:  CallRef,
-    process:  String,
-    args:     Seq[PiResource]
+      pii: PiInstance[ObjectId],
+      callRef: CallRef,
+      process: String,
+      args: Seq[PiResource]
+  ) extends AnyMsg
+      with HasPii {
 
-  ) extends AnyMsg with HasPii {
-
-    override def toString: String
-      = s"Assignment($piiId, call ${callRef.id}, AP '$process', args $args)"
+    override def toString: String =
+      s"Assignment($piiId, call ${callRef.id}, AP '$process', args $args)"
   }
 
   /** An output message sent to the Results topic. Has no impact on PiInstance execution,
@@ -137,7 +131,7 @@ object StatelessMessages {
     *
     * @param event The `PiEvent` being logged.
     */
-  case class PiiLog( event: PiEvent[ObjectId] ) extends AnyMsg {
+  case class PiiLog(event: PiEvent[ObjectId]) extends AnyMsg {
     override def piiId: ObjectId = event.id
   }
 }

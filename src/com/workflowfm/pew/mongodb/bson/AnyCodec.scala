@@ -1,8 +1,8 @@
 package com.workflowfm.pew.mongodb.bson
 
 import com.workflowfm.pew.util.ClassLoaderUtil
-import org.bson.{BsonReader, BsonWriter}
-import org.bson.codecs.{Codec, DecoderContext, EncoderContext}
+import org.bson.{ BsonReader, BsonWriter }
+import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
 import org.bson.codecs.configuration.CodecRegistry
 
 /** AnyCodec: Capable of encoding/decoding values of `Any` type by fetching the
@@ -12,18 +12,17 @@ import org.bson.codecs.configuration.CodecRegistry
   *
   * @param registry Registry to use to find `Codec`s.
   */
-class AnyCodec( val registry: CodecRegistry )
-  extends Codec[Any] {
+class AnyCodec(val registry: CodecRegistry) extends Codec[Any] {
 
   val classN: String = "class"
   val childN: String = "child"
 
-  def codec( clazz: Class[_] ): Codec[Any]
-    = registry.get( clazz.asInstanceOf[Class[Any]] )
+  def codec(clazz: Class[_]): Codec[Any] = registry.get(clazz.asInstanceOf[Class[Any]])
 
   // Jev, unset the `ClassLoader` to ensure the default is used.
-  def classForName( name: String ): Class[_]
-    = ClassLoaderUtil.withClassLoader(null) { Class.forName(name) }
+  def classForName(name: String): Class[_] = ClassLoaderUtil.withClassLoader(null) {
+    Class.forName(name)
+  }
 
   override def encode(writer: BsonWriter, value: Any, ctx: EncoderContext): Unit = {
 
@@ -32,11 +31,11 @@ class AnyCodec( val registry: CodecRegistry )
     // Jev, `getCanonicalName` produces incorrect results for packaged or inner classes.
     // We need the `fully qualified` names for `Class.forName`, eg, "some.package.Object$Innerclass"
     val className: String = value.getClass.getName // .getCanonicalName)
-    classForName( className ) // throw a ClassNotFound error if we won't be able to decode this.
+    classForName(className) // throw a ClassNotFound error if we won't be able to decode this.
     writer.writeString(classN, className)
 
-    writer.writeName( childN )
-    ctx.encodeWithChildContext( codec( value.getClass ), writer, value )
+    writer.writeName(childN)
+    ctx.encodeWithChildContext(codec(value.getClass), writer, value)
 
     writer.writeEndDocument()
   }
@@ -45,10 +44,10 @@ class AnyCodec( val registry: CodecRegistry )
 
     reader.readStartDocument()
 
-    val anyClass: Class[_] = classForName( reader.readString( classN ) )
+    val anyClass: Class[_] = classForName(reader.readString(classN))
 
-    reader.readName( childN )
-    val anyValue: Any = ctx.decodeWithChildContext[Any]( codec( anyClass ), reader )
+    reader.readName(childN)
+    val anyValue: Any = ctx.decodeWithChildContext[Any](codec(anyClass), reader)
 
     reader.readEndDocument()
 
