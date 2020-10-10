@@ -4,8 +4,12 @@ import akka.actor.ActorSystem
 import akka.kafka._
 import akka.stream.Materializer
 import com.workflowfm.pew.stateless.StatelessMessages._
-import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.{AnyKey, KeyPiiId, KeyPiiIdCall}
-import com.workflowfm.pew.stateless.{CallRef, StatelessMessages}
+import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.{
+  AnyKey,
+  KeyPiiId,
+  KeyPiiIdCall
+}
+import com.workflowfm.pew.stateless.{ CallRef, StatelessMessages }
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.bson.types.ObjectId
 
@@ -20,16 +24,16 @@ abstract class KafkaExecutorEnvironment {
   val materializer: Materializer
 
   // Kafka - PiiId keyed consumer topic settings
-  val csPiiHistory:       ConsumerSettings[KeyPiiId, PiiHistory]
-  val csSequenceRequest:  ConsumerSettings[KeyPiiId, SequenceRequest]
-  val csReduceRequest:    ConsumerSettings[KeyPiiId, ReduceRequest]
-  val csResult:           ConsumerSettings[KeyPiiId, PiiLog]
+  val csPiiHistory: ConsumerSettings[KeyPiiId, PiiHistory]
+  val csSequenceRequest: ConsumerSettings[KeyPiiId, SequenceRequest]
+  val csReduceRequest: ConsumerSettings[KeyPiiId, ReduceRequest]
+  val csResult: ConsumerSettings[KeyPiiId, PiiLog]
 
   // Kafka - (PiiId, CallRef) keyed consumer topic settings
-  val csAssignment:       ConsumerSettings[KeyPiiIdCall, Assignment]
+  val csAssignment: ConsumerSettings[KeyPiiIdCall, Assignment]
 
   // Kafka - All producer settings
-  val psAllMessages:      ProducerSettings[AnyKey, AnyMsg]
+  val psAllMessages: ProducerSettings[AnyKey, AnyMsg]
 
 }
 
@@ -37,8 +41,8 @@ object KafkaExecutorSettings {
 
   // Kafka - Topic Keys
   sealed trait AnyKey
-  case class KeyPiiId( piiId: ObjectId ) extends AnyKey
-  case class KeyPiiIdCall( piiId: ObjectId, ref: CallRef) extends AnyKey
+  case class KeyPiiId(piiId: ObjectId) extends AnyKey
+  case class KeyPiiIdCall(piiId: ObjectId, ref: CallRef) extends AnyKey
 
   type AnyRes = Any
 

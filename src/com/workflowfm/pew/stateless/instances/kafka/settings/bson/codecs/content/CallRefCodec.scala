@@ -5,8 +5,7 @@ import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCode
 import org.bson._
 import org.bson.codecs._
 
-class CallRefCodec
-  extends Codec[CallRef] {
+class CallRefCodec extends Codec[CallRef] {
 
   import PewCodecs._
 
@@ -15,18 +14,18 @@ class CallRefCodec
   override def decode(reader: BsonReader, ctx: DecoderContext): CallRef = {
     reader.readStartDocument()
 
-    reader.readName( idN )
+    reader.readName(idN)
     val id = reader.readInt32()
 
     reader.readEndDocument()
-    CallRef( id )
+    CallRef(id)
   }
 
   override def encode(writer: BsonWriter, value: CallRef, ctx: EncoderContext): Unit = {
     writer.writeStartDocument()
 
-    writer.writeName( idN )
-    writer.writeInt32( value.id )
+    writer.writeName(idN)
+    writer.writeInt32(value.id)
 
     writer.writeEndDocument()
   }

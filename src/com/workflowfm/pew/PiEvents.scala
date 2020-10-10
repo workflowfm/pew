@@ -2,11 +2,10 @@ package com.workflowfm.pew
 
 import java.text.SimpleDateFormat
 
-import com.workflowfm.pew.PiMetadata.{PiMetadataMap, SimulatedTime, SystemTime}
+import com.workflowfm.pew.PiMetadata.{ PiMetadataMap, SimulatedTime, SystemTime }
 
 import scala.collection.immutable.Queue
-import scala.concurrent.{ExecutionContext, Future, Promise}
-
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 
 ///////////////////////
 // Abstract PiEvents //
@@ -52,12 +51,12 @@ sealed trait PiEvent[KeyT] {
   /** @return The system time (in milliseconds) when this PiEvent
     *         actually occurred during computation.
     */
-  def rawTime: Long = SystemTime( metadata )
+  def rawTime: Long = SystemTime(metadata)
 
   /** @return The simulated time (in its own units) when the real-life
     *         event that is represented by this PiEvent occured.
     */
-  def simTime: Long = SimulatedTime( metadata )
+  def simTime: Long = SimulatedTime(metadata)
 
   def asString: String
 }
@@ -72,30 +71,28 @@ object PiEvent {
     * @tparam KeyT The type used to identify PiInstances.
     * @return A function to which returns events with modified metadata.
     */
-  def liftMetaFn[KeyT]( fn: PiMetadataMap => PiMetadataMap )
-    : PiEvent[KeyT] => PiEvent[KeyT] = {
+  def liftMetaFn[KeyT](fn: PiMetadataMap => PiMetadataMap): PiEvent[KeyT] => PiEvent[KeyT] = {
 
     // PiInstance Level PiEvents
-    case e: PiEventStart[KeyT] => e.copy( metadata = fn( e.metadata ) )
-    case e: PiEventResult[KeyT] => e.copy( metadata = fn( e.metadata ) )
-    case e: PiEventIdle[KeyT] => e.copy( metadata = fn( e.metadata ) )
+    case e: PiEventStart[KeyT] => e.copy(metadata = fn(e.metadata))
+    case e: PiEventResult[KeyT] => e.copy(metadata = fn(e.metadata))
+    case e: PiEventIdle[KeyT] => e.copy(metadata = fn(e.metadata))
 
     // PiInstance Level PiFailures
-    case e: PiFailureNoResult[KeyT] => e.copy( metadata = fn( e.metadata ) )
-    case e: PiFailureUnknownProcess[KeyT] => e.copy( metadata = fn( e.metadata ) )
-    case e: PiFailureAtomicProcessIsComposite[KeyT] => e.copy( metadata = fn( e.metadata ) )
-    case e: PiFailureNoSuchInstance[KeyT] => e.copy( metadata = fn( e.metadata ) )
-    case e: PiFailureExceptions[KeyT] => e.copy( metadata = fn( e.metadata ) )
+    case e: PiFailureNoResult[KeyT] => e.copy(metadata = fn(e.metadata))
+    case e: PiFailureUnknownProcess[KeyT] => e.copy(metadata = fn(e.metadata))
+    case e: PiFailureAtomicProcessIsComposite[KeyT] => e.copy(metadata = fn(e.metadata))
+    case e: PiFailureNoSuchInstance[KeyT] => e.copy(metadata = fn(e.metadata))
+    case e: PiFailureExceptions[KeyT] => e.copy(metadata = fn(e.metadata))
 
     // PiInstance-Call Level PiEvents
-    case e: PiEventCall[KeyT] => e.copy( metadata = fn( e.metadata ) )
-    case e: PiEventReturn[KeyT] => e.copy( metadata = fn( e.metadata ) )
+    case e: PiEventCall[KeyT] => e.copy(metadata = fn(e.metadata))
+    case e: PiEventReturn[KeyT] => e.copy(metadata = fn(e.metadata))
 
     // PiInstance-Call Level PiFailures
-    case e: PiFailureAtomicProcessException[KeyT] => e.copy( metadata = fn( e.metadata ) )
+    case e: PiFailureAtomicProcessException[KeyT] => e.copy(metadata = fn(e.metadata))
   }
 }
-
 
 ///////////////////////////////
 // PiInstance Level PiEvents //
@@ -108,12 +105,14 @@ object PiEvent {
   * @tparam KeyT The type used to identify PiInstances.
   */
 case class PiEventStart[KeyT](
-   i: PiInstance[KeyT],
-   override val metadata: PiMetadataMap = PiMetadata()
- ) extends PiEvent[KeyT] {
+    i: PiInstance[KeyT],
+    override val metadata: PiMetadataMap = PiMetadata()
+) extends PiEvent[KeyT] {
 
   override def id: KeyT = i.id
-  override def asString: String = s" === [$id] INITIAL STATE === \n${i.state}\n === === === === === === === ==="
+
+  override def asString: String =
+    s" === [$id] INITIAL STATE === \n${i.state}\n === === === === === === === ==="
 }
 
 /** Abstract superclass for all PiEvents which denote the termination of a PiInstance.
@@ -131,19 +130,21 @@ case class PiEventResult[KeyT](
     i: PiInstance[KeyT],
     res: Any,
     override val metadata: PiMetadataMap = PiMetadata()
-
-  ) extends PiEvent[KeyT] with PiEventFinish[KeyT] {
+) extends PiEvent[KeyT]
+    with PiEventFinish[KeyT] {
 
   override def id: KeyT = i.id
-  override def asString: String = s" === [$id] FINAL STATE === \n${i.state}\n === === === === === === === ===\n" +
-    s" === [$id] RESULT: $res"
+
+  override def asString: String =
+    s" === [$id] FINAL STATE === \n${i.state}\n === === === === === === === ===\n" +
+        s" === [$id] RESULT: $res"
 }
 
 /** Denotes the completion of all reductions and process calls.
   * We are waiting for at least one process call to complete.
-  * This is useful in simulations so we know when to progress in virtual time. 
+  * This is useful in simulations so we know when to progress in virtual time.
   *
-  * @note Not all executor implementations fire this event. 
+  * @note Not all executor implementations fire this event.
   * @param i PiInstance representing the current state.
   * @param metadata Metadata object.
   * @tparam KeyT The type used to identify PiInstances.
@@ -151,13 +152,12 @@ case class PiEventResult[KeyT](
 case class PiEventIdle[KeyT](
     i: PiInstance[KeyT],
     override val metadata: PiMetadataMap = PiMetadata()
-
-  ) extends PiEvent[KeyT] with PiEventFinish[KeyT] {
+) extends PiEvent[KeyT]
+    with PiEventFinish[KeyT] {
 
   override def id: KeyT = i.id
   override def asString: String = s" === [$id] Idling... "
 }
-
 
 ////////////////////////////////////////////
 // PiInstance Level Exceptions & Failures //
@@ -167,8 +167,7 @@ case class PiEventIdle[KeyT](
   *
   * @tparam KeyT The type used to identify PiInstances.
   */
-sealed trait PiFailure[KeyT]
-  extends PiEvent[KeyT] {
+sealed trait PiFailure[KeyT] extends PiEvent[KeyT] {
 
   def exception: PiException[KeyT]
 
@@ -194,7 +193,7 @@ object PiFailure {
     * @tparam KeyT The type used to identify PiInstances.
     * @return A single error to throw and terminate the PiInstance execution.
     */
-  def condense[KeyT]( errors: Seq[PiFailure[KeyT]] ): PiFailure[KeyT] = {
+  def condense[KeyT](errors: Seq[PiFailure[KeyT]]): PiFailure[KeyT] = {
     errors.head match {
       case PiFailureAtomicProcessException(id, ref, message, trace, metadata) =>
         PiFailureExceptions(id, message, trace, metadata)
@@ -213,13 +212,15 @@ object PiFailure {
 case class PiFailureNoResult[KeyT](
     i: PiInstance[KeyT],
     override val metadata: PiMetadataMap = PiMetadata()
-
-  ) extends PiFailure[KeyT] with PiEventFinish[KeyT] {
+) extends PiFailure[KeyT]
+    with PiEventFinish[KeyT] {
 
   override def id: KeyT = i.id
-  override def asString: String = s" === [$id] FINAL STATE ===\n${i.state}\n === === === === === === === ===\n === [$id] NO RESULT! ==="
 
-  override def exception: PiException[KeyT] = NoResultException[KeyT]( i )
+  override def asString: String =
+    s" === [$id] FINAL STATE ===\n${i.state}\n === === === === === === === ===\n === [$id] NO RESULT! ==="
+
+  override def exception: PiException[KeyT] = NoResultException[KeyT](i)
 }
 
 /** The ProcessExecutor could not complete execution of this PiInstance
@@ -238,14 +239,16 @@ case class PiFailureUnknownProcess[KeyT](
     i: PiInstance[KeyT],
     process: String,
     override val metadata: PiMetadataMap = PiMetadata()
-
-  ) extends PiFailure[KeyT] with PiEventFinish[KeyT] {
+) extends PiFailure[KeyT]
+    with PiEventFinish[KeyT] {
 
   override def id: KeyT = i.id
-  override def asString: String = s" === [$id] FINAL STATE === \n${i.state}\n === === === === === === === ===\n" +
-    s" === [$id] FAILED - Unknown process: $process"
 
-  override def exception: PiException[KeyT] = UnknownProcessException[KeyT]( i, process )
+  override def asString: String =
+    s" === [$id] FINAL STATE === \n${i.state}\n === === === === === === === ===\n" +
+        s" === [$id] FAILED - Unknown process: $process"
+
+  override def exception: PiException[KeyT] = UnknownProcessException[KeyT](i, process)
 }
 
 /** The ProcessExecutor attempted to dispatch a CompositeProcess to the
@@ -263,14 +266,16 @@ case class PiFailureAtomicProcessIsComposite[KeyT](
     i: PiInstance[KeyT],
     process: String,
     override val metadata: PiMetadataMap = PiMetadata()
-
-  ) extends PiFailure[KeyT] with PiEventFinish[KeyT] {
+) extends PiFailure[KeyT]
+    with PiEventFinish[KeyT] {
 
   override def id: KeyT = i.id
-  override def asString: String = s" === [$id] FINAL STATE === \n${i.state}\n === === === === === === === ===\n" +
-    s" === [$id] FAILED - Executor encountered composite process thread: $process"
 
-  override def exception: PiException[KeyT] = AtomicProcessIsCompositeException[KeyT]( i, process )
+  override def asString: String =
+    s" === [$id] FINAL STATE === \n${i.state}\n === === === === === === === ===\n" +
+        s" === [$id] FAILED - Executor encountered composite process thread: $process"
+
+  override def exception: PiException[KeyT] = AtomicProcessIsCompositeException[KeyT](i, process)
 }
 
 /** A ProcessExecutor could not initiate execution of this PiInstance
@@ -285,12 +290,12 @@ case class PiFailureAtomicProcessIsComposite[KeyT](
 case class PiFailureNoSuchInstance[KeyT](
     override val id: KeyT,
     override val metadata: PiMetadataMap = PiMetadata()
-
-  ) extends PiFailure[KeyT] with PiEventFinish[KeyT] {
+) extends PiFailure[KeyT]
+    with PiEventFinish[KeyT] {
 
   override def asString: String = s" === [$id] FAILED - Failed to find instance!"
 
-  override def exception: PiException[KeyT] = NoSuchInstanceException[KeyT]( id )
+  override def exception: PiException[KeyT] = NoSuchInstanceException[KeyT](id)
 }
 
 /** At least one AtomicProcess called by this PiInstance encountered
@@ -307,24 +312,29 @@ case class PiFailureExceptions[KeyT](
     message: String,
     trace: Array[StackTraceElement],
     override val metadata: PiMetadataMap
+) extends PiFailure[KeyT]
+    with PiEventFinish[KeyT] {
 
-  ) extends PiFailure[KeyT] with PiEventFinish[KeyT] {
+  override def asString: String =
+    s" === [$id] FAILED - Exception: $message\n === [$id] Trace: $trace"
 
-  override def asString: String = s" === [$id] FAILED - Exception: $message\n === [$id] Trace: $trace"
+  override def exception: PiException[KeyT] = RemoteException[KeyT](id, message, trace, rawTime)
 
-  override def exception: PiException[KeyT] = RemoteException[KeyT]( id, message, trace, rawTime )
-
-  override def equals( other: Any ): Boolean = other match {
+  override def equals(other: Any): Boolean = other match {
     case that: PiFailureExceptions[KeyT] =>
       id == that.id && message == that.message
   }
 }
 
 object PiFailureExceptions {
-  def apply[KeyT]( id: KeyT, ex: Throwable, metadata: PiMetadataMap = PiMetadata() ): PiFailureExceptions[KeyT]
-    = PiFailureExceptions[KeyT]( id, ex.getLocalizedMessage, ex.getStackTrace, metadata )
-}
 
+  def apply[KeyT](
+      id: KeyT,
+      ex: Throwable,
+      metadata: PiMetadataMap = PiMetadata()
+  ): PiFailureExceptions[KeyT] =
+    PiFailureExceptions[KeyT](id, ex.getLocalizedMessage, ex.getStackTrace, metadata)
+}
 
 ///////////////////////////////////////
 // AtomicProcess Call Level PiEvents //
@@ -354,9 +364,10 @@ case class PiEventCall[KeyT](
     p: MetadataAtomicProcess,
     args: Seq[PiObject],
     override val metadata: PiMetadataMap = PiMetadata()
-  ) extends PiAtomicProcessEvent[KeyT] {
+) extends PiAtomicProcessEvent[KeyT] {
 
-	override def asString: String = s" === [$id] PROCESS CALL: ${p.name} ($ref) args: ${args.mkString(",")}"
+  override def asString: String =
+    s" === [$id] PROCESS CALL: ${p.name} ($ref) args: ${args.mkString(",")}"
 }
 
 /** Abstract superclass for all PiAtomicProcessEvent which denote the termination
@@ -379,12 +390,11 @@ case class PiEventReturn[KeyT](
     ref: Int,
     result: Any,
     metadata: PiMetadataMap = PiMetadata()
+) extends PiAtomicProcessEvent[KeyT]
+    with PiEventCallEnd[KeyT] {
 
-  ) extends PiAtomicProcessEvent[KeyT] with PiEventCallEnd[KeyT] {
-
-	override def asString: String = s" === [$id] PROCESS RETURN: ($ref) returned: $result"
+  override def asString: String = s" === [$id] PROCESS RETURN: ($ref) returned: $result"
 }
-
 
 /////////////////////////////////////////
 // AtomicProcess Call Level PiFailures //
@@ -406,17 +416,20 @@ case class PiFailureAtomicProcessException[KeyT](
     message: String,
     trace: Array[StackTraceElement],
     override val metadata: PiMetadataMap
+) extends PiAtomicProcessEvent[KeyT]
+    with PiFailure[KeyT]
+    with PiEventCallEnd[KeyT] {
 
-  ) extends PiAtomicProcessEvent[KeyT] with PiFailure[KeyT] with PiEventCallEnd[KeyT] {
+  override def asString: String =
+    s" === [$id] PROCESS [$ref] FAILED - Exception: $message\n === [$id] Trace: $trace"
 
-	override def asString: String = s" === [$id] PROCESS [$ref] FAILED - Exception: $message\n === [$id] Trace: $trace"
-
-  override def exception: PiException[KeyT] = RemoteProcessException[KeyT]( id, ref, message, trace, rawTime )
+  override def exception: PiException[KeyT] =
+    RemoteProcessException[KeyT](id, ref, message, trace, rawTime)
 
   /** @param other Object to compare to this.
     * @return True if both objects concern the same failure.
     */
-  override def equals( other: Any ): Boolean = other match {
+  override def equals(other: Any): Boolean = other match {
     case that: PiFailureAtomicProcessException[KeyT] =>
       id == that.id && ref == that.ref && message == that.message
 
@@ -425,6 +438,17 @@ case class PiFailureAtomicProcessException[KeyT](
 }
 
 object PiFailureAtomicProcessException {
-  def apply[KeyT]( id: KeyT, ref: Int, ex: Throwable, metadata: PiMetadataMap = PiMetadata() ): PiFailureAtomicProcessException[KeyT]
-    = PiFailureAtomicProcessException[KeyT]( id, ref, ex.getLocalizedMessage, ex.getStackTrace, metadata )
+
+  def apply[KeyT](
+      id: KeyT,
+      ref: Int,
+      ex: Throwable,
+      metadata: PiMetadataMap = PiMetadata()
+  ): PiFailureAtomicProcessException[KeyT] = PiFailureAtomicProcessException[KeyT](
+    id,
+    ref,
+    ex.getLocalizedMessage,
+    ex.getStackTrace,
+    metadata
+  )
 }

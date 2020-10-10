@@ -1,12 +1,14 @@
-sbtVersion := "1.2.6"
-
 lazy val commonSettings = Seq (
-	version := "1.4.0",
 	organization := "com.workflowfm",
-	scalaVersion := "2.12.10"
+	scalaVersion := "2.12.12"
 )
 
 autoAPIMappings := true
+
+/* Only invoked when you do `doc` in SBT */
+scalacOptions in (Compile, doc) += "-groups"
+scalacOptions in (Compile, doc) += "-diagrams"
+scalacOptions in (Compile, doc) += "-diagrams-debug"
 
 // The dependencies are in Maven format, with % separating the parts.  
 // Notice the extra bit "test" on the end of JUnit and ScalaTest, which will 

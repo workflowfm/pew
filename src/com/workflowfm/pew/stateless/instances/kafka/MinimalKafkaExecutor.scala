@@ -4,13 +4,13 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import com.workflowfm.pew._
-import com.workflowfm.pew.stream.{ PiObservable, DelegatedPiObservable }
+import com.workflowfm.pew.stream.{ DelegatedPiObservable, PiObservable }
 import com.workflowfm.pew.stateless._
 import com.workflowfm.pew.stateless.components.ResultListener
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorEnvironment
 import org.bson.types.ObjectId
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.concurrent._
 
@@ -19,8 +19,9 @@ import scala.concurrent._
   * Other components are required are required to run on the Kafka cluster
   * but need not be situated on the local machine.
   */
-class MinimalKafkaExecutor( implicit val environment: KafkaExecutorEnvironment )
-  extends StatelessExecutor[ObjectId] with DelegatedPiObservable[ObjectId] {
+class MinimalKafkaExecutor(implicit val environment: KafkaExecutorEnvironment)
+    extends StatelessExecutor[ObjectId]
+    with DelegatedPiObservable[ObjectId] {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
@@ -28,34 +29,32 @@ class MinimalKafkaExecutor( implicit val environment: KafkaExecutorEnvironment )
   import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors._
 
   // Implicit settings.
-  override implicit val executionContext: ExecutionContext = environment.context
+  implicit override val executionContext: ExecutionContext = environment.context
   implicit val actorSystem: ActorSystem = environment.actors
   implicit val materializer: Materializer = environment.materializer
 
   protected var piiStore: PiInstanceStore[ObjectId] = SimpleInstanceStore()
 
-
-
-  override def init( instance: PiInstance[_] ): Future[ObjectId] = {
-    if (isShutdown) throw new ShutdownExecutorException( "`init` was called." )
+  override def init(instance: PiInstance[_]): Future[ObjectId] = {
+    if (isShutdown) throw new ShutdownExecutorException("`init` was called.")
 
     val piiId = ObjectId.get
-    piiStore = piiStore.put( instance.copy(id = piiId) )
-    Future.successful( piiId )
+    piiStore = piiStore.put(instance.copy(id = piiId))
+    Future.successful(piiId)
   }
 
-  override def start( id: ObjectId ): Unit = {
-    if (isShutdown) throw new ShutdownExecutorException( "`start` was called." )
+  override def start(id: ObjectId): Unit = {
+    if (isShutdown) throw new ShutdownExecutorException("`start` was called.")
 
-    piiStore.get( id ) match {
+    piiStore.get(id) match {
       case None =>
-        eventHandler.publish( PiFailureNoSuchInstance( id ) )
+        eventHandler.publish(PiFailureNoSuchInstance(id))
 
-      case Some( pii ) =>
-        logger.info( "Seeding initial 'ReduceRequest'." )
+      case Some(pii) =>
+        logger.info("Seeding initial 'ReduceRequest'.")
         sendMessages(
-          ReduceRequest( pii, Seq() ),
-          PiiLog( PiEventStart( pii ) )
+          ReduceRequest(pii, Seq()),
+          PiiLog(PiEventStart(pii))
         )
     }
   }
@@ -64,17 +63,19 @@ class MinimalKafkaExecutor( implicit val environment: KafkaExecutorEnvironment )
   val eventHandler: ResultListener = new ResultListener
   override val worker: PiObservable[ObjectId] = eventHandler
 
-  val eventHandlerControl: DrainControl = uniqueResultListener( eventHandler )
-  lazy val allControls: Seq[DrainControl] = Seq( eventHandlerControl )
+  val eventHandlerControl: DrainControl = uniqueResultListener(eventHandler)
+  lazy val allControls: Seq[DrainControl] = Seq(eventHandlerControl)
 
   override def shutdown: Future[Done] = {
-    KafkaConnectors.drainAndShutdownAll( allControls )
-    .flatMap( _ => environment.actors.terminate().map( _ => Done ) )
+    KafkaConnectors
+      .drainAndShutdownAll(allControls)
+      .flatMap(_ => environment.actors.terminate().map(_ => Done))
   }
 
   override def forceShutdown: Future[Done] = {
-    KafkaConnectors.shutdownAll( allControls )
-    .flatMap( _ => environment.actors.terminate().map( _ => Done ) )
+    KafkaConnectors
+      .shutdownAll(allControls)
+      .flatMap(_ => environment.actors.terminate().map(_ => Done))
   }
 
   def isShutdown: Boolean = eventHandlerControl.isShutdown.isCompleted

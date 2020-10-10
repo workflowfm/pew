@@ -7,20 +7,19 @@ import org.bson._
 import org.bson.codecs._
 import org.bson.types.ObjectId
 
-class PiiLogCodec( eventCodec: Codec[PiEvent[ObjectId]] )
-  extends ClassCodec[PiiLog] {
+class PiiLogCodec(eventCodec: Codec[PiEvent[ObjectId]]) extends ClassCodec[PiiLog] {
 
   val eventN: String = "event"
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): PiiLog = {
-    reader.readName( eventN )
+    reader.readName(eventN)
     val event: PiEvent[ObjectId] = ctx.decodeWithChildContext(eventCodec, reader)
 
-    PiiLog( event )
+    PiiLog(event)
   }
 
   override def encodeBody(writer: BsonWriter, value: PiiLog, ctx: EncoderContext): Unit = {
-    writer.writeName( eventN )
+    writer.writeName(eventN)
     ctx.encodeWithChildContext(eventCodec, writer, value.event)
   }
 
