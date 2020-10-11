@@ -1,5 +1,10 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson
 
+import org.bson.codecs.Codec
+import org.bson.codecs.configuration.{ CodecProvider, CodecRegistry }
+import org.bson.types.ObjectId
+import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
+
 import com.workflowfm.pew._
 import com.workflowfm.pew.mongodb.bson._
 import com.workflowfm.pew.mongodb.bson.auto.{ AutoCodecRegistryExt, SuperclassCodec }
@@ -14,10 +19,6 @@ import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.keys.{
   KeyPiiIdCodec
 }
 import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messages._
-import org.bson.codecs.Codec
-import org.bson.codecs.configuration.{ CodecProvider, CodecRegistry }
-import org.bson.types.ObjectId
-import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 
 class KafkaCodecRegistry(
     processes: PiProcessStore,

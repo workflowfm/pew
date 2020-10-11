@@ -1,5 +1,8 @@
 package com.workflowfm.pew.execution
 
+import scala.concurrent._
+import scala.concurrent.duration._
+
 import com.workflowfm.pew._
 import com.workflowfm.pew.stream.{
   PiEventHandler,
@@ -7,8 +10,6 @@ import com.workflowfm.pew.stream.{
   PiObservable,
   ResultHandlerFactory
 }
-import scala.concurrent._
-import scala.concurrent.duration._
 
 /** Executes an atomic process - blocking
   *
@@ -18,7 +19,7 @@ import scala.concurrent.duration._
   */
 case class AtomicProcessExecutor(process: AtomicProcess) {
 
-  def call(args: PiObject*)(implicit ec: ExecutionContext) = {
+  def call(args: PiObject*)(implicit ec: ExecutionContext): Option[Any] = {
     val s = process.execState(args) fullReduce ()
     s.threads.headOption match {
       case None => None

@@ -1,11 +1,12 @@
 package com.workflowfm.pew.mongodb.bson
 
-import com.workflowfm.pew._
-import com.workflowfm.pew.mongodb.bson.pitypes._
 import org.bson.codecs._
 import org.bson.codecs.configuration.CodecProvider
 import org.bson.codecs.configuration.CodecRegistry
 import org.bson.types.ObjectId
+
+import com.workflowfm.pew._
+import com.workflowfm.pew.mongodb.bson.pitypes._
 
 /**
   * Provider for Codecs for PiObject, Chan, ChanMap, PiResource, PiFuture

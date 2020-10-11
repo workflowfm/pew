@@ -1,14 +1,15 @@
 package com.workflowfm.pew.mongodb.bson.pitypes
 
-import com.workflowfm.pew._
-import com.workflowfm.pew.mongodb.bson._
-import com.workflowfm.pew.mongodb.bson.auto.{ ClassCodec, SuperclassCodec }
+import scala.collection.mutable.Queue
+
 import org.bson._
 import org.bson.codecs._
 import org.bson.codecs.configuration.CodecRegistry
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 
-import scala.collection.mutable.Queue
+import com.workflowfm.pew._
+import com.workflowfm.pew.mongodb.bson._
+import com.workflowfm.pew.mongodb.bson.auto.{ ClassCodec, SuperclassCodec }
 
 class PiItemCodec(anyCodec: Codec[Any]) extends ClassCodec[PiItem[Any]] {
 

@@ -1,24 +1,26 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
+import scala.reflect.ClassTag
+
 import akka.actor.ActorSystem
 import akka.kafka.{ ConsumerSettings, ProducerSettings }
 import akka.stream.{ ActorMaterializer, Materializer }
-import com.workflowfm.pew.stateless.instances.kafka.settings.{
-  KafkaExecutorEnvironment,
-  KafkaExecutorSettings
-}
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_OFFSET_RESET_CONFIG
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.bson.codecs.configuration.CodecRegistry
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
-import scala.reflect.ClassTag
+import com.workflowfm.pew.stateless.instances.kafka.settings.{
+  KafkaExecutorEnvironment,
+  KafkaExecutorSettings
+}
 
 class BsonKafkaExecutorSettings(val reg: CodecRegistry) extends KafkaExecutorSettings {
 
   import KafkaExecutorSettings._
+
   import com.workflowfm.pew.stateless.StatelessMessages._
 
   // Kafka - Topic Names

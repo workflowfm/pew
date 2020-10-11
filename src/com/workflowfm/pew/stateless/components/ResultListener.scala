@@ -1,11 +1,12 @@
 package com.workflowfm.pew.stateless.components
 
-import com.workflowfm.pew.stateless.StatelessMessages.PiiLog
-import com.workflowfm.pew.stream.{ PiEventHandler, PiObservable, SimplePiObservable }
+import scala.concurrent.ExecutionContext
+import scala.language.implicitConversions
+
 import org.bson.types.ObjectId
 
-import scala.language.implicitConversions
-import scala.concurrent.ExecutionContext
+import com.workflowfm.pew.stateless.StatelessMessages.PiiLog
+import com.workflowfm.pew.stream.{ PiEventHandler, PiObservable, SimplePiObservable }
 
 class ResultListener(implicit val executionContext: ExecutionContext = ExecutionContext.global)
     extends StatelessComponent[PiiLog, Unit]

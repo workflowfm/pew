@@ -51,43 +51,43 @@ object PiObject {
     case PiOpt(l, r) => if (l.isGround) Left(get(l)) else Right(get(r))
   }
 
-  def getAs[A](o: PiObject) = get(o).asInstanceOf[A]
+  def getAs[A](o: PiObject): A = get(o).asInstanceOf[A]
 }
 
 case class Chan(s: String) extends PiObject {
   override def isGround: Boolean = false
   override def frees: Seq[Chan] = Seq(this)
-  override def fresh(i: Int) = Chan(s + "#" + i)
+  override def fresh(i: Int): Chan = Chan(s + "#" + i)
 }
 
 case class PiItem[+A](i: A) extends PiObject {
   override def isGround: Boolean = true
   override val frees: Seq[Chan] = Seq()
-  override def fresh(i: Int) = this
+  override def fresh(i: Int): PiItem[A] = this
 }
 
 case class PiPair(l: PiObject, r: PiObject) extends PiObject {
   override def isGround: Boolean = l.isGround && r.isGround
   override def frees: Seq[Chan] = l.frees ++ r.frees
-  override def fresh(i: Int) = PiPair(l.fresh(i), r.fresh(i))
+  override def fresh(i: Int): PiPair = PiPair(l.fresh(i), r.fresh(i))
 }
 
 case class PiOpt(l: PiObject, r: PiObject) extends PiObject {
   override def isGround: Boolean = l.isGround || r.isGround
   override def frees: Seq[Chan] = l.frees ++ r.frees
-  override def fresh(i: Int) = PiOpt(l.fresh(i), r.fresh(i))
+  override def fresh(i: Int): PiOpt = PiOpt(l.fresh(i), r.fresh(i))
 }
 
 case class PiLeft(l: PiObject) extends PiObject {
   override def isGround: Boolean = l.isGround
   override def frees: Seq[Chan] = l.frees
-  override def fresh(i: Int) = PiLeft(l.fresh(i))
+  override def fresh(i: Int): PiLeft = PiLeft(l.fresh(i))
 }
 
 case class PiRight(r: PiObject) extends PiObject {
   override def isGround: Boolean = r.isGround
   override def frees: Seq[Chan] = r.frees
-  override def fresh(i: Int) = PiRight(r.fresh(i))
+  override def fresh(i: Int): PiRight = PiRight(r.fresh(i))
 }
 
 /**

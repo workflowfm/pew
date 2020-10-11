@@ -1,11 +1,12 @@
 package com.workflowfm.pew.stateless.instances.kafka.components
 
-import com.workflowfm.pew.stateless.CallRef
-import com.workflowfm.pew.stateless.StatelessMessages._
-import com.workflowfm.pew.{ PiEventCallEnd, PiFailure, PiInstance, PiObject }
+import scala.collection.immutable
+
 import org.bson.types.ObjectId
 
-import scala.collection.immutable
+import com.workflowfm.pew.{ PiEventCallEnd, PiFailure, PiInstance, PiObject }
+import com.workflowfm.pew.stateless.CallRef
+import com.workflowfm.pew.stateless.StatelessMessages._
 
 case class PartialResponse(
     pii: Option[PiInstance[ObjectId]],

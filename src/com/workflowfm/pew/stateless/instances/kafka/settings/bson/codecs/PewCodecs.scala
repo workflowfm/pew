@@ -1,9 +1,10 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs
 
+import org.bson.types.ObjectId
+
 import com.workflowfm.pew._
 import com.workflowfm.pew.stateless._
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
-import org.bson.types.ObjectId
 
 object PewCodecs {
 

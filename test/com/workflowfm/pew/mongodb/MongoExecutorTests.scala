@@ -1,17 +1,17 @@
 package com.workflowfm.pew.mongodb
+import scala.concurrent.Promise
 
 import akka.actor.ActorSystem
-import com.workflowfm.pew._
-import com.workflowfm.pew.stream._
-import com.workflowfm.pew.execution.RexampleTypes._
-import com.workflowfm.pew.execution._
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
 import org.mongodb.scala.MongoClient
 import org.scalatest.{ BeforeAndAfterAll, FlatSpec, Matchers }
 import org.scalatest.junit.JUnitRunner
 
-import scala.concurrent.Promise
+import com.workflowfm.pew._
+import com.workflowfm.pew.execution._
+import com.workflowfm.pew.execution.RexampleTypes._
+import com.workflowfm.pew.stream._
 
 @RunWith(classOf[JUnitRunner])
 class MongoExecutorTests
@@ -30,7 +30,7 @@ class MongoExecutorTests
   val ri2 = new R(pai, pbi, pci2)
   val badri = new R(pai, pbi, pci)
 
-  val client = MongoClient()
+  val client: MongoClient = MongoClient()
 
   override def afterAll: Unit = {
     client.close()

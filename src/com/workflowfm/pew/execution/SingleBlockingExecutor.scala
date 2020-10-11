@@ -1,18 +1,18 @@
 package com.workflowfm.pew.execution
 
-import com.workflowfm.pew._
-import com.workflowfm.pew.stream.SimplePiObservable
-
+import scala.annotation.tailrec
 import scala.concurrent._
 import scala.concurrent.duration.Duration
-import scala.annotation.tailrec
+
+import com.workflowfm.pew._
+import com.workflowfm.pew.stream.SimplePiObservable
 
 /**
   * SingleBlockingExecutor fully executes one PiProcess from a map of given PiProcesses.
   * It blocks waiting for every atomic call to finish, so has no concurrency.
   */
 case class SingleBlockingExecutor(implicit val context: ExecutionContext) { // extends ProcessExecutor[Int] with SimplePiObservable[Int] {
-  def call(process: PiProcess, args: Seq[PiObject]) = {
+  def call(process: PiProcess, args: Seq[PiObject]): Option[Any] = {
     val s = process.execState(args)
     System.err.println(" === INITIAL STATE === \n" + s + "\n === === === === === === === ===")
     val fs = run(s)

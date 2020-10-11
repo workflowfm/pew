@@ -1,9 +1,10 @@
 package com.workflowfm.pew.mongodb.bson.pitypes
 
+import org.bson.{ BsonReader, BsonWriter }
+import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
+
 import com.workflowfm.pew.PiMetadata.PiMetadataMap
 import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
-import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
-import org.bson.{ BsonReader, BsonWriter }
 
 class PiMetadataMapCodec(anyCodec: Codec[Any]) extends ClassCodec[PiMetadataMap] {
 

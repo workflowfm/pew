@@ -1,22 +1,24 @@
 package com.workflowfm.pew.execution
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.Future
+import scala.concurrent.duration.Duration
 
 import RexampleTypes._
 import akka.actor.ActorSystem
+import com.typesafe.config.ConfigFactory
+import org.junit.runner.RunWith
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
-import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
+
 import com.workflowfm.pew._
 
 @RunWith(classOf[JUnitRunner])
 class MultiStateExecutorTests extends FlatSpec with Matchers with ProcessExecutorTester {
   implicit val system: ActorSystem = ActorSystem("MultiStateExecutorTests")
-  implicit val executionContext = ExecutionContext.global //system.dispatchers.lookup("akka.my-dispatcher")
+  implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global //system.dispatchers.lookup("akka.my-dispatcher")
 
   val pai = new PaI
   val pbi = new PbI

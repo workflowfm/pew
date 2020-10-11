@@ -1,8 +1,16 @@
 package com.workflowfm.pew.stateless.component
 
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
+import org.bson.types.ObjectId
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+
 import com.workflowfm.pew._
+import com.workflowfm.pew.stateless.{ CallRef, KafkaExampleTypes }
 import com.workflowfm.pew.stateless.StatelessMessages.{
   AnyMsg,
   Assignment,
@@ -10,19 +18,12 @@ import com.workflowfm.pew.stateless.StatelessMessages.{
   SequenceRequest
 }
 import com.workflowfm.pew.stateless.components.AtomicExecutor
+import com.workflowfm.pew.stateless.instances.kafka.components.{ MockTracked, Tracked }
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows.{
   flowRespond,
   flowWaitFuture
 }
-import com.workflowfm.pew.stateless.instances.kafka.components.{ MockTracked, Tracked }
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorEnvironment
-import com.workflowfm.pew.stateless.{ CallRef, KafkaExampleTypes }
-import org.bson.types.ObjectId
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
 
 @RunWith(classOf[JUnitRunner])
 class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {

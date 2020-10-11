@@ -1,7 +1,8 @@
 package com.workflowfm.pew.stateless
 
-import com.workflowfm.pew._
 import org.bson.types.ObjectId
+
+import com.workflowfm.pew._
 
 /** All state is saved in "message logs" or "channels" between the actors involved.
   * When a new message is sent with the same indexes, the message is considered to update the value

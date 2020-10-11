@@ -1,11 +1,12 @@
 package com.workflowfm.pew.stateless.components
 
+import scala.concurrent.ExecutionContext
+
+import org.bson.types.ObjectId
+
 import com.workflowfm.pew._
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.{ AnyMsg, ReduceRequest }
-import org.bson.types.ObjectId
-
-import scala.concurrent.ExecutionContext
 
 /** Takes New Process Instances -> Updated Workflow State, and either an immediate result or a list of requested computations
   *   Separated from StatelessExecActor to ensure the WorkflowState message is actually posted before the tasks are executed.

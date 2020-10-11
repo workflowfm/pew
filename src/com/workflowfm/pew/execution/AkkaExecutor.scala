@@ -1,18 +1,19 @@
 package com.workflowfm.pew.execution
 
-import akka.actor._
-import akka.event.LoggingReceive
-import akka.pattern.{ ask, pipe }
-import akka.util.Timeout
-import com.workflowfm.pew._
-import com.workflowfm.pew.stream.{ PiEventHandler, PiObservable, PiStream, PiSwitch }
+import java.util.UUID
 
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
 
-import java.util.UUID
+import akka.actor._
+import akka.event.LoggingReceive
+import akka.pattern.{ ask, pipe }
+import akka.util.Timeout
+
+import com.workflowfm.pew._
+import com.workflowfm.pew.stream.{ PiEventHandler, PiObservable, PiStream, PiSwitch }
 
 class AkkaExecutor(
     store: PiInstanceStore[UUID] = SimpleInstanceStore[UUID]()
@@ -25,13 +26,13 @@ class AkkaExecutor(
   implicit val tag: ClassTag[UUID] = ClassTag(classOf[UUID])
   implicit override val executionContext: ExecutionContext = system.dispatcher
 
-  val execActor = system.actorOf(AkkaExecutor.execprops(store))
-  implicit val tOut = Timeout(timeout)
+  val execActor: ActorRef = system.actorOf(AkkaExecutor.execprops(store))
+  implicit val tOut: Timeout = Timeout(timeout)
 
   override protected def init(instance: PiInstance[_]): Future[UUID] =
     execActor ? AkkaExecutor.Init(instance) map (_.asInstanceOf[UUID])
 
-  override protected def start(id: UUID) = execActor ! AkkaExecutor.Start(id)
+  override protected def start(id: UUID): Unit = execActor ! AkkaExecutor.Start(id)
 
   override def subscribe(handler: PiEventHandler[UUID]): Future[PiSwitch] =
     (execActor ? AkkaExecutor.Subscribe(handler)).mapTo[PiSwitch]
@@ -211,5 +212,5 @@ trait AkkaExecutorActor extends Actor with ProcessExecutor[UUID] with PiStream[U
     case AkkaExecutor.Subscribe(h) => subscribe(h) pipeTo sender()
   }
 
-  override def receive = LoggingReceive { publisherBehaviour orElse akkaReceive }
+  override def receive: Receive = LoggingReceive { publisherBehaviour orElse akkaReceive }
 }

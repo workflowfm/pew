@@ -1,10 +1,11 @@
 package com.workflowfm.pew.stateless.components
 
-import com.workflowfm.pew._
-import com.workflowfm.pew.stateless.StatelessMessages._
+import scala.concurrent._
+
 import org.bson.types.ObjectId
 
-import scala.concurrent._
+import com.workflowfm.pew._
+import com.workflowfm.pew.stateless.StatelessMessages._
 
 /** Runs AtomicProcesses and handles all necessary communication with the various stateless workflow actors.
   */

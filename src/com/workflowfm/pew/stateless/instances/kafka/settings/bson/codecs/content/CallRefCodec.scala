@@ -1,9 +1,10 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.content
 
-import com.workflowfm.pew.stateless.CallRef
-import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs
 import org.bson._
 import org.bson.codecs._
+
+import com.workflowfm.pew.stateless.CallRef
+import com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.PewCodecs
 
 class CallRefCodec extends Codec[CallRef] {
 

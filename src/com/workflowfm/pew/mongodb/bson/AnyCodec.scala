@@ -1,9 +1,10 @@
 package com.workflowfm.pew.mongodb.bson
 
-import com.workflowfm.pew.util.ClassLoaderUtil
 import org.bson.{ BsonReader, BsonWriter }
 import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
 import org.bson.codecs.configuration.CodecRegistry
+
+import com.workflowfm.pew.util.ClassLoaderUtil
 
 /** AnyCodec: Capable of encoding/decoding values of `Any` type by fetching the
   * correct type from a `CodecRegistry`.

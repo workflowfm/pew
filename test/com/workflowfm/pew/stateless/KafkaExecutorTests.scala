@@ -2,7 +2,17 @@ package com.workflowfm.pew.stateless
 
 import java.util.concurrent.TimeoutException
 
+import scala.concurrent._
+import scala.concurrent.duration._
+
 import akka.Done
+import org.apache.kafka.common.utils.Utils
+import org.bson.types.ObjectId
+import org.junit.runner.RunWith
+import org.scalatest.{ FlatSpec, Matchers }
+import org.scalatest.junit.JUnitRunner
+
+import com.workflowfm.pew.{ PiEventFinish, _ }
 import com.workflowfm.pew.stateless.StatelessMessages.{ AnyMsg, _ }
 import com.workflowfm.pew.stateless.components.{ AtomicExecutor, Reducer, ResultListener }
 import com.workflowfm.pew.stateless.instances.kafka.CustomKafkaExecutor
@@ -15,16 +25,7 @@ import com.workflowfm.pew.stateless.instances.kafka.settings.{
   KafkaExecutorEnvironment,
   KafkaExecutorSettings
 }
-import com.workflowfm.pew.{ PiEventFinish, _ }
 import com.workflowfm.pew.stream.ResultHandler
-import org.apache.kafka.common.utils.Utils
-import org.bson.types.ObjectId
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.{ FlatSpec, Matchers }
-
-import scala.concurrent._
-import scala.concurrent.duration._
 
 //noinspection ZeroIndexToHead
 @RunWith(classOf[JUnitRunner])
@@ -77,7 +78,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
   // Helper functions for execution tests //
   //////////////////////////////////////////
 
-  implicit def enhanceWithContainsDuplicates[T](s: Seq[T]) = new {
+  implicit def enhanceWithContainsDuplicates[T](s: Seq[T]): enhanceWithContainsDuplicates[T] = new enhanceWithContainsDuplicates[T](s)
+  class enhanceWithContainsDuplicates[T](s: Seq[T]) extends {
     def hasDuplicates: Boolean = s.distinct.size != s.size
   }
 

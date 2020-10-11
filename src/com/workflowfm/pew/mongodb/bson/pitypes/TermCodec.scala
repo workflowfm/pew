@@ -1,13 +1,14 @@
 package com.workflowfm.pew.mongodb.bson.pitypes
 
-import com.workflowfm.pew._
-import com.workflowfm.pew.mongodb.bson.BsonUtil
+import scala.collection.mutable.ArrayBuffer
+
 import org.bson._
 import org.bson.codecs._
 import org.bson.codecs.configuration.{ CodecProvider, CodecRegistries, CodecRegistry }
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 
-import scala.collection.mutable.ArrayBuffer
+import com.workflowfm.pew._
+import com.workflowfm.pew.mongodb.bson.BsonUtil
 
 class TermCodec(registry: CodecRegistry) extends Codec[Term] {
   def this() = this(

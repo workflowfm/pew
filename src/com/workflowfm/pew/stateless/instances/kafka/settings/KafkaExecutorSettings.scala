@@ -1,19 +1,20 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings
 
+import scala.concurrent.ExecutionContext
+
 import akka.actor.ActorSystem
 import akka.kafka._
 import akka.stream.Materializer
+import org.apache.kafka.clients.producer.ProducerRecord
+import org.bson.types.ObjectId
+
+import com.workflowfm.pew.stateless.{ CallRef, StatelessMessages }
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings.{
   AnyKey,
   KeyPiiId,
   KeyPiiIdCall
 }
-import com.workflowfm.pew.stateless.{ CallRef, StatelessMessages }
-import org.apache.kafka.clients.producer.ProducerRecord
-import org.bson.types.ObjectId
-
-import scala.concurrent.ExecutionContext
 
 abstract class KafkaExecutorEnvironment {
 

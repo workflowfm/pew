@@ -1,8 +1,9 @@
 package com.workflowfm.pew.mongodb.bson.helper
 
-import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import org.bson.{ BsonReader, BsonWriter }
 import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
+
+import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 
 class Tuple2Codec(anyCodec: Codec[Any]) extends ClassCodec[(Any, Any)] {
 

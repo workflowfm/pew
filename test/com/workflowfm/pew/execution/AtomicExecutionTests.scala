@@ -1,11 +1,13 @@
 package com.workflowfm.pew.execution
 
+import scala.concurrent._
+
+import ExecutionContext.Implicits.global
+import org.junit.runner.RunWith
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
-import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import scala.concurrent._
-import ExecutionContext.Implicits.global
+
 import com.workflowfm.pew._
 
 @RunWith(classOf[JUnitRunner])
@@ -13,8 +15,8 @@ class AtomicExecutionTests extends FlatSpec with Matchers {
 
   object P1 extends AtomicProcess { // X -> X++
     override val name = "P1"
-    override val output = (Chan("ZA"), "Z")
-    override val inputs = Seq((Chan("XA"), "X"))
+    override val output: (Chan, String) = (Chan("ZA"), "Z")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("XA"), "X"))
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] =
       Future.successful(PiObject(PiObject.getAs[String](args.headOption.get) + "++"))
@@ -26,8 +28,8 @@ class AtomicExecutionTests extends FlatSpec with Matchers {
 
   object P2 extends AtomicProcess { // X,Y -> X++Y
     override val name = "P2"
-    override val output = (Chan("ZA"), "Z")
-    override val inputs = Seq((Chan("XA"), "X"), (Chan("YA"), "Y"))
+    override val output: (Chan, String) = (Chan("ZA"), "Z")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("XA"), "X"), (Chan("YA"), "Y"))
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] =
       Future.successful(
@@ -45,15 +47,15 @@ class AtomicExecutionTests extends FlatSpec with Matchers {
 
   object P3 extends AtomicProcess { // X,Y -> (X++,Y++)
     override val name = "P3"
-    override val output = (PiPair(Chan("ZA"), Chan("ZB")), "Z")
-    override val inputs = Seq((Chan("XA"), "X"), (Chan("YA"), "Y"))
+    override val output: (PiPair, String) = (PiPair(Chan("ZA"), Chan("ZB")), "Z")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("XA"), "X"), (Chan("YA"), "Y"))
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] = args match {
       case Seq(o1, o2) =>
         Future.successful(PiObject(this(PiObject.getAs[String](o1), PiObject.getAs[String](o2))))
     }
 
-    def apply(o1: String, o2: String) = (o1 + "++", o2 + "++")
+    def apply(o1: String, o2: String): (String, String) = (o1 + "++", o2 + "++")
   }
 
   "AtomicProcessExecutor" should "execute P3" in {
@@ -62,8 +64,8 @@ class AtomicExecutionTests extends FlatSpec with Matchers {
 
   object P4 extends AtomicProcess { // (X,Y) -> (X++Y)
     override val name = "P4"
-    override val output = (Chan("ZA"), "Z")
-    override val inputs = Seq((PiPair(Chan("XA"), Chan("XB")), "X"))
+    override val output: (Chan, String) = (Chan("ZA"), "Z")
+    override val inputs: Seq[(PiPair, String)] = Seq((PiPair(Chan("XA"), Chan("XB")), "X"))
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] =
       Future.successful(PiObject(PiObject.getAs[(String, String)](args.headOption.get) match {
@@ -77,9 +79,9 @@ class AtomicExecutionTests extends FlatSpec with Matchers {
 
   object P5 extends AtomicProcess { // (X,Y) (P,Q) -> (X++P,Y++Q)
     override val name = "P5"
-    override val output = (PiPair(Chan("ZA"), Chan("ZB")), "Z")
+    override val output: (PiPair, String) = (PiPair(Chan("ZA"), Chan("ZB")), "Z")
 
-    override val inputs =
+    override val inputs: Seq[(PiPair, String)] =
       Seq((PiPair(Chan("XA"), Chan("XB")), "X"), (PiPair(Chan("YA"), Chan("YB")), "Y"))
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] = {
@@ -100,8 +102,8 @@ class AtomicExecutionTests extends FlatSpec with Matchers {
 
   object P6 extends AtomicProcess { // X -> if X>5 then X - 1 else X + 1
     override val name = "P6"
-    override val output = (PiOpt(Chan("ZA"), Chan("ZB")), "Z")
-    override val inputs = Seq((Chan("XA"), "X"))
+    override val output: (PiOpt, String) = (PiOpt(Chan("ZA"), Chan("ZB")), "Z")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("XA"), "X"))
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] = {
       val x = PiObject.getAs[Int](args.headOption.get)
@@ -117,8 +119,8 @@ class AtomicExecutionTests extends FlatSpec with Matchers {
 
   object P7 extends AtomicProcess { // (int or string) -> (int +1 or string++)
     override val name = "P7"
-    override val output = (PiOpt(Chan("ZA"), Chan("ZB")), "Z")
-    override val inputs = Seq((PiOpt(Chan("XA"), Chan("XB")), "X"))
+    override val output: (PiOpt, String) = (PiOpt(Chan("ZA"), Chan("ZB")), "Z")
+    override val inputs: Seq[(PiOpt, String)] = Seq((PiOpt(Chan("XA"), Chan("XB")), "X"))
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] = {
       PiObject.getAs[Either[Int, String]](args.headOption.get) match {

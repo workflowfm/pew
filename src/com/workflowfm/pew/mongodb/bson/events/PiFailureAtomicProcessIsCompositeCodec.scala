@@ -1,10 +1,11 @@
 package com.workflowfm.pew.mongodb.bson.events
 
-import com.workflowfm.pew.PiMetadata.PiMetadataMap
-import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
-import com.workflowfm.pew.{ PiFailureAtomicProcessIsComposite, PiInstance }
 import org.bson.{ BsonReader, BsonWriter }
 import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
+
+import com.workflowfm.pew.{ PiFailureAtomicProcessIsComposite, PiInstance }
+import com.workflowfm.pew.PiMetadata.PiMetadataMap
+import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 
 class PiFailureAtomicProcessIsCompositeCodec[T](
     piiCodec: Codec[PiInstance[T]],

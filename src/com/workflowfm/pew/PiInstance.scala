@@ -63,8 +63,8 @@ case class PiInstance[T](final val id: T, called: Seq[Int], process: PiProcess, 
 
   def getCalledProcesses: Seq[PiProcess] = state.threads flatMap { f => getProc(f._2.fun) } toSeq
 
-  def updateProcs(m: Map[String, PiProcess]) = copy(state = state.updateProcs(m))
-  def updateProcs(f: PiProcess => PiProcess) = copy(state = state.updateProcs(f))
+  def updateProcs(m: Map[String, PiProcess]): PiInstance[T] = copy(state = state.updateProcs(m))
+  def updateProcs(f: PiProcess => PiProcess): PiInstance[T] = copy(state = state.updateProcs(f))
 }
 
 object PiInstance {

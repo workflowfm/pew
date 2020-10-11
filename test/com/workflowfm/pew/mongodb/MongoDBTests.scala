@@ -1,28 +1,26 @@
 package com.workflowfm.pew.mongodb
 
-import com.workflowfm.pew._
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
-import org.bson.types._
+import com.mongodb.session.ClientSession
 import org.bson._
 import org.bson.codecs._
 import org.bson.codecs.configuration.{ CodecProvider, CodecRegistry, CodecRegistries }
 import org.bson.codecs.configuration.CodecRegistries.{ fromRegistries, fromProviders, fromCodecs }
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
-
+import org.bson.types._
+import org.junit.runner.RunWith
+import org.mongodb.scala._
+import org.mongodb.scala.ClientSessionOptions
+import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
+import org.mongodb.scala.model.Filters
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
-import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
-import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
-import org.mongodb.scala._
-import com.workflowfm.pew.mongodb.bson.PiCodecProvider
+import com.workflowfm.pew._
 import com.workflowfm.pew.mongodb.bson.PiBSONTestHelper
-import org.mongodb.scala.model.Filters
-import org.mongodb.scala.ClientSessionOptions
-import com.mongodb.session.ClientSession
+import com.workflowfm.pew.mongodb.bson.PiCodecProvider
 
 @RunWith(classOf[JUnitRunner])
 class MongoDBTests
@@ -196,5 +194,5 @@ class MongoDBTests
 }
 
 trait MongoDBTestHelper {
-  def await[T](obs: Observable[T]) = Await.result(obs.toFuture, 1.minute)
+  def await[T](obs: Observable[T]): Seq[T] = Await.result(obs.toFuture, 1.minute)
 }

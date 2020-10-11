@@ -3,12 +3,14 @@ package com.workflowfm.pew.mongodb.bson
 import java.nio.ByteBuffer
 import java.util
 
-import com.workflowfm.pew._
-import com.workflowfm.pew.mongodb.bson.pitypes.{ PiObjectCodec, TermCodec }
+import scala.collection.JavaConverters._
+import scala.language.implicitConversions
+import scala.reflect.ClassTag
+
 import org.bson._
 import org.bson.codecs._
-import org.bson.codecs.configuration.CodecRegistries.{ fromCodecs, fromProviders, fromRegistries }
 import org.bson.codecs.configuration.{ CodecProvider, CodecRegistries }
+import org.bson.codecs.configuration.CodecRegistries.{ fromCodecs, fromProviders, fromRegistries }
 import org.bson.io._
 import org.bson.types._
 import org.junit.runner.RunWith
@@ -17,9 +19,8 @@ import org.mongodb.scala.bson.collection.immutable.Document
 import org.scalatest.{ FlatSpec, Matchers }
 import org.scalatest.junit.JUnitRunner
 
-import scala.collection.JavaConverters._
-import scala.language.implicitConversions
-import scala.reflect.ClassTag
+import com.workflowfm.pew._
+import com.workflowfm.pew.mongodb.bson.pitypes.{ PiObjectCodec, TermCodec }
 
 @RunWith(classOf[JUnitRunner])
 class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {

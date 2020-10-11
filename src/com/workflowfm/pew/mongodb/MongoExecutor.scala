@@ -1,35 +1,33 @@
 package com.workflowfm.pew.mongodb
-
-import com.workflowfm.pew._
-import com.workflowfm.pew.execution._
-import com.workflowfm.pew.stream.SimplePiObservable
-import com.workflowfm.pew.mongodb.bson.PiCodecProvider
-
+import scala.annotation.tailrec
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.annotation.tailrec
-import scala.util.Try
-import scala.util.Success
 import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
-import org.bson.types._
+import com.mongodb.session.ClientSession
 import org.bson._
 import org.bson.codecs._
 import org.bson.codecs.configuration.{ CodecProvider, CodecRegistries, CodecRegistry }
 import org.bson.codecs.configuration.CodecRegistries.{ fromCodecs, fromProviders, fromRegistries }
-import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
-
-import org.mongodb.scala.MongoClient
-import org.mongodb.scala.MongoDatabase
-import org.mongodb.scala.MongoCollection
-import com.mongodb.session.ClientSession
+import org.bson.types._
 import org.mongodb.scala.ClientSessionOptions
-import org.mongodb.scala.model.Filters._
+import org.mongodb.scala.MongoClient
+import org.mongodb.scala.MongoCollection
+import org.mongodb.scala.MongoDatabase
 import org.mongodb.scala.Observable
-import org.mongodb.scala.SingleObservable
 import org.mongodb.scala.Observer
 import org.mongodb.scala.ReadConcern
+import org.mongodb.scala.SingleObservable
 import org.mongodb.scala.WriteConcern
+import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
+import org.mongodb.scala.model.Filters._
+
+import com.workflowfm.pew._
+import com.workflowfm.pew.execution._
+import com.workflowfm.pew.mongodb.bson.PiCodecProvider
+import com.workflowfm.pew.stream.SimplePiObservable
 
 class MongoExecutor(client: MongoClient, db: String, collection: String, processes: PiProcessStore)(
     implicit val executionContext: ExecutionContext = ExecutionContext.global
@@ -42,7 +40,7 @@ class MongoExecutor(client: MongoClient, db: String, collection: String, process
   final val CAS_MAX_ATTEMPTS = 10
   final val CAS_WAIT_MS = 1
 
-  val codecRegistry =
+  val codecRegistry: CodecRegistry =
     fromRegistries(fromProviders(new PiCodecProvider(processes)), DEFAULT_CODEC_REGISTRY)
 
   val database: MongoDatabase = client

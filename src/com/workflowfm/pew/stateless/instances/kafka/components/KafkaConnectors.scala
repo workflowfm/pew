@@ -1,8 +1,12 @@
 package com.workflowfm.pew.stateless.instances.kafka.components
 
+import scala.concurrent.{ ExecutionContext, Future }
+
 import akka.Done
 import akka.kafka.scaladsl.Consumer.{ Control, DrainingControl }
 import akka.stream.scaladsl.Sink
+import org.bson.types.ObjectId
+
 import com.workflowfm.pew.PiEventFinish
 import com.workflowfm.pew.stateless.StatelessMessages
 import com.workflowfm.pew.stateless.components._
@@ -10,9 +14,6 @@ import com.workflowfm.pew.stateless.instances.kafka.settings.{
   KafkaExecutorEnvironment,
   KafkaExecutorSettings
 }
-import org.bson.types.ObjectId
-
-import scala.concurrent.{ ExecutionContext, Future }
 
 /** High-Level Kafka Interface:
   * Responsible for correctly wrapping StatelessComponents into RunnableGraphs to execute

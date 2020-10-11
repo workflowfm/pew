@@ -1,13 +1,14 @@
 package com.workflowfm.pew.stateless.instances.kafka.components
 
+import scala.concurrent.Future
+
 import akka._
 import akka.kafka._
 import akka.kafka.scaladsl._
 import akka.stream.scaladsl._
+
 import com.workflowfm.pew.stateless.components.StatelessComponent
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorEnvironment
-
-import scala.concurrent.Future
 
 /** Mid-Level Kafka Interface:
   * Defines the akka sources, flows, and sinks, which the high-level interface (KafkaConnectors) builds
@@ -17,6 +18,7 @@ object KafkaWrapperFlows {
 
   import Consumer._
   import Subscriptions._
+
   import com.workflowfm.pew.stateless.StatelessMessages._
 
   type Environment = KafkaExecutorEnvironment

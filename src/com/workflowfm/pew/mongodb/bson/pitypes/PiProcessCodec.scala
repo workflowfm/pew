@@ -1,9 +1,10 @@
 package com.workflowfm.pew.mongodb.bson.pitypes
 
-import com.workflowfm.pew.{ PiProcess, PiProcessStore }
-import org.bson.codecs.configuration.CodecConfigurationException
-import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
 import org.bson.{ BsonReader, BsonWriter }
+import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
+import org.bson.codecs.configuration.CodecConfigurationException
+
+import com.workflowfm.pew.{ PiProcess, PiProcessStore }
 
 class PiProcessCodec(store: PiProcessStore) extends Codec[PiProcess] {
 

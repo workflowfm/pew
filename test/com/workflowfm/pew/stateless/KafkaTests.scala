@@ -1,9 +1,15 @@
 package com.workflowfm.pew.stateless
 
+import scala.concurrent.{ ExecutionContext, Future, TimeoutException }
+import scala.concurrent.duration._
+
 import akka.actor.ActorSystem
-import com.workflowfm.pew.execution.RexampleTypes._
+
+import com.workflowfm.pew.{ PiEvent, PiProcessStore, SimpleProcessStore }
 import com.workflowfm.pew.execution._
+import com.workflowfm.pew.execution.RexampleTypes._
 import com.workflowfm.pew.stateless.StatelessMessages._
+import com.workflowfm.pew.stateless.instances.kafka.{ CompleteKafkaExecutor, CustomKafkaExecutor }
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows
 import com.workflowfm.pew.stateless.instances.kafka.settings.{
   KafkaExecutorEnvironment,
@@ -13,20 +19,16 @@ import com.workflowfm.pew.stateless.instances.kafka.settings.bson.{
   BsonKafkaExecutorSettings,
   KafkaCodecRegistry
 }
-import com.workflowfm.pew.stateless.instances.kafka.{ CompleteKafkaExecutor, CustomKafkaExecutor }
 import com.workflowfm.pew.util.ClassMap
-import com.workflowfm.pew.{ PiEvent, PiProcessStore, SimpleProcessStore }
-
-import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, Future, TimeoutException }
 
 trait KafkaTests extends ProcessExecutorTester {
 
-  import akka.Done
-  import com.workflowfm.pew.execution.RexampleTypes.{ B, Pc, Z }
-
-  import scala.concurrent.duration.Duration
   import scala.concurrent.{ Await, Promise }
+  import scala.concurrent.duration.Duration
+
+  import akka.Done
+
+  import com.workflowfm.pew.execution.RexampleTypes.{ B, Pc, Z }
 
   class PcIWait(s: String = "PcI") extends Pc {
     override def iname: String = s

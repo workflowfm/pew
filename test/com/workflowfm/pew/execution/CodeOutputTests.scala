@@ -1,9 +1,9 @@
 package com.workflowfm.pew.execution
 
+import scala.concurrent.{ ExecutionContext, Future }
+
 import com.workflowfm.pew._
 import com.workflowfm.pew.execution.CodeOutput._
-
-import scala.concurrent.{ ExecutionContext, Future }
 
 //@RunWith(classOf[JUnitRunner])
 //class CodeOutputTests extends FlatSpec with Matchers with ProcessExecutorTester {
@@ -160,9 +160,9 @@ package object CodeOutput {
 
   trait Pa extends ((X) => A) with AtomicProcess {
     override val name = "Pa"
-    override val output = (Chan("Pa__a_A"), "oPa_A_")
-    override val inputs = Seq((Chan("Pa__a_X"), "cPa_X_1"))
-    override val channels = Seq("cPa_X_1", "oPa_A_")
+    override val output: (Chan, String) = (Chan("Pa__a_A"), "oPa_A_")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("Pa__a_X"), "cPa_X_1"))
+    override val channels: Seq[String] = Seq("cPa_X_1", "oPa_A_")
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] = args match {
       case Seq(o1) => Future.successful(PiObject(this(PiObject.getAs[X](o1))))
@@ -171,9 +171,9 @@ package object CodeOutput {
 
   trait Pb extends ((A) => Y) with AtomicProcess {
     override val name = "Pb"
-    override val output = (Chan("Pb__a_Y"), "oPb_Y_")
-    override val inputs = Seq((Chan("Pb__a_A"), "cPb_A_1"))
-    override val channels = Seq("cPb_A_1", "oPb_Y_")
+    override val output: (Chan, String) = (Chan("Pb__a_Y"), "oPb_Y_")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("Pb__a_A"), "cPb_A_1"))
+    override val channels: Seq[String] = Seq("cPb_A_1", "oPb_Y_")
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] = args match {
       case Seq(o1) => Future.successful(PiObject(this(PiObject.getAs[A](o1))))
@@ -182,13 +182,13 @@ package object CodeOutput {
 
   class R1(pa: Pa, pb: Pb) extends CompositeProcess { // (X) => Y
     override val name = "R1"
-    override val output = (Chan("R1__a_Y"), "oPb_Y_")
-    override val inputs = Seq((Chan("R1__a_X"), "cPa_X_1"))
-    override val channels = Seq("cPa_X_1", "oPb_Y_")
+    override val output: (Chan, String) = (Chan("R1__a_Y"), "oPb_Y_")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("R1__a_X"), "cPa_X_1"))
+    override val channels: Seq[String] = Seq("cPa_X_1", "oPb_Y_")
 
-    override val dependencies = Seq(pa, pb)
+    override val dependencies: Seq[AtomicProcess] = Seq(pa, pb)
 
-    override val body = PiCut(
+    override val body: PiCut = PiCut(
       "z2",
       "cPb_A_1",
       "oPa_A_",
@@ -199,9 +199,9 @@ package object CodeOutput {
 
   trait Pc extends ((Y) => Z) with AtomicProcess {
     override val name = "Pc"
-    override val output = (Chan("Pc__a_Z"), "oPc_Z_")
-    override val inputs = Seq((Chan("Pc__a_Y"), "cPc_Y_1"))
-    override val channels = Seq("cPc_Y_1", "oPc_Z_")
+    override val output: (Chan, String) = (Chan("Pc__a_Z"), "oPc_Z_")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("Pc__a_Y"), "cPc_Y_1"))
+    override val channels: Seq[String] = Seq("cPc_Y_1", "oPc_Z_")
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] = args match {
       case Seq(o1) => Future.successful(PiObject(this(PiObject.getAs[Y](o1))))
@@ -210,13 +210,13 @@ package object CodeOutput {
 
   class R2(pc: Pc, r1: R1) extends CompositeProcess { // (X) => Z
     override val name = "R2"
-    override val output = (Chan("R2__a_Z"), "oPc_Z_")
-    override val inputs = Seq((Chan("R2__a_X"), "cPa_X_1"))
-    override val channels = Seq("cPa_X_1", "oPc_Z_")
+    override val output: (Chan, String) = (Chan("R2__a_Z"), "oPc_Z_")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("R2__a_X"), "cPa_X_1"))
+    override val channels: Seq[String] = Seq("cPa_X_1", "oPc_Z_")
 
-    override val dependencies = Seq(pc, r1)
+    override val dependencies: Seq[PiProcess] = Seq(pc, r1)
 
-    override val body = PiCut(
+    override val body: PiCut = PiCut(
       "z2",
       "cPc_Y_1",
       "oPb_Y_",
@@ -228,12 +228,12 @@ package object CodeOutput {
   trait Pd extends ((X) => Either[A, (B, G)]) with AtomicProcess {
     override val name = "Pd"
 
-    override val output = (
+    override val output: (PiOpt, String) = (
       PiOpt(Chan("Pd_l_a_A"), PiPair(Chan("Pd_rl_a_B"), Chan("Pd_rr_a_G"))),
       "oPd_lB_A_Plus_lB_B_x_G_rB_rB_"
     )
-    override val inputs = Seq((Chan("Pd__a_X"), "cPd_X_1"))
-    override val channels = Seq("cPd_X_1", "oPd_lB_A_Plus_lB_B_x_G_rB_rB_")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("Pd__a_X"), "cPd_X_1"))
+    override val channels: Seq[String] = Seq("cPd_X_1", "oPd_lB_A_Plus_lB_B_x_G_rB_rB_")
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] = args match {
       case Seq(o1) => Future.successful(PiObject(this(PiObject.getAs[X](o1))))
@@ -242,9 +242,9 @@ package object CodeOutput {
 
   trait Pe extends ((Either[B, A]) => Y) with AtomicProcess {
     override val name = "Pe"
-    override val output = (Chan("Pe__a_Y"), "oPe_Y_")
-    override val inputs = Seq((PiOpt(Chan("Pe_l_a_B"), Chan("Pe_r_a_A")), "cPe_lB_B_Plus_A_rB_1"))
-    override val channels = Seq("cPe_lB_B_Plus_A_rB_1", "oPe_Y_")
+    override val output: (Chan, String) = (Chan("Pe__a_Y"), "oPe_Y_")
+    override val inputs: Seq[(PiOpt, String)] = Seq((PiOpt(Chan("Pe_l_a_B"), Chan("Pe_r_a_A")), "cPe_lB_B_Plus_A_rB_1"))
+    override val channels: Seq[String] = Seq("cPe_lB_B_Plus_A_rB_1", "oPe_Y_")
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] = args match {
       case Seq(o1) => Future.successful(PiObject(this(PiObject.getAs[Either[B, A]](o1))))
@@ -254,14 +254,14 @@ package object CodeOutput {
   class R3(pd: Pd, pe: Pe) extends CompositeProcess { // (X) => Either[A,(Y,G)]
     override val name = "R3"
 
-    override val output =
+    override val output: (PiOpt, String) =
       (PiOpt(Chan("R3_l_a_A"), PiPair(Chan("R3_rl_a_Y"), Chan("R3_rr_a_G"))), "y13")
-    override val inputs = Seq((Chan("R3__a_X"), "cPd_X_1"))
-    override val channels = Seq("cPd_X_1", "y13")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("R3__a_X"), "cPd_X_1"))
+    override val channels: Seq[String] = Seq("cPd_X_1", "y13")
 
-    override val dependencies = Seq(pd, pe)
+    override val dependencies: Seq[AtomicProcess] = Seq(pd, pe)
 
-    override val body = PiCut(
+    override val body: PiCut = PiCut(
       "z15",
       "x13",
       "oPd_lB_A_Plus_lB_B_x_G_rB_rB_",
@@ -300,14 +300,14 @@ package object CodeOutput {
   class R3b(pd: Pd, pe: Pe) extends CompositeProcess { // (X) => Either[Y,(B,G)]
     override val name = "R3b"
 
-    override val output =
+    override val output: (PiOpt, String) =
       (PiOpt(Chan("R3b_l_a_Y"), PiPair(Chan("R3b_rl_a_B"), Chan("R3b_rr_a_G"))), "y6")
-    override val inputs = Seq((Chan("R3b__a_X"), "cPd_X_1"))
-    override val channels = Seq("cPd_X_1", "y6")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("R3b__a_X"), "cPd_X_1"))
+    override val channels: Seq[String] = Seq("cPd_X_1", "y6")
 
-    override val dependencies = Seq(pd, pe)
+    override val dependencies: Seq[AtomicProcess] = Seq(pd, pe)
 
-    override val body = PiCut(
+    override val body: PiCut = PiCut(
       "z11",
       "x6",
       "oPd_lB_A_Plus_lB_B_x_G_rB_rB_",
@@ -358,17 +358,17 @@ package object CodeOutput {
       with AtomicProcess {
     override val name = "SelectModel"
 
-    override val output = (
+    override val output: (PiPair, String) = (
       PiPair(Chan("SelectModel_l_a_Brand"), Chan("SelectModel_r_a_Model")),
       "oSelectModel_lB_Brand_x_Model_rB_"
     )
 
-    override val inputs = Seq(
+    override val inputs: Seq[(Chan, String)] = Seq(
       (Chan("SelectModel__a_PriceLimit"), "cSelectModel_PriceLimit_1"),
       (Chan("SelectModel__a_SkillLevel"), "cSelectModel_SkillLevel_2")
     )
 
-    override val channels = Seq(
+    override val channels: Seq[String] = Seq(
       "cSelectModel_PriceLimit_1",
       "cSelectModel_SkillLevel_2",
       "oSelectModel_lB_Brand_x_Model_rB_"
@@ -382,14 +382,14 @@ package object CodeOutput {
 
   trait SelectLength extends ((HeightCM, WeightKG) => Future[LengthCM]) with AtomicProcess {
     override val name = "SelectLength"
-    override val output = (Chan("SelectLength__a_LengthCM"), "oSelectLength_LengthCM_")
+    override val output: (Chan, String) = (Chan("SelectLength__a_LengthCM"), "oSelectLength_LengthCM_")
 
-    override val inputs = Seq(
+    override val inputs: Seq[(Chan, String)] = Seq(
       (Chan("SelectLength__a_HeightCM"), "cSelectLength_HeightCM_1"),
       (Chan("SelectLength__a_WeightKG"), "cSelectLength_WeightKG_2")
     )
 
-    override val channels =
+    override val channels: Seq[String] =
       Seq("cSelectLength_HeightCM_1", "cSelectLength_WeightKG_2", "oSelectLength_LengthCM_")
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] = args match {
@@ -400,9 +400,9 @@ package object CodeOutput {
 
   trait CM2Inch extends ((LengthCM) => Future[LengthInch]) with AtomicProcess {
     override val name = "CM2Inch"
-    override val output = (Chan("CM2Inch__a_LengthInch"), "oCM2Inch_LengthInch_")
-    override val inputs = Seq((Chan("CM2Inch__a_LengthCM"), "cCM2Inch_LengthCM_1"))
-    override val channels = Seq("cCM2Inch_LengthCM_1", "oCM2Inch_LengthInch_")
+    override val output: (Chan, String) = (Chan("CM2Inch__a_LengthInch"), "oCM2Inch_LengthInch_")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("CM2Inch__a_LengthCM"), "cCM2Inch_LengthCM_1"))
+    override val channels: Seq[String] = Seq("cCM2Inch_LengthCM_1", "oCM2Inch_LengthInch_")
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] = args match {
       case Seq(o1) => this(PiObject.getAs[LengthCM](o1)) map PiObject.apply
@@ -411,9 +411,9 @@ package object CodeOutput {
 
   trait USD2NOK extends ((PriceUSD) => Future[PriceNOK]) with AtomicProcess {
     override val name = "USD2NOK"
-    override val output = (Chan("USD2NOK__a_PriceNOK"), "oUSD2NOK_PriceNOK_")
-    override val inputs = Seq((Chan("USD2NOK__a_PriceUSD"), "cUSD2NOK_PriceUSD_1"))
-    override val channels = Seq("cUSD2NOK_PriceUSD_1", "oUSD2NOK_PriceNOK_")
+    override val output: (Chan, String) = (Chan("USD2NOK__a_PriceNOK"), "oUSD2NOK_PriceNOK_")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("USD2NOK__a_PriceUSD"), "cUSD2NOK_PriceUSD_1"))
+    override val channels: Seq[String] = Seq("cUSD2NOK_PriceUSD_1", "oUSD2NOK_PriceNOK_")
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] = args match {
       case Seq(o1) => this(PiObject.getAs[PriceUSD](o1)) map PiObject.apply
@@ -425,18 +425,18 @@ package object CodeOutput {
       with AtomicProcess {
     override val name = "SelectSki"
 
-    override val output = (
+    override val output: (PiOpt, String) = (
       PiOpt(Chan("SelectSki_l_a_PriceUSD"), Chan("SelectSki_r_a_Exception")),
       "oSelectSki_lB_PriceUSD_Plus_Exception_rB_"
     )
 
-    override val inputs = Seq(
+    override val inputs: Seq[(Chan, String)] = Seq(
       (Chan("SelectSki__a_LengthInch"), "cSelectSki_LengthInch_1"),
       (Chan("SelectSki__a_Brand"), "cSelectSki_Brand_2"),
       (Chan("SelectSki__a_Model"), "cSelectSki_Model_3")
     )
 
-    override val channels = Seq(
+    override val channels: Seq[String] = Seq(
       "cSelectSki_LengthInch_1",
       "cSelectSki_Brand_2",
       "cSelectSki_Model_3",
@@ -461,16 +461,16 @@ package object CodeOutput {
       uSD2NOK: USD2NOK
   ) extends CompositeProcess { // (HeightCM, PriceLimit, SkillLevel, WeightKG) => Either[PriceNOK,Exception]
     override val name = "GetSki"
-    override val output = (PiOpt(Chan("GetSki_l_a_PriceNOK"), Chan("GetSki_r_a_Exception")), "y12")
+    override val output: (PiOpt, String) = (PiOpt(Chan("GetSki_l_a_PriceNOK"), Chan("GetSki_r_a_Exception")), "y12")
 
-    override val inputs = Seq(
+    override val inputs: Seq[(Chan, String)] = Seq(
       (Chan("GetSki__a_HeightCM"), "cSelectLength_HeightCM_1"),
       (Chan("GetSki__a_PriceLimit"), "cSelectModel_PriceLimit_1"),
       (Chan("GetSki__a_SkillLevel"), "cSelectModel_SkillLevel_2"),
       (Chan("GetSki__a_WeightKG"), "cSelectLength_WeightKG_2")
     )
 
-    override val channels = Seq(
+    override val channels: Seq[String] = Seq(
       "cSelectLength_HeightCM_1",
       "cSelectModel_PriceLimit_1",
       "cSelectModel_SkillLevel_2",
@@ -478,9 +478,9 @@ package object CodeOutput {
       "y12"
     )
 
-    override val dependencies = Seq(cM2Inch, selectLength, selectModel, selectSki, uSD2NOK)
+    override val dependencies: Seq[AtomicProcess] = Seq(cM2Inch, selectLength, selectModel, selectSki, uSD2NOK)
 
-    override val body = PiCut(
+    override val body: PiCut = PiCut(
       "z14",
       "x12",
       "oSelectSki_lB_PriceUSD_Plus_Exception_rB_",

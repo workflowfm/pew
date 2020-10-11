@@ -1,6 +1,9 @@
 lazy val commonSettings = Seq (
 	organization := "com.workflowfm",
-	scalaVersion := "2.12.12"
+	scalaVersion := "2.12.12",
+    semanticdbEnabled := true,
+    semanticdbVersion := scalafixSemanticdb.revision,
+    scalacOptions += "-Ywarn-unused-import" // required by `RemoveUnused` rule
 )
 
 autoAPIMappings := true
@@ -39,6 +42,8 @@ libraryDependencies += "junit" % "junit" % "4.8.2"
 
 libraryDependencies += "uk.ac.ed.inf" %% "subakka" % "0.1-SNAPSHOT"
 libraryDependencies += "uk.ac.ed.inf" %% "subakka" % "0.1-SNAPSHOT" % Test classifier "tests"
+
+ThisBuild / scalafixDependencies += "com.nequissimus" %% "sort-imports" % "0.5.4"
 
 lazy val skiexample = project
   .in(file("skiexample"))

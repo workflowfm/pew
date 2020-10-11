@@ -1,11 +1,12 @@
 package com.workflowfm.pew.stateless.instances.kafka.settings.bson.codecs.messages
 
+import org.bson.{ BsonReader, BsonWriter }
+import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
+
 import com.workflowfm.pew.PiObject
 import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.SequenceRequest
-import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
-import org.bson.{ BsonReader, BsonWriter }
 
 class SequenceRequestCodec(
     refCodec: Codec[CallRef],

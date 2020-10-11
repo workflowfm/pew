@@ -1,19 +1,22 @@
 package com.workflowfm.pew.metrics
 
-import akka.actor.ActorSystem
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers
-import org.scalatest.BeforeAndAfterAll
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import java.util.UUID
+
 import scala.concurrent._
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.actor.ActorSystem
+import org.junit.runner.RunWith
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.FlatSpec
+import org.scalatest.Matchers
+import org.scalatest.junit.JUnitRunner
+
 import com.workflowfm.pew._
-import com.workflowfm.pew.stream._
 import com.workflowfm.pew.execution._
-import RexampleTypes._
-import java.util.UUID
+import com.workflowfm.pew.execution.RexampleTypes._
+import com.workflowfm.pew.stream._
 
 @RunWith(classOf[JUnitRunner])
 class MetricsTests
@@ -22,7 +25,7 @@ class MetricsTests
     with BeforeAndAfterAll
     with ProcessExecutorTester {
   implicit val system: ActorSystem = ActorSystem("AkkaExecutorTests")
-  implicit val executionContext = ExecutionContext.global //system.dispatchers.lookup("akka.my-dispatcher")
+  implicit val executionContext: ExecutionContextExecutor = ExecutionContext.global //system.dispatchers.lookup("akka.my-dispatcher")
   implicit val timeout: FiniteDuration = 10.seconds
 
   val pai = new PaI

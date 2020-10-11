@@ -3,14 +3,14 @@ package com.workflowfm.pew.stateless.instances.kafka.settings.bson
 import java.nio.ByteBuffer
 import java.util
 
-import org.apache.kafka.common.serialization._
-import org.bson._
-import org.bson.codecs.configuration.{ CodecProvider, CodecRegistry }
-import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
-import org.bson.io.BasicOutputBuffer
-
 import scala.collection.mutable
 import scala.reflect.ClassTag
+
+import org.apache.kafka.common.serialization._
+import org.bson._
+import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
+import org.bson.codecs.configuration.{ CodecProvider, CodecRegistry }
+import org.bson.io.BasicOutputBuffer
 
 /** A deserializer/serializer wrapper for the MongoDB codec serialization interface
   * so as to use them for Kafka message serialization.

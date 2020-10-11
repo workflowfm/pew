@@ -1,22 +1,23 @@
 package com.workflowfm.pew.stateless.instances.kafka.components
 
+import scala.concurrent.{ ExecutionContext, Future }
+
+import akka.{ Done, NotUsed }
+import akka.kafka._
 import akka.kafka.ConsumerMessage.{
   Committable,
   CommittableOffset,
   CommittableOffsetBatch,
   PartitionOffset
 }
-import akka.kafka._
-import akka.kafka.scaladsl.Consumer.Control
 import akka.kafka.scaladsl.{ Consumer, Producer, Transactional }
+import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.{ Sink, Source }
-import akka.{ Done, NotUsed }
+import org.bson.types.ObjectId
+
 import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorEnvironment
 import com.workflowfm.pew.util.ClassLoaderUtil.withClassLoader
-import org.bson.types.ObjectId
-
-import scala.concurrent.{ ExecutionContext, Future }
 
 /** Superclass wrapper around objects processed from objects in Kafka topics. The wrapper
   * contains the information necessary to update to consume the input messages when the

@@ -1,15 +1,17 @@
 package com.workflowfm.pew.metrics
 
-import scala.collection.immutable.Queue
-import org.apache.commons.lang3.time.DurationFormatUtils
 import java.text.SimpleDateFormat
+
+import scala.collection.immutable.Queue
+
+import org.apache.commons.lang3.time.DurationFormatUtils
 
 /** Manipulates a [[MetricsAggregator]] to produce some output via side-effects.
   * @tparam KeyT the type used for workflow IDs
   */
 trait MetricsOutput[KeyT] extends (MetricsAggregator[KeyT] => Unit) {
   /** Compose with another [[MetricsOutput]] in sequence. */
-  def and(h: MetricsOutput[KeyT]) = MetricsOutputs(this, h)
+  def and(h: MetricsOutput[KeyT]): MetricsOutputs[KeyT] = MetricsOutputs(this, h)
 }
 
 /** Contains helpful formatting shortcut functions. */
@@ -19,21 +21,21 @@ object MetricsOutput {
       v: Option[T],
       nullValue: String,
       format: T => String = { x: T => x.toString }
-  ) = v.map(format).getOrElse(nullValue)
-  def formatTime(format: String)(time: Long) = new SimpleDateFormat(format).format(time)
+  ): String = v.map(format).getOrElse(nullValue)
+  def formatTime(format: String)(time: Long): String = new SimpleDateFormat(format).format(time)
 
-  def formatTimeOption(time: Option[Long], format: String, nullValue: String) =
+  def formatTimeOption(time: Option[Long], format: String, nullValue: String): String =
     formatOption(time, nullValue, formatTime(format))
 
-  def formatDuration(from: Long, to: Long, format: String) =
+  def formatDuration(from: Long, to: Long, format: String): String =
     DurationFormatUtils.formatDuration(to - from, format)
 
-  def formatDuration(from: Option[Long], to: Long, format: String, nullValue: String) =
+  def formatDuration(from: Option[Long], to: Long, format: String, nullValue: String): String =
     from.map { f =>
       DurationFormatUtils.formatDuration(to - f, format).toString
     } getOrElse (nullValue)
 
-  def formatDuration(from: Option[Long], to: Option[Long], format: String, nullValue: String) =
+  def formatDuration(from: Option[Long], to: Option[Long], format: String, nullValue: String): String =
     from.map { f =>
       to.map { t =>
         DurationFormatUtils.formatDuration(t - f, format).toString
@@ -46,9 +48,9 @@ object MetricsOutput {
   */
 case class MetricsOutputs[KeyT](handlers: Queue[MetricsOutput[KeyT]]) extends MetricsOutput[KeyT] {
   /** Call all included [[MetricsOutput]]s. */
-  override def apply(aggregator: MetricsAggregator[KeyT]) = handlers map (_.apply(aggregator))
+  override def apply(aggregator: MetricsAggregator[KeyT]): Unit = handlers map (_.apply(aggregator))
   /** Add another [[MetricsOutput]] in sequence. */
-  override def and(h: MetricsOutput[KeyT]) = MetricsOutputs(handlers :+ h)
+  override def and(h: MetricsOutput[KeyT]): MetricsOutputs[KeyT] = MetricsOutputs(handlers :+ h)
 }
 
 object MetricsOutputs {
@@ -66,7 +68,7 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] {
   /** The field names for [[ProcessMetrics]].
     * @param separator a string (such as a space or comma) to separate the names
     */
-  def procHeader(separator: String) =
+  def procHeader(separator: String): String =
     Seq("ID", "PID", "Process", "Start", "Finish", "Result").mkString(separator)
 
   /** String representation of a [[ProcessMetrics]] instance.
@@ -75,7 +77,7 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] {
     * @param timeFormat optional argument to format timestamps using `java.text.SimpleDateFormat`
     * @param m the [[ProcessMetrics]] instance to be handled
     */
-  def procCSV(separator: String, timeFormat: Option[String])(m: ProcessMetrics[KeyT]) = m match {
+  def procCSV(separator: String, timeFormat: Option[String])(m: ProcessMetrics[KeyT]): String = m match {
     case ProcessMetrics(id, r, p, s, f, res) =>
       timeFormat match {
         case None =>
@@ -102,7 +104,7 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] {
   /** The field names for [[WorkflowMetrics]].
     * @param separator a string (such as a space or comma) to separate the names
     */
-  def workflowHeader(separator: String) =
+  def workflowHeader(separator: String): String =
     Seq("ID", "PID", "Process", "Start", "Finish", "Result").mkString(separator)
 
   /** String representation of a [[WorkflowMetrics]] instance.
@@ -111,7 +113,7 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] {
     * @param timeFormat optional argument to format timestamps using `java.text.SimpleDateFormat`
     * @param m the [[WorkflowMetrics]] instance to be handled
     */
-  def workflowCSV(separator: String, timeFormat: Option[String])(m: WorkflowMetrics[KeyT]) =
+  def workflowCSV(separator: String, timeFormat: Option[String])(m: WorkflowMetrics[KeyT]): String =
     m match {
       case WorkflowMetrics(id, s, c, f, res) =>
         timeFormat match {
@@ -146,7 +148,7 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] {
       separator: String,
       lineSep: String = "\n",
       timeFormat: Option[String] = None
-  ) =
+  ): String =
     aggregator.processMetrics.map(procCSV(separator, timeFormat)).mkString(lineSep)
 
   /** Formats all [[WorkflowMetrics]] in a [[MetricsAggregator]] in a single string.
@@ -161,7 +163,7 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] {
       separator: String,
       lineSep: String = "\n",
       timeFormat: Option[String] = None
-  ) =
+  ): String =
     aggregator.workflowMetrics.map(workflowCSV(separator, timeFormat)).mkString(lineSep)
 }
 
@@ -172,9 +174,9 @@ class MetricsPrinter[KeyT] extends MetricsStringOutput[KeyT] {
   /** Separates metrics instances. */
   val lineSep = "\n"
   /** Default time format using `java.text.SimpleDateFormat`. */
-  val timeFormat = Some("YYYY-MM-dd HH:mm:ss.SSS")
+  val timeFormat: Some[String] = Some("YYYY-MM-dd HH:mm:ss.SSS")
 
-  override def apply(aggregator: MetricsAggregator[KeyT]) = {
+  override def apply(aggregator: MetricsAggregator[KeyT]): Unit = {
     println(
       s"""
 Tasks
@@ -197,7 +199,7 @@ ${workflows(aggregator, separator, lineSep, timeFormat)}
 trait FileOutput {
   import java.io._
 
-  def writeToFile(filePath: String, output: String) = try {
+  def writeToFile(filePath: String, output: String): Unit = try {
     val file = new File(filePath)
     val bw = new BufferedWriter(new FileWriter(file))
     bw.write(output)
@@ -222,7 +224,7 @@ class MetricsCSVFileOutput[KeyT](path: String, name: String)
 
   val separator = ","
 
-  override def apply(aggregator: MetricsAggregator[KeyT]) = {
+  override def apply(aggregator: MetricsAggregator[KeyT]): Unit = {
     val taskFile = s"$path$name-tasks.csv"
     val workflowFile = s"$path$name-workflows.csv"
     writeToFile(taskFile, procHeader(separator) + "\n" + processes(aggregator, separator) + "\n")
@@ -245,10 +247,9 @@ class MetricsCSVFileOutput[KeyT](path: String, name: String)
   */
 class MetricsD3Timeline[KeyT](path: String, file: String)
     extends MetricsOutput[KeyT]
-    with FileOutput {
-  import java.io._
+    with FileOutput {import java.io._
 
-  override def apply(aggregator: MetricsAggregator[KeyT]) = {
+  override def apply(aggregator: MetricsAggregator[KeyT]): Unit = {
     val result = build(aggregator, System.currentTimeMillis())
     println(result)
     val dataFile = s"$path$file-data.js"
@@ -256,7 +257,7 @@ class MetricsD3Timeline[KeyT](path: String, file: String)
   }
 
   /** Helps build the output with a static system time. */
-  def build(aggregator: MetricsAggregator[KeyT], now: Long) = {
+  def build(aggregator: MetricsAggregator[KeyT], now: Long): String = {
     var buf: StringBuilder = StringBuilder.newBuilder
     buf.append("var processes = [\n")
     for (p <- aggregator.processSet) buf.append(s"""\t"$p",\n""")
@@ -281,7 +282,7 @@ class MetricsD3Timeline[KeyT](path: String, file: String)
       agg: MetricsAggregator[KeyT],
       now: Long,
       prefix: String
-  ) = {
+  ): String = {
     val processes = (Map[String, Queue[ProcessMetrics[KeyT]]]() /: agg.processMetricsOf(m.piID)) {
       case (m, p) => {
         val procs = m.getOrElse(p.process, Queue()) :+ p
@@ -300,7 +301,7 @@ class MetricsD3Timeline[KeyT](path: String, file: String)
     * @param now the current (real) to be used as the end time of unfinished processes
     * @param prefix a string to prefix (usually some whitespace) to prefix the entry
     */
-  def processEntry(proc: String, i: Seq[ProcessMetrics[KeyT]], now: Long, prefix: String) = {
+  def processEntry(proc: String, i: Seq[ProcessMetrics[KeyT]], now: Long, prefix: String): String = {
     if (i.isEmpty) ""
     else {
       val times = ("" /: i) { case (s, m) => s"$s${callEntry(now, m, prefix + "\t")}" }
@@ -315,7 +316,7 @@ class MetricsD3Timeline[KeyT](path: String, file: String)
     * @param m the [[ProcessMetrics]] recorded for this process call
     * @param prefix a string to prefix (usually some whitespace) to prefix the entry
     */
-  def callEntry(now: Long, m: ProcessMetrics[KeyT], prefix: String) = {
+  def callEntry(now: Long, m: ProcessMetrics[KeyT], prefix: String): String = {
     s"""$prefix{"label":"${m.ref}", "process": "${m.process}", "starting_time": ${m.start}, "ending_time": ${m.finish
       .getOrElse(now)}, "result":"${MetricsOutput.formatOption(m.result, "NONE")}"},\n"""
 

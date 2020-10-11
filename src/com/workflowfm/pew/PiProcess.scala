@@ -1,10 +1,10 @@
 package com.workflowfm.pew
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+
 import com.workflowfm.pew.MetadataAtomicProcess.MetadataAtomicResult
 import com.workflowfm.pew.PiMetadata.{ PiMetadataElem, PiMetadataMap }
-
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext
 
 /**
   * A trait corresponding to any process that can be executed within our framework.
@@ -42,12 +42,12 @@ sealed trait PiProcess {
   /**
     *  Used when a process is called to map argument channels to the given values.
     */
-  def mapArgs(args: Chan*) = ChanMap(channels map Chan zip args: _*)
-  def mapFreshArgs(i: Int, args: Chan*) = ChanMap(channels map (_ + "#" + i) map Chan zip args: _*)
+  def mapArgs(args: Chan*): ChanMap = ChanMap(channels map Chan zip args: _*)
+  def mapFreshArgs(i: Int, args: Chan*): ChanMap = ChanMap(channels map (_ + "#" + i) map Chan zip args: _*)
 
-  def inputFrees() = inputs map (_._1.frees)
+  def inputFrees(): Seq[Seq[Chan]] = inputs map (_._1.frees)
 
-  override def toString = "[|" + name + "|]"
+  override def toString: String = "[|" + name + "|]"
 
   /**
     * Shortcut to create entries in name->PiProcess maps
@@ -148,7 +148,7 @@ case class DummyProcess(
     outChan: String,
     override val inputs: Seq[(PiObject, String)]
 ) extends AtomicProcess {
-  override val output = (PiItem(None), outChan)
+  override val output: (PiItem[None.type], String) = (PiItem(None), outChan)
 
   override def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] =
     Future.successful(output._1)
@@ -169,10 +169,10 @@ trait CompositeProcess extends PiProcess {
 
 case class DummyComposition(override val name: String, i: String, o: String, n: String)
     extends CompositeProcess {
-  override val output = (Chan(n), o)
-  override val inputs = Seq((Chan(n), i))
-  override val channels = Seq(i, o)
-  override val body = PiId(i, o, n)
+  override val output: (Chan, String) = (Chan(n), o)
+  override val inputs: Seq[(Chan, String)] = Seq((Chan(n), i))
+  override val channels: Seq[String] = Seq(i, o)
+  override val body: Input = PiId(i, o, n)
   override val dependencies: Seq[PiProcess] = Seq()
 }
 

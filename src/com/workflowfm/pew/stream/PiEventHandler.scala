@@ -1,16 +1,16 @@
 package com.workflowfm.pew.stream
 
-import com.workflowfm.pew.{ PiEvent, PiEventResult }
-
 import java.text.SimpleDateFormat
 
 import scala.collection.immutable.Queue
+
+import com.workflowfm.pew.{ PiEvent, PiEventResult }
 
 // Return true if the handler is done and needs to be unsubscribed.
 /** A listener for [[PiEvent]]s. */
 trait PiEventHandler[KeyT] extends (PiEvent[KeyT] => Boolean) {
   /** Compose with another handler. */
-  def and(h: PiEventHandler[KeyT]) = MultiPiEventHandler(this, h)
+  def and(h: PiEventHandler[KeyT]): MultiPiEventHandler[KeyT] = MultiPiEventHandler(this, h)
 }
 
 /** A factory that generates a handler that is related to a particular workflow ID.
@@ -24,7 +24,7 @@ trait PiEventHandlerFactory[T, H <: PiEventHandler[T]] {
 class PrintEventHandler[T] extends PiEventHandler[T] {
   val formatter = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss.SSS")
 
-  override def apply(e: PiEvent[T]) = {
+  override def apply(e: PiEvent[T]): Boolean = {
     val time = formatter.format(e.rawTime)
     System.err.println(s"[$time] ${e.asString}")
     false
@@ -33,8 +33,8 @@ class PrintEventHandler[T] extends PiEventHandler[T] {
 
 /** A [[PiEventHandler]] consisting of a queue of multiple handlers. */
 case class MultiPiEventHandler[T](handlers: Queue[PiEventHandler[T]]) extends PiEventHandler[T] {
-  override def apply(e: PiEvent[T]) = handlers map (_(e)) forall (_ == true)
-  override def and(h: PiEventHandler[T]) = MultiPiEventHandler(handlers :+ h)
+  override def apply(e: PiEvent[T]): Boolean = handlers map (_(e)) forall (_ == true)
+  override def and(h: PiEventHandler[T]): MultiPiEventHandler[T] = MultiPiEventHandler(handlers :+ h)
 }
 
 object MultiPiEventHandler {

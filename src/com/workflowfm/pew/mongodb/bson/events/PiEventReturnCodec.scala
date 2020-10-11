@@ -1,10 +1,11 @@
 package com.workflowfm.pew.mongodb.bson.events
 
-import com.workflowfm.pew.PiMetadata.PiMetadataMap
-import com.workflowfm.pew.{ PiEventReturn }
-import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
-import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
 import org.bson.{ BsonReader, BsonWriter }
+import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
+
+import com.workflowfm.pew.{ PiEventReturn }
+import com.workflowfm.pew.PiMetadata.PiMetadataMap
+import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 
 class PiEventReturnCodec[T](tCodec: Codec[T], anyCodec: Codec[Any], metaCodec: Codec[PiMetadataMap])
     extends ClassCodec[PiEventReturn[T]] {

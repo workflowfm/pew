@@ -1,12 +1,15 @@
 package com.workflowfm.pew.stream
 
-import akka.actor.ActorRef
-import akka.stream.KillSwitch
-import com.workflowfm.pew.{ PiEvent, PiEventResult }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
+
+import akka.actor.ActorRef
+import akka.stream.KillSwitch
+
 import uk.ac.ed.inf.ppapapan.subakka.{ HashSetPublisher, Subscriber, SubscriptionSwitch }
+
+import com.workflowfm.pew.{ PiEvent, PiEventResult }
 
 class PiSubscriber[T](handler: PiEventHandler[T]) extends Subscriber[PiEvent[T]] {
   var switch: Option[SubscriptionSwitch] = None
@@ -35,5 +38,5 @@ trait PiStream[T] extends PiPublisher[T] with HashSetPublisher[PiEvent[T]] with 
 
 /** A wrapper of [[akka.stream.KillSwitch]] to stop [[PiEventHandler]]s. */
 case class PiKillSwitch(switch: SubscriptionSwitch) extends PiSwitch {
-  override def stop = switch.stop()
+  override def stop: Unit = switch.stop()
 }

@@ -1,5 +1,7 @@
 package com.workflowfm.pew.metrics
 
+import scala.collection.mutable
+
 import com.workflowfm.pew._
 import com.workflowfm.pew.stream.PiEventHandler
 
@@ -23,7 +25,7 @@ case class ProcessMetrics[KeyT](
     finish: Option[Long] = None,
     result: Option[String] = None
 ) {
-  def complete(time: Long, result: Any) = copy(finish = Some(time), result = Some(result.toString))
+  def complete(time: Long, result: Any): ProcessMetrics[KeyT] = copy(finish = Some(time), result = Some(result.toString))
 }
 
 /** Metrics for a particular workflow.
@@ -44,8 +46,8 @@ case class WorkflowMetrics[KeyT](
     finish: Option[Long] = None,
     result: Option[String] = None
 ) {
-  def complete(time: Long, result: Any) = copy(finish = Some(time), result = Some(result.toString))
-  def call = copy(calls = calls + 1)
+  def complete(time: Long, result: Any): WorkflowMetrics[KeyT] = copy(finish = Some(time), result = Some(result.toString))
+  def call: WorkflowMetrics[KeyT] = copy(calls = calls + 1)
 }
 
 /** Collects/aggregates metrics across multiple process calls and workflow executions */
@@ -53,9 +55,9 @@ class MetricsAggregator[KeyT] {
   import scala.collection.immutable.Map
 
   /** Process metrics indexed by workflow ID, then by call reference ID */
-  val processMap = scala.collection.mutable.Map[KeyT, Map[Int, ProcessMetrics[KeyT]]]()
+  val processMap: mutable.Map[KeyT,Map[Int,ProcessMetrics[KeyT]]] = scala.collection.mutable.Map[KeyT, Map[Int, ProcessMetrics[KeyT]]]()
   /** Workflow metrics indexed by workflow ID */
-  val workflowMap = scala.collection.mutable.Map[KeyT, WorkflowMetrics[KeyT]]()
+  val workflowMap: mutable.Map[KeyT,WorkflowMetrics[KeyT]] = scala.collection.mutable.Map[KeyT, WorkflowMetrics[KeyT]]()
 
   // Set
 
@@ -199,19 +201,19 @@ class MetricsAggregator[KeyT] {
   /** Returns the collection of workflow IDs that have been tracked. */
   def keys = workflowMap.keys
   /** Returns all the tracked instances of [[WorkflowMetrics]] sorted by starting time. */
-  def workflowMetrics = workflowMap.values.toSeq.sortBy(_.start)
+  def workflowMetrics: Seq[WorkflowMetrics[KeyT]] = workflowMap.values.toSeq.sortBy(_.start)
   /** Returns all the tracked instances of [[ProcessMetrics]] sorted by starting time. */
-  def processMetrics = processMap.values.flatMap(_.values).toSeq.sortBy(_.start)
+  def processMetrics: Seq[ProcessMetrics[KeyT]] = processMap.values.flatMap(_.values).toSeq.sortBy(_.start)
 
   /** Returns all the tracked instances of [[ProcessMetrics]] associated with a particular workflow, sorted by starting time.
     * @param id the ID of the workflow
     */
-  def processMetricsOf(id: KeyT) =
+  def processMetricsOf(id: KeyT): Seq[ProcessMetrics[KeyT]] =
     processMap.getOrElse(id, Map[Int, ProcessMetrics[KeyT]]()).values.toSeq.sortBy(_.start)
   /** Returns a [[scala.collection.immutable.Set]] of all process names being tracked.
     * This is useful when using process names as a category, for example to colour code tasks in the timeline.
     */
-  def processSet = processMap.values.flatMap(_.values.map(_.process)).toSet[String]
+  def processSet: Set[String] = processMap.values.flatMap(_.values.map(_.process)).toSet[String]
 }
 
 /** A [[MetricsAggregator]] that is also a [[com.workflowfm.pew.stream.PiEventHandler]].

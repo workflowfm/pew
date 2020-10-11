@@ -1,17 +1,18 @@
 package com.workflowfm.pew.stateless.component
 
+import scala.concurrent.Future
+
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+
 import com.workflowfm.pew.PewTestSuite
 import com.workflowfm.pew.stateless.KafkaExampleTypes
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.components.Reducer
-import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows.flowRespond
 import com.workflowfm.pew.stateless.instances.kafka.components.{ MockTracked, Tracked }
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-
-import scala.concurrent.Future
+import com.workflowfm.pew.stateless.instances.kafka.components.KafkaWrapperFlows.flowRespond
 
 @RunWith(classOf[JUnitRunner])
 class KafkaReducerTests extends PewTestSuite with KafkaExampleTypes {

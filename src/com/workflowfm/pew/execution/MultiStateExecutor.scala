@@ -1,10 +1,10 @@
 package com.workflowfm.pew.execution
 
-import com.workflowfm.pew._
-import com.workflowfm.pew.stream.SimplePiObservable
-
 import scala.concurrent._
 import scala.util.{ Failure, Success }
+
+import com.workflowfm.pew._
+import com.workflowfm.pew.stream.SimplePiObservable
 
 /**
   * Executes any PiProcess asynchronously.

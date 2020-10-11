@@ -1,11 +1,12 @@
 package com.workflowfm.pew.stateless
 
-import akka.Done
-import com.workflowfm.pew.stream.PiObservable
-import com.workflowfm.pew.execution._
-
-import scala.concurrent.duration.Duration
 import scala.concurrent.{ Future, _ }
+import scala.concurrent.duration.Duration
+
+import akka.Done
+
+import com.workflowfm.pew.execution._
+import com.workflowfm.pew.stream.PiObservable
 
 /** Exception throw when calling prohibited functions on a shutdown StatelessExecutor.
   *

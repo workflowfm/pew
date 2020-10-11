@@ -1,8 +1,9 @@
 package com.workflowfm.pew.mongodb.bson.helper
 
-import com.workflowfm.pew.mongodb.bson.auto.{ ClassCodec, SuperclassCodec }
 import org.bson.{ BsonReader, BsonWriter }
 import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
+
+import com.workflowfm.pew.mongodb.bson.auto.{ ClassCodec, SuperclassCodec }
 
 class NoneCodec extends ClassCodec[None.type] {
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): None.type = None

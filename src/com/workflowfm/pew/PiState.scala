@@ -49,30 +49,30 @@ case class PiState(
 
   def withSub(c: Chan, a: PiObject): PiState = copy(resources = resources + (c, a))
   def withSub(c: String, o: PiObject): PiState = withSub(Chan(c), o)
-  def withSubs(m: Map[Chan, PiObject]) = copy(resources = resources ++ m)
-  def withSubs(l: Seq[(Chan, PiObject)]) = copy(resources = resources ++ l)
-  def withSubs(m: ChanMap) = copy(resources = resources ++ m)
+  def withSubs(m: Map[Chan, PiObject]): PiState = copy(resources = resources ++ m)
+  def withSubs(l: Seq[(Chan, PiObject)]): PiState = copy(resources = resources ++ l)
+  def withSubs(m: ChanMap): PiState = copy(resources = resources ++ m)
 
-  def withProc(p: PiProcess) = copy(processes = processes + (p.name -> p))
-  def withProcs(l: PiProcess*) = (this /: l)(_ withProc _)
+  def withProc(p: PiProcess): PiState = copy(processes = processes + (p.name -> p))
+  def withProcs(l: PiProcess*): PiState = (this /: l)(_ withProc _)
 
-  def updateProcs(m: Map[String, PiProcess]) = copy(processes = m)
-  def updateProcs(f: PiProcess => PiProcess) = copy(processes = processes.mapValues(f))
+  def updateProcs(m: Map[String, PiProcess]): PiState = copy(processes = m)
+  def updateProcs(f: PiProcess => PiProcess): PiState = copy(processes = processes.mapValues(f))
 
-  def withCalls(l: PiFuture*) = copy(calls = l.toList ++ calls)
+  def withCalls(l: PiFuture*): PiState = copy(calls = l.toList ++ calls)
 
-  def withThread(ref: Int, name: String, chan: String, args: Seq[PiResource]) = withThreads(
+  def withThread(ref: Int, name: String, chan: String, args: Seq[PiResource]): PiState = withThreads(
     (ref, PiFuture(name, Chan(chan), args))
   )
-  def withThreads(t: (Int, PiFuture)*) = copy(threads = threads ++ (t map { x => x._1 -> x._2 }))
-  def removeThread(ref: Int) = copy(threads = threads - ref)
-  def removeThreads(refs: Iterable[Int]) = copy(threads = threads -- refs)
+  def withThreads(t: (Int, PiFuture)*): PiState = copy(threads = threads ++ (t map { x => x._1 -> x._2 }))
+  def removeThread(ref: Int): PiState = copy(threads = threads - ref)
+  def removeThreads(refs: Iterable[Int]): PiState = copy(threads = threads -- refs)
 
-  def withTCtr(i: Int) = copy(threadCtr = i)
-  def incTCtr() = copy(threadCtr = threadCtr + 1)
+  def withTCtr(i: Int): PiState = copy(threadCtr = i)
+  def incTCtr(): PiState = copy(threadCtr = threadCtr + 1)
 
-  def withFCtr(i: Int) = copy(freshCtr = i)
-  def incFCtr() = copy(freshCtr = freshCtr + 1)
+  def withFCtr(i: Int): PiState = copy(freshCtr = i)
+  def incFCtr(): PiState = copy(freshCtr = freshCtr + 1)
 
   private def removeIO(c: Chan): PiState = copy(inputs = inputs - c, outputs = outputs - c)
 
@@ -213,7 +213,7 @@ case class PiState(
     * Handler should return true if a thread was handled successfully, false if it failed.
     * Returns the updated state containing only threads that were handled successfully.
     */
-  def handleThreads(handler: ((Int, PiFuture)) => Boolean) = copy(threads = threads filter handler)
+  def handleThreads(handler: ((Int, PiFuture)) => Boolean): PiState = copy(threads = threads filter handler)
 }
 
 object PiState {
@@ -233,7 +233,7 @@ object PiState {
 
 trait PiStateTester {
 
-  def reduceOnce(t: ChannelTerm*) = PiState(t: _*).reduce()
+  def reduceOnce(t: ChannelTerm*): Option[PiState] = PiState(t: _*).reduce()
 
   def reduce(t: ChannelTerm*): PiState = reduceState(PiState(t: _*))
 
@@ -242,5 +242,5 @@ trait PiStateTester {
   def reduceGet(r: String, t: ChannelTerm*): PiObject =
     reduceState(PiState(t: _*)).resources.obtain(Chan(r))
 
-  def fState(l: (Chan, PiObject)*) = PiState(List(), l)
+  def fState(l: (Chan, PiObject)*): PiState = PiState(List(), l)
 }

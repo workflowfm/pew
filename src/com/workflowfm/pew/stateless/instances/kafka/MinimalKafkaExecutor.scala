@@ -1,18 +1,19 @@
 package com.workflowfm.pew.stateless.instances.kafka
 
+import scala.concurrent._
+
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.Materializer
+import org.bson.types.ObjectId
+import org.slf4j.{ Logger, LoggerFactory }
+
 import com.workflowfm.pew._
-import com.workflowfm.pew.stream.{ DelegatedPiObservable, PiObservable }
 import com.workflowfm.pew.stateless._
 import com.workflowfm.pew.stateless.components.ResultListener
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
 import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorEnvironment
-import org.bson.types.ObjectId
-import org.slf4j.{ Logger, LoggerFactory }
-
-import scala.concurrent._
+import com.workflowfm.pew.stream.{ DelegatedPiObservable, PiObservable }
 
 /** Minimal implementation of a KafkaExecutor that needs to be
   * present on the local machine to complete the Executor interface.
@@ -26,6 +27,7 @@ class MinimalKafkaExecutor(implicit val environment: KafkaExecutorEnvironment)
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   import StatelessMessages._
+
   import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors._
 
   // Implicit settings.

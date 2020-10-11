@@ -1,10 +1,10 @@
 package com.workflowfm.pew.execution
 
-import com.workflowfm.pew._
-import com.workflowfm.pew.stream.SimplePiObservable
-
 import scala.concurrent._
 import scala.util.{ Failure, Success }
+
+import com.workflowfm.pew._
+import com.workflowfm.pew.stream.SimplePiObservable
 
 /**
   * Executes any PiProcess asynchronously.
@@ -41,7 +41,7 @@ class SingleStateExecutor(
       }
   }
 
-  def success(id: Int, res: Any) = {
+  def success(id: Int, res: Any): Unit = {
     instance match {
       case Some(i) => {
         publish(PiEventResult(i, res))
@@ -51,7 +51,7 @@ class SingleStateExecutor(
     instance = None
   }
 
-  def failure(inst: PiInstance[Int]) = {
+  def failure(inst: PiInstance[Int]): Unit = {
     publish(PiFailureNoResult(inst))
     instance = None
   }

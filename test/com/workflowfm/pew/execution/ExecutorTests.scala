@@ -1,16 +1,16 @@
 package com.workflowfm.pew.execution
 
-import com.workflowfm.pew._
-
-import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.concurrent.duration._
+
+import com.workflowfm.pew._
 
 /**
   * Shortcut methods for unit testing
   */
 trait ProcessExecutorTester {
 
-  def exe(e: ProcessExecutor[_], p: PiProcess, args: Any*) = await(e.execute(p, args: Seq[Any]))
+  def exe(e: ProcessExecutor[_], p: PiProcess, args: Any*): Any = await(e.execute(p, args: Seq[Any]))
 
   def await[A](f: Future[A], timeout: Duration = 15.seconds): A = try {
     Await.result(f, timeout)
@@ -42,9 +42,9 @@ package object RexampleTypes {
 
   trait Pa extends ((X) => (A, B)) with AtomicProcess {
     override val name = "Pa"
-    override val output = (PiPair(Chan("Pa_l_a_A"), Chan("Pa_r_a_B")), "oPa_lB_A_x_B_rB_")
-    override val inputs = Seq((Chan("Pa__a_X"), "cPa_X_1"))
-    override val channels = Seq("cPa_X_1", "oPa_lB_A_x_B_rB_")
+    override val output: (PiPair, String) = (PiPair(Chan("Pa_l_a_A"), Chan("Pa_r_a_B")), "oPa_lB_A_x_B_rB_")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("Pa__a_X"), "cPa_X_1"))
+    override val channels: Seq[String] = Seq("cPa_X_1", "oPa_lB_A_x_B_rB_")
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] = args match {
       case Seq(o1) => Future { PiObject(this(PiObject.getAs[X](o1))) }
@@ -53,9 +53,9 @@ package object RexampleTypes {
 
   trait Pb extends ((A) => Y) with AtomicProcess {
     override val name = "Pb"
-    override val output = (Chan("Pb__a_Y"), "oPb_Y_")
-    override val inputs = Seq((Chan("Pb__a_A"), "cPb_A_1"))
-    override val channels = Seq("cPb_A_1", "oPb_Y_")
+    override val output: (Chan, String) = (Chan("Pb__a_Y"), "oPb_Y_")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("Pb__a_A"), "cPb_A_1"))
+    override val channels: Seq[String] = Seq("cPb_A_1", "oPb_Y_")
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] = args match {
       case Seq(o1) => Future { PiObject(this(PiObject.getAs[A](o1))) }
@@ -64,9 +64,9 @@ package object RexampleTypes {
 
   trait Pc extends ((B) => Z) with AtomicProcess {
     override val name = "Pc"
-    override val output = (Chan("Pc__a_Z"), "oPc_Z_")
-    override val inputs = Seq((Chan("Pc__a_B"), "cPc_B_1"))
-    override val channels = Seq("cPc_B_1", "oPc_Z_")
+    override val output: (Chan, String) = (Chan("Pc__a_Z"), "oPc_Z_")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("Pc__a_B"), "cPc_B_1"))
+    override val channels: Seq[String] = Seq("cPc_B_1", "oPc_Z_")
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] = args match {
       case Seq(o1) => Future { PiObject(this(PiObject.getAs[B](o1))) }
@@ -75,13 +75,13 @@ package object RexampleTypes {
 
   class R(pa: Pa, pb: Pb, pc: Pc) extends CompositeProcess { // (X) => (Y,Z)
     override val name = "R"
-    override val output = (PiPair(Chan("R_l_a_Y"), Chan("R_r_a_Z")), "z13")
-    override val inputs = Seq((Chan("R__a_X"), "cPa_X_1"))
-    override val channels = Seq("cPa_X_1", "z13")
+    override val output: (PiPair, String) = (PiPair(Chan("R_l_a_Y"), Chan("R_r_a_Z")), "z13")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("R__a_X"), "cPa_X_1"))
+    override val channels: Seq[String] = Seq("cPa_X_1", "z13")
 
-    override val dependencies = Seq(pa, pb, pc)
+    override val dependencies: Seq[AtomicProcess] = Seq(pa, pb, pc)
 
-    override val body = PiCut(
+    override val body: PiCut = PiCut(
       "z16",
       "z15",
       "z5",
@@ -126,13 +126,13 @@ package object RexampleTypes {
 
   class BadR(pa: Pa, pb: Pb, pc: Pc) extends CompositeProcess { // (X) => (Y,Z)
     override val name = "R"
-    override val output = (PiPair(Chan("R_l_a_Y"), Chan("R_r_a_Z")), "z13")
-    override val inputs = Seq((Chan("R__a_X"), "cPa_X_1"))
-    override val channels = Seq("cPa_X_1", "z13")
+    override val output: (PiPair, String) = (PiPair(Chan("R_l_a_Y"), Chan("R_r_a_Z")), "z13")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("R__a_X"), "cPa_X_1"))
+    override val channels: Seq[String] = Seq("cPa_X_1", "z13")
 
-    override val dependencies = Seq(pa, pc)
+    override val dependencies: Seq[AtomicProcess] = Seq(pa, pc)
 
-    override val body = PiCut(
+    override val body: PiCut = PiCut(
       "z16",
       "z15",
       "z5",
@@ -214,9 +214,9 @@ package object RexampleTypes {
 
   class FailP extends AtomicProcess {
     override val name = "FailP"
-    override val output = (Chan("Pc__a_Z"), "oPc_Z_")
-    override val inputs = Seq((Chan("Pc__a_B"), "cPc_B_1"))
-    override val channels = Seq("cPc_B_1", "oPc_Z_")
+    override val output: (Chan, String) = (Chan("Pc__a_Z"), "oPc_Z_")
+    override val inputs: Seq[(Chan, String)] = Seq((Chan("Pc__a_B"), "cPc_B_1"))
+    override val channels: Seq[String] = Seq("cPc_B_1", "oPc_Z_")
 
     def run(args: Seq[PiObject])(implicit ec: ExecutionContext): Future[PiObject] = args match {
       case Seq(o1) => Future.failed(new Exception("FailP"))

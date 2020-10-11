@@ -1,10 +1,11 @@
 package com.workflowfm.pew.mongodb.bson.pitypes
 
-import com.workflowfm.pew._
-import com.workflowfm.pew.mongodb.bson.BsonUtil
 import org.bson._
 import org.bson.codecs._
 import org.bson.codecs.configuration.{ CodecConfigurationException, CodecRegistry }
+
+import com.workflowfm.pew._
+import com.workflowfm.pew.mongodb.bson.BsonUtil
 
 class PiStateCodec(registry: CodecRegistry, processes: PiProcessStore) extends Codec[PiState] {
   val chanCodec: Codec[Chan] = registry.get(classOf[Chan])

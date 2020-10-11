@@ -1,9 +1,9 @@
 package com.workflowfm.pew.mongodb.bson.auto
 
+import scala.collection.mutable
+
 import org.bson.codecs.Codec
 import org.bson.codecs.configuration.{ CodecProvider, CodecRegistry }
-
-import scala.collection.mutable
 
 /** AutoCodecStore:
   * A mutable.Map which indexes Codecs by the type/class of object they serialise/deserialise.

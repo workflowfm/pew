@@ -7,12 +7,12 @@ import java.io.{
   ObjectOutputStream
 }
 
+import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable
+
 import org.bson.{ BsonReader, BsonType, BsonWriter }
 import org.mongodb.scala.bson
 import org.mongodb.scala.bson.BsonBinary
-
-import scala.collection.generic.CanBuildFrom
-import scala.collection.mutable
 
 object BsonUtil {
 

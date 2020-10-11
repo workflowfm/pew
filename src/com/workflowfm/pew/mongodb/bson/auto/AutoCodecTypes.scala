@@ -1,10 +1,10 @@
 package com.workflowfm.pew.mongodb.bson.auto
 
-import org.bson.{ BsonReader, BsonReaderMark, BsonWriter }
-import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
-
 import scala.collection.mutable
 import scala.reflect.ClassTag
+
+import org.bson.{ BsonReader, BsonReaderMark, BsonWriter }
+import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
 
 abstract class TypedCodec[T](implicit ct: ClassTag[T]) extends Codec[T] {
 

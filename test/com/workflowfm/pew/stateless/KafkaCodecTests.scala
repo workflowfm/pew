@@ -1,5 +1,16 @@
 package com.workflowfm.pew.stateless
 
+import scala.reflect.ClassTag
+import scala.runtime.BoxedUnit
+
+import org.bson.{ BsonReader, BsonWriter }
+import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
+import org.bson.codecs.configuration.CodecRegistry
+import org.bson.types.ObjectId
+import org.junit.runner.RunWith
+import org.scalatest
+import org.scalatest.junit.JUnitRunner
+
 import com.workflowfm.pew._
 import com.workflowfm.pew.mongodb.bson.AnyCodec
 import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
@@ -13,16 +24,6 @@ import com.workflowfm.pew.stateless.instances.kafka.settings.bson.{
   CodecWrapper,
   KafkaCodecRegistry
 }
-import org.bson.codecs.configuration.CodecRegistry
-import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
-import org.bson.types.ObjectId
-import org.bson.{ BsonReader, BsonWriter }
-import org.junit.runner.RunWith
-import org.scalatest
-import org.scalatest.junit.JUnitRunner
-
-import scala.reflect.ClassTag
-import scala.runtime.BoxedUnit
 
 @RunWith(classOf[JUnitRunner])
 class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
@@ -92,9 +93,9 @@ class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {
   //--- External Types ---//
   //----------------------//
 
-  lazy val easyTestObj = TestObject("easy", 1)
-  lazy val hardTestObj = TestObject("H4rD!!``", -1)
-  lazy val emptyTestObj = TestObject("", 0)
+  lazy val easyTestObj: TestObject = TestObject("easy", 1)
+  lazy val hardTestObj: TestObject = TestObject("H4rD!!``", -1)
+  lazy val emptyTestObj: TestObject = TestObject("", 0)
 
   it should "correctly (de)serialise additional Codecs" in {
     testCodec(easyTestObj)

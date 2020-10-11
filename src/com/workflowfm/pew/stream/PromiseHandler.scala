@@ -1,18 +1,18 @@
 package com.workflowfm.pew.stream
 
-import com.workflowfm.pew.{ PiEvent, PiEventResult, PiException, PiFailure }
-
 import scala.concurrent.{ ExecutionContext, Future, Promise }
+
+import com.workflowfm.pew.{ PiEvent, PiEventResult, PiException, PiFailure }
 
 trait PromiseHandler[T, R] extends PiEventHandler[T] {
   val id: T
 
-  protected val promise = Promise[R]()
+  protected val promise: Promise[R] = Promise[R]()
   def future = promise.future
 
   // class PromiseException(message:String) extends Exception(message)
 
-  override def apply(e: PiEvent[T]) = if (e.id == this.id) update(e) match {
+  override def apply(e: PiEvent[T]): Boolean = if (e.id == this.id) update(e) match {
     case PiEventResult(i, res, _) => promise.success(succeed(res)); true
     case ex: PiFailure[T] =>
       fail(ex.exception) match {
@@ -47,7 +47,7 @@ trait PromiseHandler[T, R] extends PiEventHandler[T] {
 class ResultHandler[T](override val id: T) extends PromiseHandler[T, Any] {
 
   override def succeed(result: Any) = result
-  override def fail(exception: PiException[T]) = Right(exception)
+  override def fail(exception: PiException[T]): Either[Any,Exception] = Right(exception)
 }
 
 class ResultHandlerFactory[T] extends PiEventHandlerFactory[T, ResultHandler[T]] {
@@ -58,14 +58,14 @@ class CounterHandler[T](override val id: T) extends PromiseHandler[T, Int] {
   private var counter: Int = 0
   def count = counter
 
-  override def update(event: PiEvent[T]) = {
+  override def update(event: PiEvent[T]): PiEvent[T] = {
     counter += 1
     // TODO add metadata for the counter here, because why not?
     event
   }
 
   override def succeed(result: Any) = counter
-  override def fail(exception: PiException[T]) = Left(counter)
+  override def fail(exception: PiException[T]): Either[Int,Exception] = Left(counter)
 }
 
 class CounterHandlerFactory[T] extends PiEventHandlerFactory[T, CounterHandler[T]] {

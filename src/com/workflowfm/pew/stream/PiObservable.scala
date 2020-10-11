@@ -1,8 +1,8 @@
 package com.workflowfm.pew.stream
 
-import com.workflowfm.pew.PiEvent
-
 import scala.concurrent.{ ExecutionContext, Future, Promise }
+
+import com.workflowfm.pew.PiEvent
 
 /** Has the ability to publish [[PiEvent]]s.
   * This is separate from [[PiObservable]] as in some cases publishing events
@@ -47,7 +47,7 @@ trait SimplePiObservable[T] extends PiObservable[T] with PiPublisher[T] {
     handlers.remove(handlerName).isDefined
   }
 
-  override def publish(evt: PiEvent[T]) = {
+  override def publish(evt: PiEvent[T]): Unit = {
     handlers.retain((k, v) => !v(evt))
   }
 

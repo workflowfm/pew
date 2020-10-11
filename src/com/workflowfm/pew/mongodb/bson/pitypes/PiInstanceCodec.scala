@@ -1,11 +1,12 @@
 package com.workflowfm.pew.mongodb.bson.pitypes
 
-import com.workflowfm.pew._
-import com.workflowfm.pew.mongodb.bson.BsonUtil
 import org.bson._
 import org.bson.codecs._
 import org.bson.codecs.configuration.{ CodecConfigurationException, CodecRegistry }
 import org.bson.types._
+
+import com.workflowfm.pew._
+import com.workflowfm.pew.mongodb.bson.BsonUtil
 
 class PiInstanceCodec(registry: CodecRegistry, processes: PiProcessStore)
     extends Codec[PiInstance[ObjectId]] {

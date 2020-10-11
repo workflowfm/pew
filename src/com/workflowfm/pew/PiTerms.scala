@@ -60,8 +60,8 @@ object Input {
 case class Devour(c: String, v: String) extends Input {
   override val channel: Chan = Chan(c)
   override def admits(a: PiObject): Boolean = true
-  override def sub(s: ChanMap) = Devour(s.resolve(c), v)
-  override def fresh(i: Int) = Devour(c + "#" + i, v)
+  override def sub(s: ChanMap): Devour = Devour(s.resolve(c), v)
+  override def fresh(i: Int): Devour = Devour(c + "#" + i, v)
 
   override def receive(a: PiObject): (List[Term], ChanMap) = (List(), ChanMap((Chan(v), a)))
 }
@@ -79,8 +79,8 @@ case class In(c: String, v: String, cont: Term) extends Input {
     case PiItem(_) => true
     case _ => false
   }
-  override def sub(s: ChanMap) = In(s.resolve(c), s.resolve(v), cont.sub(s)) // TODO this may need improvement to enforce name binding.
-  override def fresh(i: Int) = In(c + "#" + i, v, cont.fresh(i))
+  override def sub(s: ChanMap): In = In(s.resolve(c), s.resolve(v), cont.sub(s)) // TODO this may need improvement to enforce name binding.
+  override def fresh(i: Int): In = In(c + "#" + i, v, cont.fresh(i))
 
   override def receive(a: PiObject): (List[Term], ChanMap) =
     (List(cont.sub(ChanMap((Chan(v), a)))), ChanMap())
@@ -98,9 +98,9 @@ case class ParIn(c: String, lv: String, rv: String, left: Term, right: Term) ext
     case _ => false
   }
 
-  override def sub(s: ChanMap) =
+  override def sub(s: ChanMap): ParIn =
     ParIn(s.resolve(c), s.resolve(lv), s.resolve(rv), left.sub(s), right.sub(s)) // TODO this may need improvement to enforce name binding.
-  override def fresh(i: Int) =
+  override def fresh(i: Int): ParIn =
     ParIn(c + "#" + i, lv + "#" + i, rv + "#" + i, left.fresh(i), right.fresh(i))
 
   override def receive(a: PiObject): (List[Term], ChanMap) = a match {
@@ -121,8 +121,8 @@ case class ParInI(c: String, lv: String, rv: String, cont: Term) extends Input {
     case PiPair(_, _) => true
     case _ => false
   }
-  override def sub(s: ChanMap) = ParInI(s.resolve(c), s.resolve(lv), s.resolve(rv), cont.sub(s)) // TODO this may need improvement to enforce name binding.
-  override def fresh(i: Int) = ParInI(c + "#" + i, lv + "#" + i, rv + "#" + i, cont.fresh(i))
+  override def sub(s: ChanMap): ParInI = ParInI(s.resolve(c), s.resolve(lv), s.resolve(rv), cont.sub(s)) // TODO this may need improvement to enforce name binding.
+  override def fresh(i: Int): ParInI = ParInI(c + "#" + i, lv + "#" + i, rv + "#" + i, cont.fresh(i))
 
   override def receive(a: PiObject): (List[Term], ChanMap) = a match {
     case PiPair(l, r) => (List(cont.sub(ChanMap((Chan(lv), l), (Chan(rv), r)))), ChanMap())
@@ -143,9 +143,9 @@ case class WithIn(c: String, lv: String, rv: String, left: Term, right: Term) ex
     case _ => false
   }
 
-  override def sub(s: ChanMap) =
+  override def sub(s: ChanMap): WithIn =
     WithIn(s.resolve(c), s.resolve(lv), s.resolve(rv), left.sub(s), right.sub(s)) // TODO this may need improvement to enforce name binding.
-  override def fresh(i: Int) =
+  override def fresh(i: Int): WithIn =
     WithIn(c + "#" + i, lv + "#" + i, rv + "#" + i, left.fresh(i), right.fresh(i))
 
   override def receive(a: PiObject): (List[Term], ChanMap) = a match {
@@ -188,8 +188,8 @@ object Output {
   */
 case class Out(c: String, a: PiObject) extends Output {
   override val channel: Chan = Chan(c)
-  override def sub(s: ChanMap) = Out(s.resolve(c), s.sub(a))
-  override def fresh(i: Int) = Out(c + "#" + i, a)
+  override def sub(s: ChanMap): Out = Out(s.resolve(c), s.sub(a))
+  override def fresh(i: Int): Out = Out(c + "#" + i, a)
   override def send(s: PiState): (List[Term], PiObject, PiState) = (List(), a, s)
 }
 
@@ -205,10 +205,10 @@ case class Out(c: String, a: PiObject) extends Output {
 case class ParOut(c: String, lc: String, rc: String, left: Term, right: Term) extends Output {
   override val channel: Chan = Chan(c)
 
-  override def sub(s: ChanMap) =
+  override def sub(s: ChanMap): ParOut =
     ParOut(s.resolve(c), s.resolve(lc), s.resolve(rc), left.sub(s), right.sub(s))
 
-  override def fresh(i: Int) =
+  override def fresh(i: Int): ParOut =
     ParOut(c + "#" + i, lc + "#" + i, rc + "#" + i, left.fresh(i), right.fresh(i))
 
   override def send(s: PiState): (List[Term], PiObject, PiState) = {
@@ -232,8 +232,8 @@ case class ParOut(c: String, lc: String, rc: String, left: Term, right: Term) ex
   */
 case class LeftOut(c: String, lc: String, cont: Term) extends Output {
   override val channel: Chan = Chan(c)
-  override def sub(s: ChanMap) = LeftOut(s.resolve(c), s.resolve(lc), cont.sub(s))
-  override def fresh(i: Int) = LeftOut(c + "#" + i, lc + "#" + i, cont.fresh(i))
+  override def sub(s: ChanMap): LeftOut = LeftOut(s.resolve(c), s.resolve(lc), cont.sub(s))
+  override def fresh(i: Int): LeftOut = LeftOut(c + "#" + i, lc + "#" + i, cont.fresh(i))
 
   override def send(s: PiState): (List[Term], PiObject, PiState) = {
     val freshlc = lc + "#" + s.freshCtr
@@ -255,8 +255,8 @@ case class LeftOut(c: String, lc: String, cont: Term) extends Output {
   */
 case class RightOut(c: String, rc: String, cont: Term) extends Output {
   override val channel: Chan = Chan(c)
-  override def sub(s: ChanMap) = RightOut(s.resolve(c), s.resolve(rc), cont.sub(s))
-  override def fresh(i: Int) = RightOut(c + "#" + i, rc + "#" + i, cont.fresh(i))
+  override def sub(s: ChanMap): RightOut = RightOut(s.resolve(c), s.resolve(rc), cont.sub(s))
+  override def fresh(i: Int): RightOut = RightOut(c + "#" + i, rc + "#" + i, cont.fresh(i))
 
   override def send(s: PiState): (List[Term], PiObject, PiState) = {
     val freshrc = rc + "#" + s.freshCtr
@@ -289,7 +289,7 @@ case class PiCut(z: String, lc: String, rc: String, left: Term, right: Term) ext
     PiCut(z, lc, rc, left.sub(sl), right.sub(sr))
   }
 
-  override def fresh(i: Int) =
+  override def fresh(i: Int): PiCut =
     PiCut(z + "#" + i, lc + "#" + i, rc + "#" + i, left.fresh(i), right.fresh(i))
 
   override def addTo(s: PiState): PiState = {
@@ -337,7 +337,7 @@ case class PiFuture(fun: String, outChan: Chan, args: Seq[PiResource]) {
   */
 case class PiCall(name: String, args: Seq[Chan]) extends Term {
   override def sub(s: ChanMap): PiCall = copy(args = args map s.resolve)
-  override def fresh(i: Int) = PiCall(name, args map (_.fresh(i)))
+  override def fresh(i: Int): PiCall = PiCall(name, args map (_.fresh(i)))
 
   override def addTo(s: PiState): PiState = s.handleCall(this)
 }

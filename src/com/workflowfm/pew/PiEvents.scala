@@ -1,11 +1,6 @@
 package com.workflowfm.pew
 
-import java.text.SimpleDateFormat
-
 import com.workflowfm.pew.PiMetadata.{ PiMetadataMap, SimulatedTime, SystemTime }
-
-import scala.collection.immutable.Queue
-import scala.concurrent.{ ExecutionContext, Future, Promise }
 
 ///////////////////////
 // Abstract PiEvents //
