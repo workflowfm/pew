@@ -3,31 +3,35 @@ package com.workflowfm.pew.stateless
 import java.util.concurrent.TimeoutException
 
 import akka.Done
-import com.workflowfm.pew.stateless.StatelessMessages.{AnyMsg, _}
-import com.workflowfm.pew.stateless.components.{AtomicExecutor, Reducer, ResultListener}
+import com.workflowfm.pew.stateless.StatelessMessages.{ AnyMsg, _ }
+import com.workflowfm.pew.stateless.components.{ AtomicExecutor, Reducer, ResultListener }
 import com.workflowfm.pew.stateless.instances.kafka.CustomKafkaExecutor
 import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors
-import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors.{DrainControl, sendMessages}
-import com.workflowfm.pew.stateless.instances.kafka.settings.{KafkaExecutorEnvironment, KafkaExecutorSettings}
-import com.workflowfm.pew.{PiEventFinish, _}
+import com.workflowfm.pew.stateless.instances.kafka.components.KafkaConnectors.{
+  DrainControl,
+  sendMessages
+}
+import com.workflowfm.pew.stateless.instances.kafka.settings.{
+  KafkaExecutorEnvironment,
+  KafkaExecutorSettings
+}
+import com.workflowfm.pew.{ PiEventFinish, _ }
 import com.workflowfm.pew.stream.ResultHandler
 import org.apache.kafka.common.utils.Utils
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{ FlatSpec, Matchers }
 
 import scala.concurrent._
 import scala.concurrent.duration._
 
 //noinspection ZeroIndexToHead
 @RunWith(classOf[JUnitRunner])
-class KafkaExecutorTests
-  extends FlatSpec with Matchers with KafkaTests {
+class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
 
   // Ensure there are no outstanding messages before starting testing.
-  new MessageDrain( true )
-
+  new MessageDrain(true)
 
   /////////////////////////
   // Class Loader Checks //
@@ -35,7 +39,10 @@ class KafkaExecutorTests
 
   lazy val mainClassLoader: ClassLoader = Thread.currentThread().getContextClassLoader
   lazy val kafkaClassLoader: ClassLoader = Utils.getContextOrKafkaClassLoader
-  lazy val threadClassLoader: ClassLoader = await(Future.unit.map(_ => Thread.currentThread().getContextClassLoader))
+
+  lazy val threadClassLoader: ClassLoader = await(
+    Future.unit.map(_ => Thread.currentThread().getContextClassLoader)
+  )
 
   "A KafkaExecutor" should "use the same ClassLoader for Kafka as the Main thread" in {
     mainClassLoader shouldBe kafkaClassLoader
@@ -66,13 +73,12 @@ class KafkaExecutorTests
     }
   }
 
-
   //////////////////////////////////////////
   // Helper functions for execution tests //
   //////////////////////////////////////////
 
-  implicit def enhanceWithContainsDuplicates[T]( s: Seq[T] ) = new {
-    def hasDuplicates: Boolean= s.distinct.size != s.size
+  implicit def enhanceWithContainsDuplicates[T](s: Seq[T]) = new {
+    def hasDuplicates: Boolean = s.distinct.size != s.size
   }
 
   /** Jev, a `tryBut/always` control like a `try/finally`, but returns
@@ -81,9 +87,9 @@ class KafkaExecutorTests
     * @param tryFn A code block which might throw errors.
     * @return The return value of `always` block, if no errors were thrown.
     */
-  private def tryBut( tryFn: => Unit ) = {
+  private def tryBut(tryFn: => Unit) = {
     new {
-      def always[T]( alwaysFn: => T ): T = {
+      def always[T](alwaysFn: => T): T = {
         try {
           tryFn
           alwaysFn
@@ -96,13 +102,13 @@ class KafkaExecutorTests
     }
   }
 
-  def ensureShutdownThen[T]( exec: CustomKafkaExecutor )( fnFinally: => T ): T = {
+  def ensureShutdownThen[T](exec: CustomKafkaExecutor)(fnFinally: => T): T = {
     try {
       exec.syncShutdown(20.seconds)
 
     } catch {
       case ex: TimeoutException =>
-        Await.result( exec.forceShutdown, Duration.Inf )
+        Await.result(exec.forceShutdown, Duration.Inf)
         fnFinally
         throw ex
     }
@@ -119,10 +125,10 @@ class KafkaExecutorTests
   def withClueMessageCounts[T](msgMap: MessageMap)(fun: => T): T = {
     withClue(clue =
       s"#SequenceRequests: ${msgMap[SequenceRequest].length}\n" +
-      s"#SequenceFailures: ${msgMap[SequenceFailure].length}\n" +
-      s"#ReduceRequests:   ${msgMap[ReduceRequest].length}\n" +
-      s"#Assignments:      ${msgMap[Assignment].length}\n" +
-      s"#PiiUpdates:       ${msgMap[PiiUpdate].length}\n"
+          s"#SequenceFailures: ${msgMap[SequenceFailure].length}\n" +
+          s"#ReduceRequests:   ${msgMap[ReduceRequest].length}\n" +
+          s"#Assignments:      ${msgMap[Assignment].length}\n" +
+          s"#PiiUpdates:       ${msgMap[PiiUpdate].length}\n"
     )(fun)
   }
 
@@ -136,7 +142,7 @@ class KafkaExecutorTests
   }
 
   def checkForUnmatchedLogs(msgsOf: => MessageMap): Unit = {
-    lazy val logsOf = toLogMap( msgsOf )
+    lazy val logsOf = toLogMap(msgsOf)
 
     val nPiiEvent = logsOf[PiEvent[_]].length
     val nPiiStart = logsOf[PiEventStart[_]].length
@@ -153,38 +159,38 @@ class KafkaExecutorTests
     val nPiiAPExceps = logsOf[PiFailureAtomicProcessException[_]].length
 
     // Print PiiEvent breakdown when any of the match checks fails.
-    withClue( clue =
+    withClue(clue =
       s"#Event:     $nPiiEvent\n" +
-      s"#Start*:    $nPiiStart\n" +
-      s"#Finish:    $nPiiFinish\n" +
-      s"#Result*:   $nPiiResult\n" +
-      s"#NoRes*:    $nPiiNoRes\n" +
-      s"#UnkProc*:  $nPiiUnkProc\n" +
-      s"#IsComp*:   $nPiiIsComp\n" +
-      s"#NoInst*:   $nPiiNoInst\n" +
-      s"#Exceps*:   $nPiiExceps\n" +
-      s"#Call*:     $nPiiCall\n" +
-      s"#CallEnd:   $nPiiCallEnd\n" +
-      s"#Return*:   $nPiiReturn\n" +
-      s"#ApExceps*: $nPiiAPExceps\n"
+          s"#Start*:    $nPiiStart\n" +
+          s"#Finish:    $nPiiFinish\n" +
+          s"#Result*:   $nPiiResult\n" +
+          s"#NoRes*:    $nPiiNoRes\n" +
+          s"#UnkProc*:  $nPiiUnkProc\n" +
+          s"#IsComp*:   $nPiiIsComp\n" +
+          s"#NoInst*:   $nPiiNoInst\n" +
+          s"#Exceps*:   $nPiiExceps\n" +
+          s"#Call*:     $nPiiCall\n" +
+          s"#CallEnd:   $nPiiCallEnd\n" +
+          s"#Return*:   $nPiiReturn\n" +
+          s"#ApExceps*: $nPiiAPExceps\n"
     ) {
 
-      withClue( s"Test arithmatic includes all events:" ) {
+      withClue(s"Test arithmatic includes all events:") {
         nPiiEvent shouldBe (
           nPiiStart + nPiiResult + nPiiNoRes + nPiiUnkProc + nPiiIsComp +
-          nPiiNoInst + nPiiExceps + nPiiCall + nPiiReturn + nPiiAPExceps
+            nPiiNoInst + nPiiExceps + nPiiCall + nPiiReturn + nPiiAPExceps
         )
       }
 
       val allStartedPiis = logsOf[PiEventStart[_]].map(_.id)
       val allFinishedPiis = logsOf[PiEventFinish[_]].map(_.id)
 
-      withClue( s"PiInstances should only start once:") {
-        assert( !allStartedPiis.hasDuplicates, "no duplicate PiEventStarts" )
+      withClue(s"PiInstances should only start once:") {
+        assert(!allStartedPiis.hasDuplicates, "no duplicate PiEventStarts")
       }
 
-      withClue( s"PiInstances should only end once:") {
-        assert( !allFinishedPiis.hasDuplicates, "no duplicate PiEventFinishes" )
+      withClue(s"PiInstances should only end once:") {
+        assert(!allFinishedPiis.hasDuplicates, "no duplicate PiEventFinishes")
       }
 
       withClue(s"PiEventStarts need a corresponding PiEventFinish:") {
@@ -200,11 +206,11 @@ class KafkaExecutorTests
       val allFinishedCalls = logsOf[PiEventCallEnd[_]].map(e => (e.id, e.ref))
 
       withClue("Every PiEventCall should have a unique call reference:") {
-        assert( !allStartedCalls.hasDuplicates, "no duplicate PiEventCalls" )
+        assert(!allStartedCalls.hasDuplicates, "no duplicate PiEventCalls")
       }
 
       withClue("Every PiEventCallEnd should have a unique call reference:") {
-        assert( !allFinishedCalls.hasDuplicates, "no duplicate PiEventCallEnds" )
+        assert(!allFinishedCalls.hasDuplicates, "no duplicate PiEventCallEnds")
       }
 
       withClue("PiEventCalls need a corresponding PiEventCallEnd:") {
@@ -219,7 +225,6 @@ class KafkaExecutorTests
     }
   }
 
-
   /////////////////////////
   // All Execution Tests //
   /////////////////////////
@@ -233,10 +238,10 @@ class KafkaExecutorTests
       KafkaConnectors.indyReducer(new Reducer),
       KafkaConnectors.indySequencer,
       KafkaConnectors.indyAtomicExecutor(new AtomicExecutor()),
-      KafkaConnectors.uniqueResultListener(listener),
+      KafkaConnectors.uniqueResultListener(listener)
     )
 
-    def call( p: PiProcess, args: PiObject* ): Future[Any] = {
+    def call(p: PiProcess, args: PiObject*): Future[Any] = {
       val pii = PiInstance(ObjectId.get, p, args: _*)
 
       val handler = new ResultHandler(pii.id)
@@ -247,7 +252,7 @@ class KafkaExecutorTests
     }
 
     def shutdown(): Unit = {
-      await( KafkaConnectors.shutdownAll(controls) )
+      await(KafkaConnectors.shutdownAll(controls))
     }
   }
 
@@ -288,8 +293,8 @@ class KafkaExecutorTests
     checkForUnmatchedLogs(msgsOf)
   }
 
-  def baremetalCall( ex: CustomKafkaExecutor, p: PiProcess, args: PiObject*  ): Future[Any] = {
-    val piiId = await( ex.init( PiInstance(0, p, args:_* ) ) )
+  def baremetalCall(ex: CustomKafkaExecutor, p: PiProcess, args: PiObject*): Future[Any] = {
+    val piiId = await(ex.init(PiInstance(0, p, args: _*)))
     val handler = new ResultHandler(piiId)
     ex.subscribe(handler)
 
@@ -298,11 +303,11 @@ class KafkaExecutorTests
   }
 
   it should "call an atomic PbI (baremetal interface)" in {
-    val msgsOf: MessageMap  = {
+    val msgsOf: MessageMap = {
       val ex = makeExecutor(completeProcess.settings)
 
       tryBut {
-        val f1 = baremetalCall( ex, pbi, PiObject(1) )
+        val f1 = baremetalCall(ex, pbi, PiObject(1))
         await(f1) should be("PbISleptFor1s")
 
       } always {
@@ -312,16 +317,16 @@ class KafkaExecutorTests
       }
     }
 
-    checkOutstandingMsgs( msgsOf )
-    checkForUnmatchedLogs( msgsOf )
+    checkOutstandingMsgs(msgsOf)
+    checkForUnmatchedLogs(msgsOf)
   }
 
   it should "call an Rexample (baremetal interface)" in {
-    val msgsOf: MessageMap  = {
+    val msgsOf: MessageMap = {
       val ex = makeExecutor(completeProcess.settings)
 
       tryBut {
-        val f1 = baremetalCall( ex, ri, PiObject(21) )
+        val f1 = baremetalCall(ex, ri, PiObject(21))
         await(f1) should be(("PbISleptFor2s", "PcISleptFor1s"))
 
       } always {
@@ -331,16 +336,16 @@ class KafkaExecutorTests
       }
     }
 
-    checkOutstandingMsgs( msgsOf )
-    checkForUnmatchedLogs( msgsOf )
+    checkOutstandingMsgs(msgsOf)
+    checkForUnmatchedLogs(msgsOf)
   }
 
   it should "call an atomic PbI" in {
-    val msgsOf: MessageMap  = {
+    val msgsOf: MessageMap = {
       val ex = makeExecutor(completeProcess.settings)
 
       tryBut {
-        await( ex.execute(pbi, Seq(1)) ) should be("PbISleptFor1s")
+        await(ex.execute(pbi, Seq(1))) should be("PbISleptFor1s")
 
       } always {
         ensureShutdownThen(ex) {
@@ -354,7 +359,7 @@ class KafkaExecutorTests
   }
 
   it should "call 2 concurrent atomic PbI" in {
-    val msgsOf: MessageMap  = {
+    val msgsOf: MessageMap = {
       val ex = makeExecutor(completeProcess.settings)
 
       tryBut {
@@ -376,7 +381,7 @@ class KafkaExecutorTests
   }
 
   it should "call an Rexample" in {
-    val msgsOf: MessageMap  = {
+    val msgsOf: MessageMap = {
       val ex = makeExecutor(completeProcess.settings)
 
       tryBut {
@@ -394,7 +399,7 @@ class KafkaExecutorTests
   }
 
   it should "call an Rexample with same timings" in {
-    val msgsOf: MessageMap  = {
+    val msgsOf: MessageMap = {
       val ex = makeExecutor(completeProcess.settings)
 
       tryBut {
@@ -412,7 +417,7 @@ class KafkaExecutorTests
   }
 
   it should "call 2 concurrent Rexamples" in {
-    val msgsOf: MessageMap  = {
+    val msgsOf: MessageMap = {
       val ex = makeExecutor(completeProcess.settings)
 
       tryBut {
@@ -434,7 +439,7 @@ class KafkaExecutorTests
   }
 
   it should "call 2 concurrent Rexamples with same timings" in {
-    val msgsOf: MessageMap  = {
+    val msgsOf: MessageMap = {
       val ex = makeExecutor(completeProcess.settings)
 
       tryBut {
@@ -475,7 +480,7 @@ class KafkaExecutorTests
   }
 
   it should "call 3 concurrent Rexamples" in {
-    val msgsOf: MessageMap  = {
+    val msgsOf: MessageMap = {
       val ex = makeExecutor(completeProcess.settings)
 
       tryBut {
@@ -499,7 +504,7 @@ class KafkaExecutorTests
   }
 
   it should "call 2 Rexamples each with different processes" in {
-    val msgsOf: MessageMap  = {
+    val msgsOf: MessageMap = {
       val ex = makeExecutor(completeProcess.settings)
 
       tryBut {
@@ -613,7 +618,7 @@ class KafkaExecutorTests
     val msgsOf: MessageMap = {
       tryBut {
         val ex = makeExecutor(completeProcess.settings)
-        ensureShutdownThen( ex ) {}
+        ensureShutdownThen(ex) {}
         a[ShutdownExecutorException] should be thrownBy ex.execute(rif, Seq(21))
 
       } always {
@@ -621,7 +626,7 @@ class KafkaExecutorTests
       }
     }
 
-    withClue( "No execution should've been performed." ) {
+    withClue("No execution should've been performed.") {
       msgsOf[AnyMsg] shouldBe empty
     }
   }
@@ -648,14 +653,14 @@ class KafkaExecutorTests
         onShutdown[SequenceFailure] shouldBe empty
         onShutdown[ReduceRequest] shouldBe empty
       }
-      withClue( "There should be 1 Assignment and 1 PiiUpdate.\n") {
+      withClue("There should be 1 Assignment and 1 PiiUpdate.\n") {
         onShutdown[Assignment] should have size 1
         onShutdown[PiiUpdate] should have size 1
       }
     }
   }
 
-  def testShutdown( process: PiProcess, args: Seq[Any], expectedResult: Any ): Unit = {
+  def testShutdown(process: PiProcess, args: Seq[Any], expectedResult: Any): Unit = {
 
     val ourPiiId: ObjectId = {
       try {
@@ -698,13 +703,13 @@ class KafkaExecutorTests
     }
 
     withClue("Unexpected messages after the shutdown:\n") {
-      withClueMessageCounts( atShutdown ) {
+      withClueMessageCounts(atShutdown) {
 
-        withClue( s"All messages should belong our PiInstance ($ourPiiId).\n" ) {
-          all( atShutdown[AnyMsg] map (_.piiId) ) shouldBe ourPiiId
+        withClue(s"All messages should belong our PiInstance ($ourPiiId).\n") {
+          all(atShutdown[AnyMsg] map (_.piiId)) shouldBe ourPiiId
         }
 
-        withClue( "There should be no SequenceRequests, SequenceFailures or ReduceRequests:\n") {
+        withClue("There should be no SequenceRequests, SequenceFailures or ReduceRequests:\n") {
           atShutdown[SequenceRequest] ++ atShutdown[SequenceFailure] ++
             atShutdown[ReduceRequest] shouldBe empty
         }
@@ -734,11 +739,11 @@ class KafkaExecutorTests
 
   // Jev, use `PcI` as it's configured to `PPcIWait` under shutdown settings.
   it should "call an atomic PcI interupted by a shutdown" in {
-    testShutdown( pci, Seq(1), "PcISleptFor1s" )
+    testShutdown(pci, Seq(1), "PcISleptFor1s")
   }
 
   it should "call an Rexample interupted by a shutdown." in {
-    testShutdown( ri, Seq(21), ("PbISleptFor2s", "PcISleptFor1s") )
+    testShutdown(ri, Seq(21), ("PbISleptFor2s", "PcISleptFor1s"))
   }
 
   it should "call an Rexample (with an outstanding PiiUpdate)" in {
@@ -769,12 +774,11 @@ class KafkaExecutorTests
 
   it should "call an Rexample (with an outstanding *irreducible* PiiUpdate)" in {
 
-    val oldMsg: PiiUpdate
-      = PiiUpdate(
-        PiInstance(ObjectId.get, ri, PiObject(13))
-          .reduce
-          .handleThreads((_, _) => true)._2
-      )
+    val oldMsg: PiiUpdate = PiiUpdate(
+      PiInstance(ObjectId.get, ri, PiObject(13)).reduce
+        .handleThreads((_, _) => true)
+        ._2
+    )
 
     // Construct and send a fully reduced PiiUpdate message to test robustness.
     //    val oldMsg: PiiUpdate
@@ -800,10 +804,11 @@ class KafkaExecutorTests
 
     checkOutstandingMsgs(msgsOf filter (!_.isInstanceOf[PiiUpdate]))
 
-    withClue( "The irreducible PiUpdate shouldn't be processed:" ) {
+    withClue("The irreducible PiUpdate shouldn't be processed:") {
       msgsOf[PiiUpdate] should have size 1
 
-      // TODO: PiInstances don't equal one another as they have different container types after serialization.
+      /* TODO: PiInstances don't equal one another as they have different container types after
+       * serialization. */
       // msgsOf[PiiUpdate].head shouldBe oldMsg
       msgsOf[PiiUpdate].head.pii.id shouldBe oldMsg.pii.id
     }
@@ -818,9 +823,8 @@ class KafkaExecutorTests
         for (i <- 0 to 240) {
 
           // Jev, intersperse some timeconsuming tasks.
-          val b: Seq[Int]
-            = Seq(41, 43, 47, 53, 59, 61)
-              .map(j => if ((i % j) == 0) 1 else 0)
+          val b: Seq[Int] = Seq(41, 43, 47, 53, 59, 61)
+            .map(j => if ((i % j) == 0) 1 else 0)
 
           val f0 = ex.execute(ri, Seq(b(0) * 10 + b(1)))
           val f1 = ex.execute(ri, Seq(b(2) * 10 + b(3)))

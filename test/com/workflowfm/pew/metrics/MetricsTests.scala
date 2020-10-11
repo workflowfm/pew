@@ -16,63 +16,66 @@ import RexampleTypes._
 import java.util.UUID
 
 @RunWith(classOf[JUnitRunner])
-class MetricsTests extends FlatSpec with Matchers with BeforeAndAfterAll with ProcessExecutorTester {
+class MetricsTests
+    extends FlatSpec
+    with Matchers
+    with BeforeAndAfterAll
+    with ProcessExecutorTester {
   implicit val system: ActorSystem = ActorSystem("AkkaExecutorTests")
-  implicit val executionContext = ExecutionContext.global //system.dispatchers.lookup("akka.my-dispatcher")  
-  implicit val timeout:FiniteDuration = 10.seconds
-  
+  implicit val executionContext = ExecutionContext.global //system.dispatchers.lookup("akka.my-dispatcher")
+  implicit val timeout: FiniteDuration = 10.seconds
+
   val pai = new PaI
   val pbi = new PbI
   val pci = new PcI
   val pci2 = new PcI("PcX")
   val pcif = new PcIF
-  val ri = new R(pai,pbi,pci)
-  val ri2 = new R(pai,pbi,pci2)
-  val rif = new R(pai,pbi,pcif)
+  val ri = new R(pai, pbi, pci)
+  val ri2 = new R(pai, pbi, pci2)
+  val rif = new R(pai, pbi, pcif)
 
-  override def afterAll:Unit = {
-    Await.result(system.terminate(),10.seconds)
+  override def afterAll: Unit = {
+    Await.result(system.terminate(), 10.seconds)
   }
 
   it should "measure things" in {
     val handler = new MetricsHandler[UUID]
-    
+
     val ex = new AkkaExecutor()
     val k1 = ex.subscribe(handler)
-    
-    val f1 = ex.execute(ri,Seq(11))
-    
+
+    val f1 = ex.execute(ri, Seq(11))
+
     await(f1)
     k1.map(_.stop)
-    
+
     handler.keys.size shouldBe 1
     handler.processMetrics.size shouldBe 3
     handler.workflowMetrics.size shouldBe 1
     //handler.processMetricsOf(0).size shouldBe 3 // TODO need to find a way to test this
   }
-  
+
   it should "output a D3 timeline of 3 Rexample workflows" in {
     val handler = new MetricsHandler[UUID]
-    
+
     val ex = new AkkaExecutor()
     val k1 = ex.subscribe(handler)
-    
-    val f1 = ex.execute(ri,Seq(11))
-    val f2 = ex.execute(ri,Seq(11))
-    val f3 = ex.execute(ri,Seq(11))
-    
-    val r1 = await(f1)
-    r1 should be (("PbISleptFor1s","PcISleptFor1s"))
-    val r2 = await(f2)
-    r2 should be (("PbISleptFor1s","PcISleptFor1s"))
-    val r3 = await(f3)
-    r3 should be (("PbISleptFor1s","PcISleptFor1s"))
-	
-    k1.map(_.stop)
-    
-    new MetricsPrinter[UUID]()(handler)
-    new MetricsD3Timeline[UUID]("resources/d3-timeline","Rexample3")(handler)
-  }
-  
-}
 
+    val f1 = ex.execute(ri, Seq(11))
+    val f2 = ex.execute(ri, Seq(11))
+    val f3 = ex.execute(ri, Seq(11))
+
+    val r1 = await(f1)
+    r1 should be(("PbISleptFor1s", "PcISleptFor1s"))
+    val r2 = await(f2)
+    r2 should be(("PbISleptFor1s", "PcISleptFor1s"))
+    val r3 = await(f3)
+    r3 should be(("PbISleptFor1s", "PcISleptFor1s"))
+
+    k1.map(_.stop)
+
+    new MetricsPrinter[UUID]()(handler)
+    new MetricsD3Timeline[UUID]("resources/d3-timeline", "Rexample3")(handler)
+  }
+
+}
