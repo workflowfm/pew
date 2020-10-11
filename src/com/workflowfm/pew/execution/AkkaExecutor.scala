@@ -19,7 +19,7 @@ class AkkaExecutor(
     store: PiInstanceStore[UUID] = SimpleInstanceStore[UUID]()
 )(
     implicit val system: ActorSystem,
-    implicit val timeout: FiniteDuration
+    implicit val timeout: FiniteDuration = 10.seconds
 ) extends ProcessExecutor[UUID]
     with PiObservable[UUID] {
 
