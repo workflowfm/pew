@@ -2,9 +2,9 @@
 *.log
 /bin/
 .cache*
-/target/
-/project/target/
-/project/project/target/
+**/target/
+**/project/target/
+**/project/project/target/
 /.settings/
 /.classpath
 /.idea
