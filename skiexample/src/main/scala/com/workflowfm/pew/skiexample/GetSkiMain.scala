@@ -18,9 +18,9 @@ import com.workflowfm.pew.metrics.MetricsHandler
 import com.workflowfm.pew.skiexample.SkiExampleTypes._
 import com.workflowfm.pew.skiexample.instances._
 import com.workflowfm.pew.skiexample.processes._
-//import com.workflowfm.pew.stateless.instances.kafka.CompleteKafkaExecutor
-//import com.workflowfm.pew.stateless.instances.kafka.settings.KafkaExecutorSettings
-//import com.workflowfm.pew.stateless.instances.kafka.settings.bson.{
+//import com.workflowfm.pew.kafka.CompleteKafkaExecutor
+//import com.workflowfm.pew.kafka.settings.KafkaExecutorSettings
+//import com.workflowfm.pew.kafka.settings.bson.{
 //  BsonKafkaExecutorSettings,
 //  KafkaCodecRegistry
 //}
