@@ -6,8 +6,6 @@ import com.workflowfm.pew.PiMetadata.{ PiMetadataMap, SimulatedTime, SystemTime 
 // Abstract PiEvents //
 ///////////////////////
 
-// TODO: Jev: Should this be moved into it's own file now?
-
 /** Super-class for any PiProcess events which take place during
   * workflow execution or simulation. These can be understood as
   * being divided in 2 ways (into 4 categories):

@@ -42,7 +42,7 @@ object PiMetadata {
     */
   def apply(data: PiMetadataElem[_]*): PiMetadataMap = {
     // Jev, ensure there's at least a SystemPiTime.
-    lazy val current = SystemTime -> System.currentTimeMillis()
+    val current = SystemTime -> System.currentTimeMillis()
     (current +: data).map(elem => (elem._1.id, elem._2)).toMap
   }
 

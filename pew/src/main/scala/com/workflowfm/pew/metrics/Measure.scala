@@ -219,10 +219,10 @@ class MetricsAggregator[KeyT] {
     */
   def processMetricsOf(id: KeyT): Seq[ProcessMetrics[KeyT]] =
     processMap.getOrElse(id, Map[Int, ProcessMetrics[KeyT]]()).values.toSeq.sortBy(_.start)
-  /** Returns a [[scala.collection.immutable.Set]] of all process names being tracked.
+  /** Returns a [[scala.collection.immutable.SortedSet SortedSet]] of all process names being tracked.
     * This is useful when using process names as a category, for example to colour code tasks in the timeline.
     */
-  def processSet: Set[String] = processMap.values.flatMap(_.values.map(_.process)).toSet[String]
+  def processSet: collection.immutable.SortedSet[String] = collection.immutable.SortedSet[String]() ++ processMap.values.flatMap(_.values.map(_.process))
 }
 
 /** A [[MetricsAggregator]] that is also a [[com.workflowfm.pew.stream.PiEventHandler]].

@@ -1,6 +1,7 @@
 package com.workflowfm.pew.metrics
 
 import scala.collection.immutable.Queue
+import com.workflowfm.pew.util.FileOutput
 
 /** Manipulates a [[MetricsAggregator]] to produce some output via side-effects.
   * @tparam KeyT the type used for workflow IDs
@@ -135,14 +136,15 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] with MetricsFormatti
     aggregator.workflowMetrics.map(workflowCSV(separator, timeFormat)).mkString(lineSep)
 }
 
-/** Prints all metrics to standard output. */
-class MetricsPrinter[KeyT] extends MetricsStringOutput[KeyT] {
-  /** Separates the values. */
-  val separator = "\t| "
+/** Prints all metrics to standard output. 
+  * 
+  * @param separator A string to separate values.
+  * @param timeFormat An optional time format using `java.text.SimpleDateFormat`
+  */
+case class MetricsPrinter[KeyT](separator: String = "\t| ", timeFormat: Some[String] = Some("YYYY-MM-dd HH:mm:ss.SSS")) extends MetricsStringOutput[KeyT] {
+
   /** Separates metrics instances. */
-  val lineSep = "\n"
-  /** Default time format using `java.text.SimpleDateFormat`. */
-  val timeFormat: Some[String] = Some("YYYY-MM-dd HH:mm:ss.SSS")
+  val lineSep: String = "\n"
 
   override def apply(aggregator: MetricsAggregator[KeyT]): Unit = {
     println(
@@ -161,21 +163,6 @@ ${workflows(aggregator, separator, lineSep, timeFormat)}
   }
 }
 
-/** Helper to write stuff to a file.
-  * @todo Move to [[com.workflowfm.pew.util]]
-  */
-trait FileOutput {
-  import java.io._
-
-  def writeToFile(filePath: String, output: String): Unit = try {
-    val file = new File(filePath)
-    val bw = new BufferedWriter(new FileWriter(file))
-    bw.write(output)
-    bw.close()
-  } catch {
-    case e: Exception => e.printStackTrace()
-  }
-}
 
 /** Outputs metrics to files using a standard CSV format.
   * Generates 2 CSV files:
@@ -184,22 +171,29 @@ trait FileOutput {
   *
   * @tparam KeyT the type used for workflow IDs
   * @param path path to directory where the files will be placed
-  * @param name file name prefix
+  * @param prefix file name prefix
+  * @param separator a string to separate values, defaulting to a comma
   */
-class MetricsCSVFileOutput[KeyT](path: String, name: String)
+case class MetricsCSVFileOutput[KeyT](path: String, prefix: String,  separator: String = ",")
     extends MetricsStringOutput[KeyT]
     with FileOutput {
 
-  val separator = ","
-
   override def apply(aggregator: MetricsAggregator[KeyT]): Unit = {
-    val taskFile = s"$path$name-tasks.csv"
-    val workflowFile = s"$path$name-workflows.csv"
-    writeToFile(taskFile, procHeader(separator) + "\n" + processes(aggregator, separator) + "\n")
+    val taskFile = s"$path${prefix}Tasks.csv"
+    val workflowFile = s"$path${prefix}workflows.csv"
+    
+    writeToFile(taskFile, s"${procHeader(separator)}\n${processes(aggregator, separator)}\n") match {
+      case None => Unit
+      case Some(e) => e.printStackTrace()
+    }
+
     writeToFile(
       workflowFile,
-      workflowHeader(separator) + "\n" + workflows(aggregator, separator) + "\n"
-    )
+      s"${workflowHeader(separator)}\n${workflows(aggregator, separator)}\n"
+    ) match {
+      case None => Unit
+      case Some(e) => e.printStackTrace()
+    }
   }
 }
 
@@ -213,7 +207,7 @@ class MetricsCSVFileOutput[KeyT](path: String, name: String)
   * @param path path to directory where the files will be placed
   * @param file file name prefix
   */
-class MetricsD3Timeline[KeyT](path: String, file: String)
+case class MetricsD3Timeline[KeyT](path: String, file: String)
     extends MetricsOutput[KeyT]
     with FileOutput
     with MetricsFormatting {
@@ -221,8 +215,12 @@ class MetricsD3Timeline[KeyT](path: String, file: String)
   override def apply(aggregator: MetricsAggregator[KeyT]): Unit = {
     val result = build(aggregator, System.currentTimeMillis())
     println(result)
-    val dataFile = s"$path$file-data.js"
-    writeToFile(dataFile, result)
+    val dataFile = s"$path${file}.js"
+
+    writeToFile(dataFile, result) match {
+      case None => Unit
+      case Some(e) => e.printStackTrace()
+    }
   }
 
   /** Helps build the output with a static system time. */
