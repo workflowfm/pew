@@ -47,25 +47,25 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] with MetricsFormatti
     */
   def procCSV(separator: String, timeFormat: Option[String])(m: ProcessMetrics[KeyT]): String =
     m match {
-      case ProcessMetrics(id, r, p, s, f, res) =>
+      case ProcessMetrics(id, ref, process, start, finish, result) =>
         timeFormat match {
           case None =>
             Seq(
               id,
-              r,
-              p,
-              s,
-              formatOption(f, nullValue),
-              formatOption(res, nullValue)
+              ref,
+              process,
+              start,
+              formatOption(finish, nullValue),
+              formatOption(result, nullValue)
             ).mkString(separator)
           case Some(format) =>
             Seq(
               id,
-              r,
-              p,
-              formatTime(format)(s),
-              formatTimeOption(f, format, nullValue),
-              formatOption(res, nullValue)
+              ref,
+              process,
+              formatTime(format)(start),
+              formatTimeOption(finish, format, nullValue),
+              formatOption(result, nullValue)
             ).mkString(separator)
         }
     }
