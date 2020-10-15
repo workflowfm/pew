@@ -15,8 +15,8 @@ import akka.kafka.scaladsl.Consumer.Control
 import akka.stream.scaladsl.{ Sink, Source }
 import org.bson.types.ObjectId
 
-import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
 import com.workflowfm.pew.kafka.settings.KafkaExecutorEnvironment
+import com.workflowfm.pew.stateless.StatelessMessages.AnyMsg
 import com.workflowfm.pew.util.ClassLoaderUtil.withClassLoader
 
 /** Superclass wrapper around objects processed from objects in Kafka topics. The wrapper

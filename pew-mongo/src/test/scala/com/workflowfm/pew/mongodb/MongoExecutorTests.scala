@@ -1,4 +1,5 @@
 package com.workflowfm.pew.mongodb
+
 import scala.concurrent.Promise
 
 import akka.actor.ActorSystem

@@ -4,10 +4,10 @@ import org.bson._
 import org.bson.codecs._
 
 import com.workflowfm.pew.PiResource
+import com.workflowfm.pew.kafka.settings.bson.codecs.PewCodecs.{ PiResT, PiiT }
 import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.Assignment
-import com.workflowfm.pew.kafka.settings.bson.codecs.PewCodecs.{ PiResT, PiiT }
 
 class AssignmentCodec(
     piiCodec: Codec[PiiT],

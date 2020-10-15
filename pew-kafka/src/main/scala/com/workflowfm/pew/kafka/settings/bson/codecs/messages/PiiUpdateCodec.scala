@@ -5,9 +5,9 @@ import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
 import org.bson.types.ObjectId
 
 import com.workflowfm.pew.PiInstance
+import com.workflowfm.pew.kafka.settings.bson.codecs.PewCodecs._
 import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import com.workflowfm.pew.stateless.StatelessMessages.PiiUpdate
-import com.workflowfm.pew.kafka.settings.bson.codecs.PewCodecs._
 
 class PiiUpdateCodec(piiCodec: Codec[PiiT]) extends ClassCodec[PiiUpdate] {
 

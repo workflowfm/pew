@@ -8,13 +8,9 @@ import akka.stream.Materializer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.bson.types.ObjectId
 
+import com.workflowfm.pew.kafka.settings.KafkaExecutorSettings.{ AnyKey, KeyPiiId, KeyPiiIdCall }
 import com.workflowfm.pew.stateless.{ CallRef, StatelessMessages }
 import com.workflowfm.pew.stateless.StatelessMessages._
-import com.workflowfm.pew.kafka.settings.KafkaExecutorSettings.{
-  AnyKey,
-  KeyPiiId,
-  KeyPiiIdCall
-}
 
 abstract class KafkaExecutorEnvironment {
 

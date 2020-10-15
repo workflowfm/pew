@@ -3,8 +3,8 @@ package com.workflowfm.pew.kafka.settings.bson.codecs
 import org.bson.types.ObjectId
 
 import com.workflowfm.pew._
-import com.workflowfm.pew.stateless._
 import com.workflowfm.pew.kafka.settings.KafkaExecutorSettings
+import com.workflowfm.pew.stateless._
 
 object PewCodecs {
 

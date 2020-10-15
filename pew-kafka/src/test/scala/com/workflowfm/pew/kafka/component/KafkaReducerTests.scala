@@ -8,11 +8,11 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 import com.workflowfm.pew.PewTestSuite
-import com.workflowfm.pew.stateless.StatelessMessages._
-import com.workflowfm.pew.stateless.components.Reducer
 import com.workflowfm.pew.kafka.KafkaExampleTypes
 import com.workflowfm.pew.kafka.components.{ MockTracked, Tracked }
 import com.workflowfm.pew.kafka.components.KafkaWrapperFlows.flowRespond
+import com.workflowfm.pew.stateless.StatelessMessages._
+import com.workflowfm.pew.stateless.components.Reducer
 
 @RunWith(classOf[JUnitRunner])
 class KafkaReducerTests extends PewTestSuite with KafkaExampleTypes {

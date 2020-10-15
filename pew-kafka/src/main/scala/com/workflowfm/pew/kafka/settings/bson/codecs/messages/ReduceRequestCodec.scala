@@ -5,10 +5,10 @@ import org.bson.codecs.{ Codec, DecoderContext, EncoderContext }
 import org.bson.types.ObjectId
 
 import com.workflowfm.pew.{ PiInstance, PiObject }
+import com.workflowfm.pew.kafka.settings.bson.codecs.PewCodecs._
 import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.ReduceRequest
-import com.workflowfm.pew.kafka.settings.bson.codecs.PewCodecs._
 
 class ReduceRequestCodec(piiCodec: Codec[PiiT], refCodec: Codec[CallRef], objCodec: Codec[PiObject])
     extends ClassCodec[ReduceRequest] {

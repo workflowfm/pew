@@ -34,7 +34,10 @@ class PrintEventHandler[T] extends PiEventHandler[T] {
 /** A [[PiEventHandler]] consisting of a queue of multiple handlers. */
 case class MultiPiEventHandler[T](handlers: Queue[PiEventHandler[T]]) extends PiEventHandler[T] {
   override def apply(e: PiEvent[T]): Boolean = handlers map (_(e)) forall (_ == true)
-  override def and(h: PiEventHandler[T]): MultiPiEventHandler[T] = MultiPiEventHandler(handlers :+ h)
+
+  override def and(h: PiEventHandler[T]): MultiPiEventHandler[T] = MultiPiEventHandler(
+    handlers :+ h
+  )
 }
 
 object MultiPiEventHandler {

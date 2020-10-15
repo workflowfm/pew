@@ -6,10 +6,10 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 import com.workflowfm.pew.PewTestSuite
-import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.kafka.KafkaExampleTypes
 import com.workflowfm.pew.kafka.components.{ MockTransaction, Tracked }
 import com.workflowfm.pew.kafka.components.KafkaWrapperFlows.flowSequencer
+import com.workflowfm.pew.stateless.StatelessMessages._
 
 @RunWith(classOf[JUnitRunner])
 class KafkaSequencerTests extends PewTestSuite with KafkaExampleTypes {

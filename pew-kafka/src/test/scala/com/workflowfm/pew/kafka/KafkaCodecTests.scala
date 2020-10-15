@@ -12,19 +12,12 @@ import org.scalatest
 import org.scalatest.junit.JUnitRunner
 
 import com.workflowfm.pew._
+import com.workflowfm.pew.kafka.settings.KafkaExecutorSettings.{ AnyKey, KeyPiiId, KeyPiiIdCall }
+import com.workflowfm.pew.kafka.settings.bson.{ CodecWrapper, KafkaCodecRegistry }
 import com.workflowfm.pew.mongodb.bson.AnyCodec
 import com.workflowfm.pew.mongodb.bson.auto.ClassCodec
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages._
-import com.workflowfm.pew.kafka.settings.KafkaExecutorSettings.{
-  AnyKey,
-  KeyPiiId,
-  KeyPiiIdCall
-}
-import com.workflowfm.pew.kafka.settings.bson.{
-  CodecWrapper,
-  KafkaCodecRegistry
-}
 
 @RunWith(classOf[JUnitRunner])
 class KafkaCodecTests extends PewTestSuite with KafkaExampleTypes {

@@ -7,24 +7,25 @@ import scala.concurrent.duration._
 import scala.util.Try
 
 import akka.actor.ActorSystem
-//import org.bson.codecs.configuration.CodecRegistry
-//import org.mongodb.scala.MongoClient
 
 import com.workflowfm.pew._
 import com.workflowfm.pew.execution._
 import com.workflowfm.pew.metrics.MetricsD3Timeline
 import com.workflowfm.pew.metrics.MetricsHandler
-//import com.workflowfm.pew.mongodb.MongoExecutor
 import com.workflowfm.pew.skiexample.SkiExampleTypes._
 import com.workflowfm.pew.skiexample.instances._
 import com.workflowfm.pew.skiexample.processes._
+
 //import com.workflowfm.pew.kafka.CompleteKafkaExecutor
 //import com.workflowfm.pew.kafka.settings.KafkaExecutorSettings
 //import com.workflowfm.pew.kafka.settings.bson.{
 //  BsonKafkaExecutorSettings,
 //  KafkaCodecRegistry
 //}
-import com.workflowfm.pew.stream.PrintEventHandler
+//import com.workflowfm.pew.stream.PrintEventHandler
+//import org.bson.codecs.configuration.CodecRegistry
+//import org.mongodb.scala.MongoClient
+//import com.workflowfm.pew.mongodb.MongoExecutor
 
 object GetSkiMain {
 

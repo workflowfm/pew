@@ -47,7 +47,7 @@ trait PromiseHandler[T, R] extends PiEventHandler[T] {
 class ResultHandler[T](override val id: T) extends PromiseHandler[T, Any] {
 
   override def succeed(result: Any) = result
-  override def fail(exception: PiException[T]): Either[Any,Exception] = Right(exception)
+  override def fail(exception: PiException[T]): Either[Any, Exception] = Right(exception)
 }
 
 class ResultHandlerFactory[T] extends PiEventHandlerFactory[T, ResultHandler[T]] {
@@ -65,7 +65,7 @@ class CounterHandler[T](override val id: T) extends PromiseHandler[T, Int] {
   }
 
   override def succeed(result: Any) = counter
-  override def fail(exception: PiException[T]): Either[Int,Exception] = Left(counter)
+  override def fail(exception: PiException[T]): Either[Int, Exception] = Left(counter)
 }
 
 class CounterHandlerFactory[T] extends PiEventHandlerFactory[T, CounterHandler[T]] {

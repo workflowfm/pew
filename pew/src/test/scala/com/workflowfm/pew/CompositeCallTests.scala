@@ -49,7 +49,7 @@ class CompositeCallTests extends FlatSpec with Matchers with PiStateTester {
 
 }
 
-/*  X->A + A->Y = X->Y `Pa (cPa_X_1,oPa_A_) =
+/* X->A + A->Y = X->Y `Pa (cPa_X_1,oPa_A_) =
  * Comp (In cPa_X_1 [cPa_X_1__a_X] Zero) (Res [oPa_A___a_A] (Out oPa_A_ [oPa_A___a_A] Zero))`
  *
  * `Pa (cPa_X_1,oPa_A_) =

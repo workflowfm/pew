@@ -61,10 +61,13 @@ case class PiState(
 
   def withCalls(l: PiFuture*): PiState = copy(calls = l.toList ++ calls)
 
-  def withThread(ref: Int, name: String, chan: String, args: Seq[PiResource]): PiState = withThreads(
-    (ref, PiFuture(name, Chan(chan), args))
-  )
-  def withThreads(t: (Int, PiFuture)*): PiState = copy(threads = threads ++ (t map { x => x._1 -> x._2 }))
+  def withThread(ref: Int, name: String, chan: String, args: Seq[PiResource]): PiState =
+    withThreads(
+      (ref, PiFuture(name, Chan(chan), args))
+    )
+
+  def withThreads(t: (Int, PiFuture)*): PiState =
+    copy(threads = threads ++ (t map { x => x._1 -> x._2 }))
   def removeThread(ref: Int): PiState = copy(threads = threads - ref)
   def removeThreads(refs: Iterable[Int]): PiState = copy(threads = threads -- refs)
 
@@ -213,7 +216,8 @@ case class PiState(
     * Handler should return true if a thread was handled successfully, false if it failed.
     * Returns the updated state containing only threads that were handled successfully.
     */
-  def handleThreads(handler: ((Int, PiFuture)) => Boolean): PiState = copy(threads = threads filter handler)
+  def handleThreads(handler: ((Int, PiFuture)) => Boolean): PiState =
+    copy(threads = threads filter handler)
 }
 
 object PiState {

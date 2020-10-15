@@ -10,7 +10,9 @@ import com.workflowfm.pew._
   */
 trait ProcessExecutorTester {
 
-  def exe(e: ProcessExecutor[_], p: PiProcess, args: Any*): Any = await(e.execute(p, args: Seq[Any]))
+  def exe(e: ProcessExecutor[_], p: PiProcess, args: Any*): Any = await(
+    e.execute(p, args: Seq[Any])
+  )
 
   def await[A](f: Future[A], timeout: Duration = 15.seconds): A = try {
     Await.result(f, timeout)
@@ -42,7 +44,9 @@ package object RexampleTypes {
 
   trait Pa extends ((X) => (A, B)) with AtomicProcess {
     override val name = "Pa"
-    override val output: (PiPair, String) = (PiPair(Chan("Pa_l_a_A"), Chan("Pa_r_a_B")), "oPa_lB_A_x_B_rB_")
+
+    override val output: (PiPair, String) =
+      (PiPair(Chan("Pa_l_a_A"), Chan("Pa_r_a_B")), "oPa_lB_A_x_B_rB_")
     override val inputs: Seq[(Chan, String)] = Seq((Chan("Pa__a_X"), "cPa_X_1"))
     override val channels: Seq[String] = Seq("cPa_X_1", "oPa_lB_A_x_B_rB_")
 

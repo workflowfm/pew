@@ -12,10 +12,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_OFFSET_RESET_CONFIG
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.bson.codecs.configuration.CodecRegistry
 
-import com.workflowfm.pew.kafka.settings.{
-  KafkaExecutorEnvironment,
-  KafkaExecutorSettings
-}
+import com.workflowfm.pew.kafka.settings.{ KafkaExecutorEnvironment, KafkaExecutorSettings }
 
 class BsonKafkaExecutorSettings(val reg: CodecRegistry) extends KafkaExecutorSettings {
 

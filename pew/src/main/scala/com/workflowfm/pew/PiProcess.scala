@@ -43,7 +43,10 @@ sealed trait PiProcess {
     *  Used when a process is called to map argument channels to the given values.
     */
   def mapArgs(args: Chan*): ChanMap = ChanMap(channels map Chan zip args: _*)
-  def mapFreshArgs(i: Int, args: Chan*): ChanMap = ChanMap(channels map (_ + "#" + i) map Chan zip args: _*)
+
+  def mapFreshArgs(i: Int, args: Chan*): ChanMap = ChanMap(
+    channels map (_ + "#" + i) map Chan zip args: _*
+  )
 
   def inputFrees(): Seq[Seq[Chan]] = inputs map (_._1.frees)
 

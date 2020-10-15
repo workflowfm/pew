@@ -7,8 +7,8 @@ import akka.kafka._
 import akka.kafka.scaladsl._
 import akka.stream.scaladsl._
 
-import com.workflowfm.pew.stateless.components.StatelessComponent
 import com.workflowfm.pew.kafka.settings.KafkaExecutorEnvironment
+import com.workflowfm.pew.stateless.components.StatelessComponent
 
 /** Mid-Level Kafka Interface:
   * Defines the akka sources, flows, and sinks, which the high-level interface (KafkaConnectors) builds

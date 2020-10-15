@@ -2,13 +2,10 @@ package com.workflowfm.pew.kafka
 
 import scala.concurrent.ExecutionContext
 
-import com.workflowfm.pew.stateless.components._
 import com.workflowfm.pew.kafka.components.KafkaConnectors
 import com.workflowfm.pew.kafka.components.KafkaConnectors.DrainControl
-import com.workflowfm.pew.kafka.settings.{
-  KafkaExecutorEnvironment,
-  KafkaExecutorSettings
-}
+import com.workflowfm.pew.kafka.settings.{ KafkaExecutorEnvironment, KafkaExecutorSettings }
+import com.workflowfm.pew.stateless.components._
 
 /** Wrapper for a CustomKafkaExecutor that controls the lifecycle of an arbitrary collection
   * of local Kafka connectors.

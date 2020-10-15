@@ -35,7 +35,7 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
 ////	  codec.encode(writer, obj, EncoderContext.builder().build())
 ////
 ////	  val buffer: BasicOutputBuffer = writer.getBsonOutput().asInstanceOf[BasicOutputBuffer];
-/* // val reader: BsonBinaryReader = new BsonBinaryReader(new ByteBufferBsonInput(new
+  /* // val reader: BsonBinaryReader = new BsonBinaryReader(new ByteBufferBsonInput(new
    * ByteBufNIO(ByteBuffer.wrap(buffer.toByteArray)))) */
 ////		val dec = codec.decode(reader, DecoderContext.builder().build())
 ////
@@ -45,9 +45,9 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
 //	  roundTrip(PiItem(9), """{piitem: 9}""", codec)
 //  }
 
-/* This doesn't work because the decoder doesn't know how to deal with the (sub-)Document and that
+  /* This doesn't work because the decoder doesn't know how to deal with the (sub-)Document and that
    * it should be mapped to a PiItem. */
-/* You either (a) manually decode the Document to a PiItem or (b) use a bsonTypeCodecMap to map
+  /* You either (a) manually decode the Document to a PiItem or (b) use a bsonTypeCodecMap to map
    * Documents to PiItems */
 
 //	"codec" should "encode/decode a Document with a PiItem" in {
@@ -65,7 +65,7 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
 //	  docc.encode(writer, doc, EncoderContext.builder().build())
 //
 //	  val buffer: BasicOutputBuffer = writer.getBsonOutput().asInstanceOf[BasicOutputBuffer];
-/* val reader: BsonBinaryReader = new BsonBinaryReader(new ByteBufferBsonInput(new
+  /* val reader: BsonBinaryReader = new BsonBinaryReader(new ByteBufferBsonInput(new
    * ByteBufNIO(ByteBuffer.wrap(buffer.toByteArray)))) */
 //	  val dec = docc.decode(reader, DecoderContext.builder().build())
 //

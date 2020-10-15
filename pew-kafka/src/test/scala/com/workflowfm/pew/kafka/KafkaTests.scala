@@ -8,16 +8,10 @@ import akka.actor.ActorSystem
 import com.workflowfm.pew.{ PiEvent, PiProcessStore, SimpleProcessStore }
 import com.workflowfm.pew.execution._
 import com.workflowfm.pew.execution.RexampleTypes._
-import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.kafka.components.KafkaWrapperFlows
-import com.workflowfm.pew.kafka.settings.{
-  KafkaExecutorEnvironment,
-  KafkaExecutorSettings
-}
-import com.workflowfm.pew.kafka.settings.bson.{
-  BsonKafkaExecutorSettings,
-  KafkaCodecRegistry
-}
+import com.workflowfm.pew.kafka.settings.{ KafkaExecutorEnvironment, KafkaExecutorSettings }
+import com.workflowfm.pew.kafka.settings.bson.{ BsonKafkaExecutorSettings, KafkaCodecRegistry }
+import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.util.ClassMap
 
 trait KafkaTests extends ProcessExecutorTester {

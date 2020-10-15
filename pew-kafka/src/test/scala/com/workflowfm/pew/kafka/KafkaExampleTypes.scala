@@ -21,6 +21,7 @@ trait KafkaExampleTypes extends KafkaTests {
   val callResErr: (CallRef, TestException) = (CallRef(53141), new TestException)
 
   val eg1: eg1 = new eg1
+
   class eg1 extends {
 
     val piiId: ObjectId = ObjectId.get
@@ -52,7 +53,8 @@ trait KafkaExampleTypes extends KafkaTests {
       Seq(PiResource(arg1, pai.inputs.head._1))
     )
 
-    val rpeInProgress: RemoteProcessException[ObjectId] = RemoteProcessException(piiId, r1._1.id, testException)
+    val rpeInProgress: RemoteProcessException[ObjectId] =
+      RemoteProcessException(piiId, r1._1.id, testException)
     val sfInProgress: SequenceFailure = SequenceFailure(piiId, r1._1, rpeInProgress)
 
     val srInProgress: SequenceRequest = SequenceRequest(piiId, r1)
@@ -78,8 +80,11 @@ trait KafkaExampleTypes extends KafkaTests {
       Seq(PiResource(arg3, pci.inputs.head._1))
     )
 
-    val pepeFinishing2: PiFailureAtomicProcessException[ObjectId] = PiFailureAtomicProcessException(piiId, r2._1.id, testException)
-    val rpeFinishing: RemoteProcessException[ObjectId] = RemoteProcessException(piiId, r2._1.id, testException)
+    val pepeFinishing2: PiFailureAtomicProcessException[ObjectId] =
+      PiFailureAtomicProcessException(piiId, r2._1.id, testException)
+
+    val rpeFinishing: RemoteProcessException[ObjectId] =
+      RemoteProcessException(piiId, r2._1.id, testException)
 
     val sfFinishing21: SequenceFailure = SequenceFailure(piiId, r2._1, rpeFinishing)
 

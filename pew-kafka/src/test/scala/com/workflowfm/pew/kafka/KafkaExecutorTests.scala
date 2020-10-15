@@ -13,18 +13,12 @@ import org.scalatest.{ FlatSpec, Matchers }
 import org.scalatest.junit.JUnitRunner
 
 import com.workflowfm.pew.{ PiEventFinish, _ }
+import com.workflowfm.pew.kafka.components.KafkaConnectors
+import com.workflowfm.pew.kafka.components.KafkaConnectors.{ DrainControl, sendMessages }
+import com.workflowfm.pew.kafka.settings.{ KafkaExecutorEnvironment, KafkaExecutorSettings }
 import com.workflowfm.pew.stateless.ShutdownExecutorException
 import com.workflowfm.pew.stateless.StatelessMessages._
 import com.workflowfm.pew.stateless.components.{ AtomicExecutor, Reducer, ResultListener }
-import com.workflowfm.pew.kafka.components.KafkaConnectors
-import com.workflowfm.pew.kafka.components.KafkaConnectors.{
-  DrainControl,
-  sendMessages
-}
-import com.workflowfm.pew.kafka.settings.{
-  KafkaExecutorEnvironment,
-  KafkaExecutorSettings
-}
 import com.workflowfm.pew.stream.ResultHandler
 
 //noinspection ZeroIndexToHead
@@ -78,7 +72,9 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
   // Helper functions for execution tests //
   //////////////////////////////////////////
 
-  implicit def enhanceWithContainsDuplicates[T](s: Seq[T]): enhanceWithContainsDuplicates[T] = new enhanceWithContainsDuplicates[T](s)
+  implicit def enhanceWithContainsDuplicates[T](s: Seq[T]): enhanceWithContainsDuplicates[T] =
+    new enhanceWithContainsDuplicates[T](s)
+
   class enhanceWithContainsDuplicates[T](s: Seq[T]) extends {
     def hasDuplicates: Boolean = s.distinct.size != s.size
   }

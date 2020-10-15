@@ -10,6 +10,10 @@ import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 
 import com.workflowfm.pew._
+import com.workflowfm.pew.kafka.KafkaExampleTypes
+import com.workflowfm.pew.kafka.components.{ MockTracked, Tracked }
+import com.workflowfm.pew.kafka.components.KafkaWrapperFlows.{ flowRespond, flowWaitFuture }
+import com.workflowfm.pew.kafka.settings.KafkaExecutorEnvironment
 import com.workflowfm.pew.stateless.CallRef
 import com.workflowfm.pew.stateless.StatelessMessages.{
   AnyMsg,
@@ -18,13 +22,6 @@ import com.workflowfm.pew.stateless.StatelessMessages.{
   SequenceRequest
 }
 import com.workflowfm.pew.stateless.components.AtomicExecutor
-import com.workflowfm.pew.kafka.KafkaExampleTypes
-import com.workflowfm.pew.kafka.components.{ MockTracked, Tracked }
-import com.workflowfm.pew.kafka.components.KafkaWrapperFlows.{
-  flowRespond,
-  flowWaitFuture
-}
-import com.workflowfm.pew.kafka.settings.KafkaExecutorEnvironment
 
 @RunWith(classOf[JUnitRunner])
 class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {

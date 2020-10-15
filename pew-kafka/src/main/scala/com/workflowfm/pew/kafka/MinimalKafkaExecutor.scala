@@ -9,10 +9,10 @@ import org.bson.types.ObjectId
 import org.slf4j.{ Logger, LoggerFactory }
 
 import com.workflowfm.pew._
-import com.workflowfm.pew.stateless._
-import com.workflowfm.pew.stateless.components.ResultListener
 import com.workflowfm.pew.kafka.components.KafkaConnectors
 import com.workflowfm.pew.kafka.settings.KafkaExecutorEnvironment
+import com.workflowfm.pew.stateless._
+import com.workflowfm.pew.stateless.components.ResultListener
 import com.workflowfm.pew.stream.{ DelegatedPiObservable, PiObservable }
 
 /** Minimal implementation of a KafkaExecutor that needs to be

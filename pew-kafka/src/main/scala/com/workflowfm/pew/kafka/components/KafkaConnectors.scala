@@ -8,12 +8,9 @@ import akka.stream.scaladsl.Sink
 import org.bson.types.ObjectId
 
 import com.workflowfm.pew.PiEventFinish
+import com.workflowfm.pew.kafka.settings.{ KafkaExecutorEnvironment, KafkaExecutorSettings }
 import com.workflowfm.pew.stateless.StatelessMessages
 import com.workflowfm.pew.stateless.components._
-import com.workflowfm.pew.kafka.settings.{
-  KafkaExecutorEnvironment,
-  KafkaExecutorSettings
-}
 
 /** High-Level Kafka Interface:
   * Responsible for correctly wrapping StatelessComponents into RunnableGraphs to execute

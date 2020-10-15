@@ -121,8 +121,11 @@ case class ParInI(c: String, lv: String, rv: String, cont: Term) extends Input {
     case PiPair(_, _) => true
     case _ => false
   }
-  override def sub(s: ChanMap): ParInI = ParInI(s.resolve(c), s.resolve(lv), s.resolve(rv), cont.sub(s)) // TODO this may need improvement to enforce name binding.
-  override def fresh(i: Int): ParInI = ParInI(c + "#" + i, lv + "#" + i, rv + "#" + i, cont.fresh(i))
+
+  override def sub(s: ChanMap): ParInI =
+    ParInI(s.resolve(c), s.resolve(lv), s.resolve(rv), cont.sub(s)) // TODO this may need improvement to enforce name binding.
+  override def fresh(i: Int): ParInI =
+    ParInI(c + "#" + i, lv + "#" + i, rv + "#" + i, cont.fresh(i))
 
   override def receive(a: PiObject): (List[Term], ChanMap) = a match {
     case PiPair(l, r) => (List(cont.sub(ChanMap((Chan(lv), l), (Chan(rv), r)))), ChanMap())

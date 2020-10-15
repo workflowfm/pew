@@ -1,29 +1,39 @@
 package com.workflowfm.pew.simulator
 
-import akka.actor.{ ActorRef, Props }
-import com.workflowfm.pew.stream.{ PiEventHandler, PiEventHandlerFactory, PrintEventHandler }
-import com.workflowfm.pew.{ PiProcess, PiInstance, PiInstanceStore, SimpleInstanceStore, PiEvent, PiEventIdle }
-import com.workflowfm.pew.execution.AkkaExecutorActor
-import com.workflowfm.simulator.{ Coordinator, Task }
-import com.workflowfm.simulator.{ SimulatedProcess, AsyncSimulation, TaskGenerator }
 import java.util.UUID
+
 import scala.collection.mutable.{ Map, Queue }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
+import akka.actor.{ ActorRef, Props }
 
-abstract class PiSimulation (name: String, coordinator: ActorRef)
-  (override implicit val executionContext: ExecutionContext)
-    extends AsyncSimulation(name, coordinator) with AkkaExecutorActor {
+import com.workflowfm.pew.{
+  PiProcess,
+  PiInstance,
+  PiInstanceStore,
+  SimpleInstanceStore,
+  PiEvent,
+  PiEventIdle
+}
+import com.workflowfm.pew.execution.AkkaExecutorActor
+import com.workflowfm.pew.stream.{ PiEventHandler, PiEventHandlerFactory, PrintEventHandler }
+import com.workflowfm.simulator.{ Coordinator, Task }
+import com.workflowfm.simulator.{ SimulatedProcess, AsyncSimulation, TaskGenerator }
+
+abstract class PiSimulation(name: String, coordinator: ActorRef)(
+    implicit override val executionContext: ExecutionContext
+) extends AsyncSimulation(name, coordinator)
+    with AkkaExecutorActor {
 
   override var store: PiInstanceStore[UUID] = SimpleInstanceStore[UUID]()
 
-  override implicit val timeout: FiniteDuration = 10.seconds
+  implicit override val timeout: FiniteDuration = 10.seconds
 
   var computing: Seq[String] = Seq[String]()
   val waiting: Queue[String] = Queue[String]()
-  val sources: Map[UUID,String] = Map()
+  val sources: Map[UUID, String] = Map()
 
   def rootProcess: PiProcess
   def args: Seq[Any]
@@ -35,7 +45,7 @@ abstract class PiSimulation (name: String, coordinator: ActorRef)
     execute(rootProcess, args)
   }
 
-  def readyCheck() = {
+  def readyCheck(): Unit = {
     val q = waiting.clone()
     val check = computing.forall { p =>
       q.dequeueFirst(_ == p) match {
@@ -45,7 +55,7 @@ abstract class PiSimulation (name: String, coordinator: ActorRef)
     }
     if (check) ready()
   }
-  
+
   def processWaiting(process: String): Unit = {
     waiting += process
     readyCheck()
@@ -57,13 +67,13 @@ abstract class PiSimulation (name: String, coordinator: ActorRef)
 
   override def complete(task: Task, time: Long): Unit = {
     sources.get(task.id).map(processResuming)
-    super.complete(task,time)
+    super.complete(task, time)
   }
 
-  override def publish(evt: PiEvent[UUID]) {
+  override def publish(evt: PiEvent[UUID]): Unit = {
     super.publish(evt)
     evt match {
-      case PiEventIdle(i,_) => executorReady(i)
+      case PiEventIdle(i, _) => executorReady(i)
       case _ => Unit
     }
   }
@@ -81,14 +91,14 @@ abstract class PiSimulation (name: String, coordinator: ActorRef)
       processWaiting(p)
       sender() ! PiSimulation.Ack
     }
-      
+
     case PiSimulation.Resuming(p) => {
       processResuming(p)
       coordinator.forward(Coordinator.WaitFor(self))
     }
     case PiSimulation.AddTask(iname, t, resources) => {
       val id = java.util.UUID.randomUUID
-      sources += id->iname
+      sources += id -> iname
       task(id, t, actorCallback(sender), resources)
     }
   }
@@ -97,8 +107,10 @@ abstract class PiSimulation (name: String, coordinator: ActorRef)
     case m => println(s"WTF WTF WTF WTF WTF WTF WTF WTF : $m")
   }
 
-  override def receive = publisherBehaviour orElse akkaReceive orElse simulationReceive orElse piActorReceive orElse wtfReceive
+  override def receive: PartialFunction[Any, Unit] =
+    publisherBehaviour orElse akkaReceive orElse simulationReceive orElse piActorReceive orElse wtfReceive
 }
+
 object PiSimulation {
   case class Waiting(process: String)
   case class Resuming(process: String)

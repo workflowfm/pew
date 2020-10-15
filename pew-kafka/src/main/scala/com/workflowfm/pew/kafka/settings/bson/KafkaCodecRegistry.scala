@@ -6,19 +6,16 @@ import org.bson.types.ObjectId
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 
 import com.workflowfm.pew._
+import com.workflowfm.pew.kafka.settings.KafkaExecutorSettings.AnyKey
+import com.workflowfm.pew.kafka.settings.bson.codecs.content.CallRefCodec
+import com.workflowfm.pew.kafka.settings.bson.codecs.keys.{ KeyPiiIdCallCodec, KeyPiiIdCodec }
+import com.workflowfm.pew.kafka.settings.bson.codecs.messages._
 import com.workflowfm.pew.mongodb.bson._
 import com.workflowfm.pew.mongodb.bson.auto.{ AutoCodecRegistryExt, SuperclassCodec }
 import com.workflowfm.pew.mongodb.bson.events._
 import com.workflowfm.pew.mongodb.bson.helper._
 import com.workflowfm.pew.mongodb.bson.pitypes._
 import com.workflowfm.pew.stateless.StatelessMessages.{ AnyMsg, PiiHistory }
-import com.workflowfm.pew.kafka.settings.KafkaExecutorSettings.AnyKey
-import com.workflowfm.pew.kafka.settings.bson.codecs.content.CallRefCodec
-import com.workflowfm.pew.kafka.settings.bson.codecs.keys.{
-  KeyPiiIdCallCodec,
-  KeyPiiIdCodec
-}
-import com.workflowfm.pew.kafka.settings.bson.codecs.messages._
 
 class KafkaCodecRegistry(
     processes: PiProcessStore,
