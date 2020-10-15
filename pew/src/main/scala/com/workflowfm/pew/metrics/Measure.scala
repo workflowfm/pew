@@ -21,9 +21,9 @@ case class ProcessMetrics[KeyT](
     piID: KeyT,
     ref: Int,
     process: String,
-    start: Long = System.currentTimeMillis(),
-    finish: Option[Long] = None,
-    result: Option[String] = None
+    start: Long,
+    finish: Option[Long],
+    result: Option[String]
 ) {
   def complete(time: Long, result: Any): ProcessMetrics[KeyT] = copy(finish = Some(time), result = Some(result.toString))
 }
@@ -41,10 +41,10 @@ case class ProcessMetrics[KeyT](
   */
 case class WorkflowMetrics[KeyT](
     piID: KeyT,
-    start: Long = System.currentTimeMillis(),
-    calls: Int = 0,
-    finish: Option[Long] = None,
-    result: Option[String] = None
+    start: Long,
+    calls: Int,
+    finish: Option[Long],
+    result: Option[String]
 ) {
   def complete(time: Long, result: Any): WorkflowMetrics[KeyT] = copy(finish = Some(time), result = Some(result.toString))
   def call: WorkflowMetrics[KeyT] = copy(calls = calls + 1)
@@ -116,8 +116,8 @@ class MetricsAggregator[KeyT] {
     * @param piID the ID of the workflow
     * @param time the timestamp to be recorded as the workflow start
     */
-  def workflowStart(piID: KeyT, time: Long = System.currentTimeMillis()): Unit =
-    this += WorkflowMetrics(piID, time)
+  def workflowStart(piID: KeyT, time: Long): Unit =
+    this += WorkflowMetrics(piID, time, 0, None, None)
 
   /** Handles the event of a workflow finishing successfully, updating its metrics accordingly.
     *
@@ -148,9 +148,9 @@ class MetricsAggregator[KeyT] {
       piID: KeyT,
       ref: Int,
       process: String,
-      time: Long = System.currentTimeMillis()
+      time: Long
   ): Unit = {
-    this += ProcessMetrics(piID, ref, process, time)
+    this += ProcessMetrics(piID, ref, process, time, None, None)
     this ^ (piID, _.call)
   }
 
