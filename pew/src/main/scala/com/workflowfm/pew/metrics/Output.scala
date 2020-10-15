@@ -1,10 +1,6 @@
 package com.workflowfm.pew.metrics
 
-import java.text.SimpleDateFormat
-
 import scala.collection.immutable.Queue
-
-import org.apache.commons.lang3.time.DurationFormatUtils
 
 /** Manipulates a [[MetricsAggregator]] to produce some output via side-effects.
   * @tparam KeyT the type used for workflow IDs
@@ -12,35 +8,6 @@ import org.apache.commons.lang3.time.DurationFormatUtils
 trait MetricsOutput[KeyT] extends (MetricsAggregator[KeyT] => Unit) {
   /** Compose with another [[MetricsOutput]] in sequence. */
   def and(h: MetricsOutput[KeyT]): MetricsOutputs[KeyT] = MetricsOutputs(this, h)
-}
-
-/** Contains helpful formatting shortcut functions. */
-object MetricsOutput {
-
-  def formatOption[T](
-      v: Option[T],
-      nullValue: String,
-      format: T => String = { x: T => x.toString }
-  ): String = v.map(format).getOrElse(nullValue)
-  def formatTime(format: String)(time: Long): String = new SimpleDateFormat(format).format(time)
-
-  def formatTimeOption(time: Option[Long], format: String, nullValue: String): String =
-    formatOption(time, nullValue, formatTime(format))
-
-  def formatDuration(from: Long, to: Long, format: String): String =
-    DurationFormatUtils.formatDuration(to - from, format)
-
-  def formatDuration(from: Option[Long], to: Long, format: String, nullValue: String): String =
-    from.map { f =>
-      DurationFormatUtils.formatDuration(to - f, format).toString
-    } getOrElse (nullValue)
-
-  def formatDuration(from: Option[Long], to: Option[Long], format: String, nullValue: String): String =
-    from.map { f =>
-      to.map { t =>
-        DurationFormatUtils.formatDuration(t - f, format).toString
-      } getOrElse (nullValue)
-    } getOrElse (nullValue)
 }
 
 /** A [[MetricsOutput]] consisting of a [[scala.collection.immutable.Queue]] of [[MetricsOutput]]s
@@ -61,7 +28,7 @@ object MetricsOutputs {
 }
 
 /** Generates a string representation of the metrics using a generalized CSV format. */
-trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] {
+trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] with MetricsFormatting {
   /** A string representing null values. */
   val nullValue = "NULL"
 
@@ -77,29 +44,30 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] {
     * @param timeFormat optional argument to format timestamps using `java.text.SimpleDateFormat`
     * @param m the [[ProcessMetrics]] instance to be handled
     */
-  def procCSV(separator: String, timeFormat: Option[String])(m: ProcessMetrics[KeyT]): String = m match {
-    case ProcessMetrics(id, r, p, s, f, res) =>
-      timeFormat match {
-        case None =>
-          Seq(
-            id,
-            r,
-            p,
-            s,
-            MetricsOutput.formatOption(f, nullValue),
-            MetricsOutput.formatOption(res, nullValue)
-          ).mkString(separator)
-        case Some(format) =>
-          Seq(
-            id,
-            r,
-            p,
-            MetricsOutput.formatTime(format)(s),
-            MetricsOutput.formatTimeOption(f, format, nullValue),
-            MetricsOutput.formatOption(res, nullValue)
-          ).mkString(separator)
-      }
-  }
+  def procCSV(separator: String, timeFormat: Option[String])(m: ProcessMetrics[KeyT]): String =
+    m match {
+      case ProcessMetrics(id, r, p, s, f, res) =>
+        timeFormat match {
+          case None =>
+            Seq(
+              id,
+              r,
+              p,
+              s,
+              formatOption(f, nullValue),
+              formatOption(res, nullValue)
+            ).mkString(separator)
+          case Some(format) =>
+            Seq(
+              id,
+              r,
+              p,
+              formatTime(format)(s),
+              formatTimeOption(f, format, nullValue),
+              formatOption(res, nullValue)
+            ).mkString(separator)
+        }
+    }
 
   /** The field names for [[WorkflowMetrics]].
     * @param separator a string (such as a space or comma) to separate the names
@@ -122,16 +90,16 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] {
               id,
               s,
               c,
-              MetricsOutput.formatOption(f, nullValue),
-              MetricsOutput.formatOption(res, nullValue)
+              formatOption(f, nullValue),
+              formatOption(res, nullValue)
             ).mkString(separator)
           case Some(format) =>
             Seq(
               id,
-              MetricsOutput.formatTime(format)(s),
+              formatTime(format)(s),
               c,
-              MetricsOutput.formatTimeOption(f, format, nullValue),
-              MetricsOutput.formatOption(res, nullValue)
+              formatTimeOption(f, format, nullValue),
+              formatOption(res, nullValue)
             ).mkString(separator)
         }
     }
@@ -247,7 +215,8 @@ class MetricsCSVFileOutput[KeyT](path: String, name: String)
   */
 class MetricsD3Timeline[KeyT](path: String, file: String)
     extends MetricsOutput[KeyT]
-    with FileOutput {import java.io._
+    with FileOutput
+    with MetricsFormatting {
 
   override def apply(aggregator: MetricsAggregator[KeyT]): Unit = {
     val result = build(aggregator, System.currentTimeMillis())
@@ -258,7 +227,7 @@ class MetricsD3Timeline[KeyT](path: String, file: String)
 
   /** Helps build the output with a static system time. */
   def build(aggregator: MetricsAggregator[KeyT], now: Long): String = {
-    var buf: StringBuilder = StringBuilder.newBuilder
+    val buf: StringBuilder = StringBuilder.newBuilder
     buf.append("var processes = [\n")
     for (p <- aggregator.processSet) buf.append(s"""\t"$p",\n""")
     buf.append("];\n\n")
@@ -301,7 +270,12 @@ class MetricsD3Timeline[KeyT](path: String, file: String)
     * @param now the current (real) to be used as the end time of unfinished processes
     * @param prefix a string to prefix (usually some whitespace) to prefix the entry
     */
-  def processEntry(proc: String, i: Seq[ProcessMetrics[KeyT]], now: Long, prefix: String): String = {
+  def processEntry(
+      proc: String,
+      i: Seq[ProcessMetrics[KeyT]],
+      now: Long,
+      prefix: String
+  ): String = {
     if (i.isEmpty) ""
     else {
       val times = ("" /: i) { case (s, m) => s"$s${callEntry(now, m, prefix + "\t")}" }
@@ -318,7 +292,7 @@ class MetricsD3Timeline[KeyT](path: String, file: String)
     */
   def callEntry(now: Long, m: ProcessMetrics[KeyT], prefix: String): String = {
     s"""$prefix{"label":"${m.ref}", "process": "${m.process}", "starting_time": ${m.start}, "ending_time": ${m.finish
-      .getOrElse(now)}, "result":"${MetricsOutput.formatOption(m.result, "NONE")}"},\n"""
+      .getOrElse(now)}, "result":"${formatOption(m.result, "NONE")}"},\n"""
 
   }
 }

@@ -25,7 +25,9 @@ case class ProcessMetrics[KeyT](
     finish: Option[Long],
     result: Option[String]
 ) {
-  def complete(time: Long, result: Any): ProcessMetrics[KeyT] = copy(finish = Some(time), result = Some(result.toString))
+
+  def complete(time: Long, result: Any): ProcessMetrics[KeyT] =
+    copy(finish = Some(time), result = Some(result.toString))
 }
 
 /** Metrics for a particular workflow.
@@ -46,7 +48,9 @@ case class WorkflowMetrics[KeyT](
     finish: Option[Long],
     result: Option[String]
 ) {
-  def complete(time: Long, result: Any): WorkflowMetrics[KeyT] = copy(finish = Some(time), result = Some(result.toString))
+
+  def complete(time: Long, result: Any): WorkflowMetrics[KeyT] =
+    copy(finish = Some(time), result = Some(result.toString))
   def call: WorkflowMetrics[KeyT] = copy(calls = calls + 1)
 }
 
@@ -55,9 +59,12 @@ class MetricsAggregator[KeyT] {
   import scala.collection.immutable.Map
 
   /** Process metrics indexed by workflow ID, then by call reference ID */
-  val processMap: mutable.Map[KeyT,Map[Int,ProcessMetrics[KeyT]]] = scala.collection.mutable.Map[KeyT, Map[Int, ProcessMetrics[KeyT]]]()
+  val processMap: mutable.Map[KeyT, Map[Int, ProcessMetrics[KeyT]]] =
+    scala.collection.mutable.Map[KeyT, Map[Int, ProcessMetrics[KeyT]]]()
+
   /** Workflow metrics indexed by workflow ID */
-  val workflowMap: mutable.Map[KeyT,WorkflowMetrics[KeyT]] = scala.collection.mutable.Map[KeyT, WorkflowMetrics[KeyT]]()
+  val workflowMap: mutable.Map[KeyT, WorkflowMetrics[KeyT]] =
+    scala.collection.mutable.Map[KeyT, WorkflowMetrics[KeyT]]()
 
   // Set
 
@@ -202,8 +209,10 @@ class MetricsAggregator[KeyT] {
   def keys = workflowMap.keys
   /** Returns all the tracked instances of [[WorkflowMetrics]] sorted by starting time. */
   def workflowMetrics: Seq[WorkflowMetrics[KeyT]] = workflowMap.values.toSeq.sortBy(_.start)
+
   /** Returns all the tracked instances of [[ProcessMetrics]] sorted by starting time. */
-  def processMetrics: Seq[ProcessMetrics[KeyT]] = processMap.values.flatMap(_.values).toSeq.sortBy(_.start)
+  def processMetrics: Seq[ProcessMetrics[KeyT]] =
+    processMap.values.flatMap(_.values).toSeq.sortBy(_.start)
 
   /** Returns all the tracked instances of [[ProcessMetrics]] associated with a particular workflow, sorted by starting time.
     * @param id the ID of the workflow
