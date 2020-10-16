@@ -51,21 +51,21 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] with MetricsFormatti
         timeFormat match {
           case None =>
             Seq(
-              id,
+              quote(id),
               ref,
-              process,
+              quote(process),
               start,
               formatOption(finish, nullValue),
-              formatOption(result, nullValue)
+              quote(formatOption(result, nullValue))
             ).mkString(separator)
           case Some(format) =>
             Seq(
-              id,
+              quote(id),
               ref,
-              process,
+              quote(process),
               formatTime(format)(start),
               formatTimeOption(finish, format, nullValue),
-              formatOption(result, nullValue)
+              quote(formatOption(result, nullValue))
             ).mkString(separator)
         }
     }
@@ -84,23 +84,23 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] with MetricsFormatti
     */
   def workflowCSV(separator: String, timeFormat: Option[String])(m: WorkflowMetrics[KeyT]): String =
     m match {
-      case WorkflowMetrics(id, s, c, f, res) =>
+      case WorkflowMetrics(id, start, calls, finish, result) =>
         timeFormat match {
           case None =>
             Seq(
-              id,
-              s,
-              c,
-              formatOption(f, nullValue),
-              formatOption(res, nullValue)
+              quote(id),
+              start,
+              calls,
+              formatOption(finish, nullValue),
+              quote(formatOption(result, nullValue))
             ).mkString(separator)
           case Some(format) =>
             Seq(
-              id,
-              formatTime(format)(s),
-              c,
-              formatTimeOption(f, format, nullValue),
-              formatOption(res, nullValue)
+              quote(id),
+              formatTime(format)(start),
+              calls,
+              formatTimeOption(finish, format, nullValue),
+              quote(formatOption(result, nullValue))
             ).mkString(separator)
         }
     }

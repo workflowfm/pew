@@ -36,4 +36,9 @@ trait MetricsFormatting {
         DurationFormatUtils.formatDuration(t - f, format).toString
       } getOrElse (nullValue)
     } getOrElse (nullValue)
+
+
+  // don't use interpolation, it's problematic
+  // see https://github.com/scala/bug/issues/6476
+  def quote(s: String): String = "\"" + s + "\"" 
 }
