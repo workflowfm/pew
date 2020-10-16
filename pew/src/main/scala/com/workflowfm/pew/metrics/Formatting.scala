@@ -37,8 +37,7 @@ trait MetricsFormatting {
       } getOrElse (nullValue)
     } getOrElse (nullValue)
 
-
   // don't use interpolation, it's problematic
   // see https://github.com/scala/bug/issues/6476
-  def quote(s: String): String = "\"" + s + "\"" 
+  def quote(s: String): String = "\"" + s + "\""
 }

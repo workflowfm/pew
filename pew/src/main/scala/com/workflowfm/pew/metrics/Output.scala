@@ -1,6 +1,7 @@
 package com.workflowfm.pew.metrics
 
 import scala.collection.immutable.Queue
+
 import com.workflowfm.pew.util.FileOutput
 
 /** Manipulates a [[MetricsAggregator]] to produce some output via side-effects.
@@ -51,7 +52,7 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] with MetricsFormatti
         timeFormat match {
           case None =>
             Seq(
-              quote(id),
+              quote(id.toString),
               ref,
               quote(process),
               start,
@@ -60,7 +61,7 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] with MetricsFormatti
             ).mkString(separator)
           case Some(format) =>
             Seq(
-              quote(id),
+              quote(id.toString),
               ref,
               quote(process),
               formatTime(format)(start),
@@ -88,7 +89,7 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] with MetricsFormatti
         timeFormat match {
           case None =>
             Seq(
-              quote(id),
+              quote(id.toString),
               start,
               calls,
               formatOption(finish, nullValue),
@@ -96,7 +97,7 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] with MetricsFormatti
             ).mkString(separator)
           case Some(format) =>
             Seq(
-              quote(id),
+              quote(id.toString),
               formatTime(format)(start),
               calls,
               formatTimeOption(finish, format, nullValue),
@@ -136,12 +137,15 @@ trait MetricsStringOutput[KeyT] extends MetricsOutput[KeyT] with MetricsFormatti
     aggregator.workflowMetrics.map(workflowCSV(separator, timeFormat)).mkString(lineSep)
 }
 
-/** Prints all metrics to standard output. 
-  * 
+/** Prints all metrics to standard output.
+  *
   * @param separator A string to separate values.
   * @param timeFormat An optional time format using `java.text.SimpleDateFormat`
   */
-case class MetricsPrinter[KeyT](separator: String = "\t| ", timeFormat: Some[String] = Some("YYYY-MM-dd HH:mm:ss.SSS")) extends MetricsStringOutput[KeyT] {
+case class MetricsPrinter[KeyT](
+    separator: String = "\t| ",
+    timeFormat: Some[String] = Some("YYYY-MM-dd HH:mm:ss.SSS")
+) extends MetricsStringOutput[KeyT] {
 
   /** Separates metrics instances. */
   val lineSep: String = "\n"
@@ -163,7 +167,6 @@ ${workflows(aggregator, separator, lineSep, timeFormat)}
   }
 }
 
-
 /** Outputs metrics to files using a standard CSV format.
   * Generates 2 CSV files:
   * 1. one for processes with a "-tasks.csv" suffix,
@@ -174,15 +177,18 @@ ${workflows(aggregator, separator, lineSep, timeFormat)}
   * @param prefix file name prefix
   * @param separator a string to separate values, defaulting to a comma
   */
-case class MetricsCSVFileOutput[KeyT](path: String, prefix: String,  separator: String = ",")
+case class MetricsCSVFileOutput[KeyT](path: String, prefix: String, separator: String = ",")
     extends MetricsStringOutput[KeyT]
     with FileOutput {
 
   override def apply(aggregator: MetricsAggregator[KeyT]): Unit = {
     val taskFile = s"$path${prefix}Tasks.csv"
     val workflowFile = s"$path${prefix}workflows.csv"
-    
-    writeToFile(taskFile, s"${procHeader(separator)}\n${processes(aggregator, separator)}\n") match {
+
+    writeToFile(
+      taskFile,
+      s"${procHeader(separator)}\n${processes(aggregator, separator)}\n"
+    ) match {
       case None => Unit
       case Some(e) => e.printStackTrace()
     }
