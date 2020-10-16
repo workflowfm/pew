@@ -1,0 +1,3 @@
+[submodule "d3-timeline"]
+	path = skiexample/output/d3-workflow-timeline
+	url = git@github.com:workflowfm/d3-workflow-timeline.git
