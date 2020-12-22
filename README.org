@@ -1,0 +1,63 @@
+#+TITLE: PEW: Persistent Execution of Workflows
+#+AUTHOR: Petros Papapanagiotou
+
+[[../../releases/latest][https://img.shields.io/badge/version-1.5.0-brightgreen.svg]]
+[[https://opensource.org/licenses/Apache-2.0][https://img.shields.io/badge/license-Apache%202.0-yellowgreen.svg]]
+
+A library for the execution of [[https://en.wikipedia.org/wiki/%CE%A0-calculus][\pi-calculus]] workflows, particularly those constructed by the WorkflowFM Reasoner using persistent (serializable) state.
+
+| Created by [[https://github.com/PetrosPapapa][Petros Papapanagiotou]] |
+| [[https://aiml.inf.ed.ac.uk/][Artificial Intelligence Modelling Lab]] |
+| [[https://web.inf.ed.ac.uk/aiai][Artificial Intelligence and its Applications Institute]] |
+| [[https://www.ed.ac.uk/informatics/][School of Informatics, University of Edinburgh]] |
+
+This is part of the [[https://github.com/workflowfm/][WorkflowFM]] framework for correct-by-construction process and resource workflows.
+
+* Modules
+
+In addition to the core \pi-calculus model and execution engine, a list of additoinal modules are provided:
+
+- *pew-mongo*: Additional executor that stores the state in a [[https://www.mongodb.com/][MongoDB]] database.
+- *pew-kafka*: Additional executor that stores the state and open process calls in [[https://kafka.apache.org/][Kafka]] topics, yielding a fully persistent/completely stateless execution.
+- *pew-simulator*: Integration with [[https://github.com/workflowfm/proter][Proter]], an expressive, asynchronous process simulator.
+- *skiexample*: Deployment of an example ski purchasing workflow documented in [[https://arxiv.org/abs/1108.2348][this paper]].
+
+* Install
+
+Requirements:
+- Java 8, Scala 2.12.12
+- [[https://www.scala-sbt.org/][sbt]] v1.3.13
+
+Installation is manual (at least for now) using ~sbt publishLocal~.
+
+This will publish PEW in a local ivy repository.
+
+You can then add it as a dependency in your own project.
+
+e.g. in sbt: 
+#+BEGIN_SRC scala
+libraryDependencies += "com.workflowfm" %% "pew" % "1.5.0"
+#+END_SRC 
+
+* Authors
+:PROPERTIES:
+:CUSTOM_ID: authors
+:END:
+
+** Maintainer
+
+   [[https://github.com/PetrosPapapa][Petros Papapanagiotou]] - pe.p@ed.ac.uk - [[https://twitter.com/petrospapapa][@PetrosPapapa]]
+
+** Contributors
+
+   A big thank you to the following contributors in order of appearance:
+
+   - [[https://github.com/JeVaughan][James Vaughan]]
+   - [[https://github.com/pilif0][Filip Smola]]
+
+
+* License
+
+Distributed under the Apache 2.0 license. See [[LICENSE]] for more information.
+
+Copyright \copy 2012-2020 [[https://www.ed.ac.uk/][The University of Edinburgh]] and [[#authors][contributors]]
