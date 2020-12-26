@@ -16,16 +16,23 @@ class ReduceTests extends FlatSpec with Matchers with PiStateTester {
     reduce(Devour("C", "V"), Out("C", PiItem("OUTPUT"))) should be(
       fState((Chan("V"), PiItem("OUTPUT")))
     )
+  }
+
+  it should "reduce two simple I/O in parallel" in {
     reduce(
       Devour("D", "W"),
       Out("C", PiItem("OUTPUT1")),
       Devour("C", "V"),
       Out("D", PiItem("OUTPUT2"))
     ) should be(fState((Chan("V"), PiItem("OUTPUT1")), (Chan("W"), PiItem("OUTPUT2"))))
+
+  }
+
+  it should "reduce an input continuation correctly" in {
+    reduce(In("A", "C", Devour("C", "V")), Out("A", Chan("X"))) should be(PiState(Devour("X", "V")))
   }
 
   it should "reduce back-to-back input" in {
-    reduce(In("A", "C", Devour("C", "V")), Out("A", Chan("X"))) should be(PiState(Devour("X", "V")))
     reduce(
       In("A", "C", Devour("C", "V")),
       Out("A", Chan("X")),
@@ -33,15 +40,21 @@ class ReduceTests extends FlatSpec with Matchers with PiStateTester {
     ) should be(fState((Chan("V"), PiItem("OHHAI!"))))
   }
 
-  it should "reduce a simple buffer" in {
+  it should "reduce the input of a simple buffer" in {
     reduce(Out("IN", PiItem("HELLO")), In("IN", "V", Out("OUT", Chan("V")))) should be(
       PiState(Out("OUT", PiItem("HELLO")))
     )
+  }
+
+  it should "reduce a simple buffer fully" in {
     reduce(
       Devour("OUT", "WUT"),
       Out("IN", PiItem("HELLO")),
       In("IN", "V", Out("OUT", Chan("V")))
     ) should be(fState((Chan("WUT"), PiItem("HELLO"))))
+  }
+
+  it should "reduce a simple buffer and get the result" in {
     reduceGet(
       "WUT",
       Devour("OUT", "WUT"),
@@ -107,18 +120,21 @@ class ReduceTests extends FlatSpec with Matchers with PiStateTester {
     )
   }
 
-  it should "reduce an optional I/O" in {
+  it should "reduce an optional I/O with a left selection" in {
     reduce(
       WithIn("X", "L", "R", Devour("L", "LEFT"), Devour("R", "RIGHT")),
       LeftOut("X", "A", Out("A", PiItem("Left")))
     ) should be(fState((Chan("LEFT"), PiItem("Left"))) incFCtr ())
+  }
+
+  it should "reduce an optional I/O with a right selection" in {
     reduce(
       WithIn("X", "L", "R", Devour("L", "LEFT"), Devour("R", "RIGHT")),
       RightOut("X", "B", Out("B", PiItem("Right")))
     ) should be(fState((Chan("RIGHT"), PiItem("Right"))) incFCtr ())
   }
 
-  it should "reduce a A+(B+C) I/O" in {
+  it should "reduce a A+(B+C) I/O with a left selection" in {
     reduce(
       WithIn(
         "X",
@@ -129,6 +145,9 @@ class ReduceTests extends FlatSpec with Matchers with PiStateTester {
       ),
       LeftOut("X", "A", Out("A", PiItem("aaa")))
     ) should be(fState((Chan("AAA"), PiItem("aaa"))) withFCtr (1))
+  }
+
+  it should "reduce a A+(B+C) I/O with a right-left selection" in {
     reduce(
       WithIn(
         "X",
@@ -139,6 +158,9 @@ class ReduceTests extends FlatSpec with Matchers with PiStateTester {
       ),
       RightOut("X", "BC", LeftOut("BC", "B", Out("B", PiItem("bbb"))))
     ) should be(fState((Chan("BBB"), PiItem("bbb"))) withFCtr (2))
+  }
+
+  it should "reduce a A+(B+C) I/O with a right-right selection" in {
     reduce(
       WithIn(
         "X",
@@ -156,6 +178,9 @@ class ReduceTests extends FlatSpec with Matchers with PiStateTester {
       ParIn("X", "L", "R", Devour("L", "LEFT"), Devour("R", "RIGHT")),
       Out("X", PiItem("OUTPUT"))
     ) should be(None)
+  }
+
+  it should "not reduce non-admissible I/O, but allow other I/O" in {
     reduce(
       ParIn("X", "L", "R", Devour("L", "LEFT"), Devour("R", "RIGHT")),
       Out("X", PiItem("OUTPUT")),
