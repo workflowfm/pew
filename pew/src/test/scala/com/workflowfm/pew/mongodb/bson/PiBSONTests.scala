@@ -96,16 +96,16 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
   "PiObjectCodec" should "encode/decode PiObjects" in {
     val codec = new PiObjectCodec
 
-    roundTrip(PiItem("Oh!"), """{"_t": "PiItem", "class":"java.lang.String", "i":"Oh!"}""", codec)
-    roundTrip(Chan("Oh!"), """{"_t": "Chan", "s":"Oh!"}""", codec)
+    roundTrip(PiItem("Oh!"), """{"__typeID": "com.workflowfm.pew.PiItem", "i" : { "class":"java.lang.String", "child":"Oh!"} }""", codec)
+    roundTrip(Chan("Oh!"), """{"__typeID": "com.workflowfm.pew.Chan", "s":"Oh!"}""", codec)
     roundTrip(
       PiPair(Chan("L"), PiItem("R")),
-      """{"_t": "PiPair", "l":{"_t" : "Chan", "s":"L"}, "r":{"_t" : "PiItem", "class":"java.lang.String", "i":"R"}}""",
+      """{"__typeID": "com.workflowfm.pew.PiPair", "l":{"__typeID" : "com.workflowfm.pew.Chan", "s":"L"}, "r":{"__typeID" : "com.workflowfm.pew.PiItem", "i" : { "class":"java.lang.String", "child":"R"}}}""",
       codec
     )
     roundTrip(
       PiOpt(Chan("L"), PiPair(Chan("RL"), Chan("RR"))),
-      """{"_t": "PiOpt", "l":{"_t" : "Chan", "s":"L"}, "r":{"_t" : "PiPair", "l":{"_t" : "Chan", "s":"RL"}, "r":{"_t" : "Chan", "s":"RR"}}}""",
+      """{"__typeID": "com.workflowfm.pew.PiOpt", "l":{"__typeID" : "com.workflowfm.pew.Chan", "s":"L"}, "r":{"__typeID" : "com.workflowfm.pew.PiPair", "l":{"__typeID" : "com.workflowfm.pew.Chan", "s":"RL"}, "r":{"__typeID" : "com.workflowfm.pew.Chan", "s":"RR"}}}""",
       codec
     )
   }
