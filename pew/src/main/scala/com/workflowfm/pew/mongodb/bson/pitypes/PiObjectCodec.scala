@@ -30,13 +30,17 @@ class PiItemCodec(anyCodec: Codec[Any]) extends ClassCodec[PiItem[Any]] {
 class ChanCodec extends ClassCodec[Chan] {
 
   val sN: String = "s"
+  val iN: String = "i"
 
   override def decodeBody(reader: BsonReader, ctx: DecoderContext): Chan = Chan(
-    reader.readString(sN)
+    reader.readString(sN),
+    reader.readInt32(iN)
   )
 
-  override def encodeBody(writer: BsonWriter, value: Chan, ctx: EncoderContext): Unit =
+  override def encodeBody(writer: BsonWriter, value: Chan, ctx: EncoderContext): Unit = {
     writer.writeString(sN, value.s)
+    writer.writeInt32(iN, value.i)
+  }
 }
 
 class PiPairCodec(objCodec: Codec[PiObject]) extends ClassCodec[PiPair] {
@@ -142,7 +146,7 @@ class ChanMapCodec(registry: CodecRegistry) extends Codec[ChanMap] {
     reader.readStartDocument()
     reader.readName("ChanMap")
     reader.readStartArray()
-    var args: Queue[(Chan, PiObject)] = Queue()
+    val args: Queue[(Chan, PiObject)] = Queue()
     while (reader.readBsonType() != BsonType.END_OF_DOCUMENT) {
       reader.readStartDocument()
       reader.readName("k")
