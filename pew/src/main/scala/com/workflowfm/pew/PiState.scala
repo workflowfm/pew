@@ -48,7 +48,6 @@ case class PiState(
   def withTerms(t: Seq[Term]): PiState = (this /: t)(_ withTerm _)
 
   def withSub(c: Chan, a: PiObject): PiState = copy(resources = resources + (c, a))
-  def withSub(c: String, o: PiObject): PiState = withSub(Chan(c), o)
   def withSubs(m: Map[Chan, PiObject]): PiState = copy(resources = resources ++ m)
   def withSubs(l: Seq[(Chan, PiObject)]): PiState = copy(resources = resources ++ l)
   def withSubs(m: ChanMap): PiState = copy(resources = resources ++ m)
@@ -61,9 +60,9 @@ case class PiState(
 
   def withCalls(l: PiFuture*): PiState = copy(calls = l.toList ++ calls)
 
-  def withThread(ref: Int, name: String, chan: String, args: Seq[PiResource]): PiState =
+  def withThread(ref: Int, name: String, chan: Chan, args: Seq[PiResource]): PiState =
     withThreads(
-      (ref, PiFuture(name, Chan(chan), args))
+      (ref, PiFuture(name, chan, args))
     )
 
   def withThreads(t: (Int, PiFuture)*): PiState =

@@ -71,7 +71,7 @@ object PiObject {
   }
 
   /**
-    * Converts a [[PiObject]] to a Scala object of a given time.
+    * Converts a [[PiObject]] to a Scala object of a given type.
     * 
     * Same as [[get]] but also type casts the object. Type casting may fail, but we typically use this
     * when we can rely on typechecking from the reasoner with CLL.
@@ -102,12 +102,18 @@ object PiObject {
   * A process would never receive and/or do anything useful with a pi-calculus channel.
   * 
   * @param s The name of the channel.
+  * @param i An extra parameter to ensure freshness.
   */
 case class Chan(s: String) extends PiObject {
   override val isGround: Boolean = false
   override lazy val frees: Seq[Chan] = Seq(this)
-  override def fresh(i: Int): Chan = Chan(s + "#" + i)
+  override def fresh(f: Int): Chan = Chan(s + "#" + f)
 }
+
+object Chan {
+  implicit def fromString(s: String): Chan = Chan(s)
+}
+
 
 /**
   * A resource that can be communicated through pi-calculus channels.
@@ -210,18 +216,9 @@ case class ChanMap(map: Map[Chan, PiObject] = Map()) {
   def resolve(c: Chan): Chan =
     map.get(c) match {
       case None => c
-      case Some(Chan(x)) if c.s != x => resolve(Chan(x))
+      case Some(x: Chan) if c != x => resolve(x)
       case _ => c
     }
-
-  /**
-    * Shortcut to [[com.workflowfm.pew.ChanMap.resolve(c* resolve]] using a channel name (String) instead of a [[Chan]].
-    *
-    * @see [[com.workflowfm.pew.ChanMap.resolve(c* resolve]]
-    * @param s The name of the channel to resolve.
-    * @return The last channel in the chain, or `c` if no chain is found.
-    */
-  def resolve(s: String): String = resolve(Chan(s)).s
 
   /**
     * Returns the [[PiObject]] at the end of a chain of channel mappings.
@@ -247,8 +244,8 @@ case class ChanMap(map: Map[Chan, PiObject] = Map()) {
     */
   def sub(o: PiObject): PiObject = {
     o match {
-      case Chan(c) => obtain(Chan(c))
-      case PiItem(i) => PiItem(i)
+      case c: Chan=> obtain(c)
+      case i: PiItem[_] => i
       case PiPair(l, r) => PiPair(sub(l), sub(r))
       case PiOpt(l, r) => PiOpt(sub(l), sub(r))
       case PiLeft(l) => PiLeft(sub(l))
@@ -345,6 +342,6 @@ object PiResource {
     * @param m The [[ChanMap]] used to resolve the channel.
     * @return The constructed [[PiResource]].
     */
-  def of(obj: PiObject, c: String, m: ChanMap = ChanMap()): PiResource =
-    PiResource(obj, m.resolve(Chan(c)))
+  def of(obj: PiObject, c: Chan, m: ChanMap = ChanMap()): PiResource =
+    PiResource(obj, m.resolve(c))
 }
