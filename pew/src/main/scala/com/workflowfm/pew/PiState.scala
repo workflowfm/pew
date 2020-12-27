@@ -75,7 +75,7 @@ case class PiState(
   def incTCtr(): PiState = copy(threadCtr = threadCtr + 1)
 
   def withFCtr(i: Int): PiState = copy(freshCtr = i)
-  def incFCtr(): PiState = copy(freshCtr = freshCtr + 1)
+  def incFCtr(i: Int = 1): PiState = copy(freshCtr = freshCtr + i)
 
   private def removeIO(c: Chan): PiState = copy(inputs = inputs - c, outputs = outputs - c)
 
