@@ -31,8 +31,8 @@ class AtomicCallTests extends FlatSpec with Matchers with PiStateTester {
       Out("A", Chan("X"))
     ) withProc proc1 reduce () should be(
       Some(
-        PiState() withProc proc1 withCalls proc1.getFuture(0, Chan("R"), Chan("X")) withTerms proc1
-              .getInputs(0, Chan("R"), Chan("X")) incFCtr ()
+        PiState() withProc proc1 withCalls proc1.getFuture(1, Chan("R"), Chan("X")) withTerms proc1
+              .getInputs(1, Chan("R"), Chan("X")) incFCtr ()
       )
     )
   }
@@ -43,8 +43,8 @@ class AtomicCallTests extends FlatSpec with Matchers with PiStateTester {
       Out("A", Chan("X"))
     ) withProc proc1 reduce () should be(
       Some(
-        PiState(Devour("X", "INPUT#0")) withProc proc1 withCalls proc1.getFuture(
-              0,
+        PiState(Devour("X", "INPUT#1")) withProc proc1 withCalls proc1.getFuture(
+              1,
               Chan("R"),
               Chan("X")
             ) incFCtr ()
@@ -54,10 +54,10 @@ class AtomicCallTests extends FlatSpec with Matchers with PiStateTester {
 
   it should "reduce a input -> call -> processInput sequence: creating a thread" in {
     PiState() withProc proc1 withCalls proc1.getFuture(
-      0,
+      1,
       Chan("R"),
       Chan("X")
-    ) withSub ("INPUT#0", PiItem("OHHAI!")) reduce () should be(
+    ) withSub ("INPUT#1", PiItem("OHHAI!")) reduce () should be(
       Some(
         PiState() withProc proc1 withThread (0, "PROC", "R", Seq(
               PiResource(PiItem("OHHAI!"), Chan("X"))
@@ -68,10 +68,10 @@ class AtomicCallTests extends FlatSpec with Matchers with PiStateTester {
 
   it should "reduce a input -> call -> processInput sequence: devour the input" in {
     PiState(Devour("X", "INPUT"), Out("X", PiItem("OHHAI!"))) withProc proc1 withCalls proc1
-      .getFuture(0, Chan("R"), Chan("X")) reduce () should be(
+      .getFuture(1, Chan("R"), Chan("X")) reduce () should be(
       Some(
         PiState() withProc proc1 withCalls proc1.getFuture(
-              0,
+              1,
               Chan("R"),
               Chan("X")
             ) withSub ("INPUT", PiItem("OHHAI!"))
@@ -80,8 +80,8 @@ class AtomicCallTests extends FlatSpec with Matchers with PiStateTester {
   }
 
   it should "reduce a input -> call -> processInput sequence: devour and create the thread" in {
-    PiState(Devour("X", "INPUT#0"), Out("X", PiItem("OHHAI!"))) withProc proc1 withCalls proc1
-      .getFuture(0, Chan("R"), Chan("X")) fullReduce () should be(
+    PiState(Devour("X", "INPUT#1"), Out("X", PiItem("OHHAI!"))) withProc proc1 withCalls proc1
+      .getFuture(1, Chan("R"), Chan("X")) fullReduce () should be(
       PiState() withProc proc1 withThread (0, "PROC", "R", Seq(
             PiResource(PiItem("OHHAI!"), Chan("X"))
           )) incTCtr
@@ -136,12 +136,12 @@ class AtomicCallTests extends FlatSpec with Matchers with PiStateTester {
 
     PiState(
       Out("C", PiItem("INPUT")),
-      Devour("R", "RESULT#0")
+      Devour("R", "RESULT#1")
     ) withProc proc1 withTerm (PiCall < ("PROC", "R", "C")) fullReduce () result (0, PiObject(
       "ResultString"
     )) map (_.fullReduce) should be(
       Some(
-        PiState() withProc proc1 withSub ("RESULT#0", PiItem("ResultString")) incTCtr () incFCtr ()
+        PiState() withProc proc1 withSub ("RESULT#1", PiItem("ResultString")) incTCtr () incFCtr ()
       )
     )
   }

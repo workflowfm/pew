@@ -148,13 +148,13 @@ case class PiState(
     }
     case Some(p: MetadataAtomicProcess) => {
       //System.err.println("*** Handling atomic call: " + c.name)
-      val m = p.mapFreshArgs(freshCtr, c.args: _*)
-      copy(calls = p.getFuture(freshCtr, m) +: calls) withTerms p.getInputs(freshCtr, m) incFCtr ()
+      val m = p.mapFreshArgs(freshCtr + 1, c.args: _*)
+      copy(calls = p.getFuture(freshCtr + 1, m) +: calls) withTerms p.getInputs(freshCtr + 1, m) incFCtr ()
     }
     case Some(p: CompositeProcess) => {
       //System.err.println("*** Handling composite call: " + c.name)
-      val m = p.mapFreshArgs(freshCtr, c.args: _*)
-      this withTerm p.body.fresh(freshCtr).sub(m) incFCtr ()
+      val m = p.mapFreshArgs(freshCtr + 1, c.args: _*)
+      this withTerm p.body.fresh(freshCtr+1).sub(m) incFCtr ()
     }
   }
 
