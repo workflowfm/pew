@@ -74,20 +74,20 @@ class AkkaExecActor(
     implicit override val timeout: FiniteDuration
 ) extends AkkaExecutorActor
 
-trait AkkaExecutorActor extends Actor with ProcessExecutor[UUID] with PiStream[UUID] {
+trait AkkaExecutorActor extends Actor with PiStream[UUID] {
   var store: PiInstanceStore[UUID]
   implicit val executionContext: ExecutionContext
 
   implicit override val tag: ClassTag[PiEvent[UUID]] = ClassTag(classOf[PiEvent[UUID]])
   implicit override val timeout: FiniteDuration
 
-  override def init(instance: PiInstance[_]): Future[UUID] = Future {
+  def init(instance: PiInstance[_]): UUID = {
     val id = java.util.UUID.randomUUID
     store = store.put(instance.copy(id = id))
     id
   }
 
-  override def start(id: UUID): Unit = store.get(id) match {
+  def start(id: UUID): Unit = store.get(id) match {
     case None => publish(PiFailureNoSuchInstance(id))
     case Some(inst) => {
       publish(PiEventStart(inst))
@@ -200,7 +200,7 @@ trait AkkaExecutorActor extends Actor with ProcessExecutor[UUID] with PiStream[U
   }
 
   def akkaReceive: Receive = {
-    case AkkaExecutor.Init(inst) => init(inst) pipeTo sender()
+    case AkkaExecutor.Init(inst) => sender() ! init(inst)
     case AkkaExecutor.Start(id) => start(id)
     case AkkaExecutor.Result(id, ref, res) => postResult(id, ref, res)
     case AkkaExecutor.Error(id, ref, ex) => {
