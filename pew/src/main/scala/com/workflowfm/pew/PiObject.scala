@@ -114,7 +114,6 @@ object Chan {
   implicit def fromString(s: String): Chan = Chan(s)
 }
 
-
 /**
   * A resource that can be communicated through pi-calculus channels.
   * 

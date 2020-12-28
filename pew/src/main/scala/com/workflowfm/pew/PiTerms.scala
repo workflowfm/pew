@@ -200,7 +200,7 @@ object Output {
   */
 case class Out(override val channel: Chan, a: PiObject) extends Output {
   override def sub(s: ChanMap): Out = Out(s.resolve(channel), s.sub(a))
-  override def fresh(i: Int): Out = Out(channel.fresh(i), a)
+  override def fresh(i: Int): Out = Out(channel.fresh(i), a.fresh(i))
   override def send(s: PiState): (List[Term], PiObject, PiState) = (List(), a, s)
 }
 
