@@ -20,7 +20,7 @@ import org.scalatest.{ FlatSpec, Matchers }
 import org.scalatest.junit.JUnitRunner
 
 import com.workflowfm.pew._
-import com.workflowfm.pew.mongodb.bson.pitypes.{ PiObjectCodec, TermCodec }
+import com.workflowfm.pew.mongodb.bson.pitypes.{ ChanCodec, PiObjectCodec, TermCodec }
 
 @RunWith(classOf[JUnitRunner])
 class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
@@ -112,7 +112,7 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
 
   "TermCodec" should "encode/decode Terms" in {
     val objcodec = new PiObjectCodec
-    val codec = new TermCodec(fromCodecs(objcodec))
+    val codec = new TermCodec(fromCodecs(objcodec, objcodec.chanCodec))
 
     roundTrip(ParInI("XC", "LC", "RC", PiCall < ("P1", "LC", "RC", "Z")), codec)
     val ski = PiCut(
@@ -175,7 +175,7 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
   }
 
   "PiStateCodec" should "encode/decode PiStates" in {
-    val proc1 = DummyProcess("PROC", Seq("C", "R"), "R", Seq((Chan("INPUT"), "C")))
+    val proc1 = DummyProcess("PROC", "R", Seq((Chan("INPUT"), "C")))
     val procs = SimpleProcessStore(proc1)
 
     val reg = fromRegistries(fromProviders(new PiCodecProvider(procs)), DEFAULT_CODEC_REGISTRY)
@@ -210,7 +210,7 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
   }
 
   "PiInstanceCodec" should "encode/decode PiInstances" in {
-    val proc1 = DummyProcess("PROC", Seq("C", "R"), "R", Seq((Chan("INPUT"), "C")))
+    val proc1 = DummyProcess("PROC", "R", Seq((Chan("INPUT"), "C")))
     val procs = SimpleProcessStore(proc1)
 
     val reg = fromRegistries(fromProviders(new PiCodecProvider(procs)), DEFAULT_CODEC_REGISTRY)

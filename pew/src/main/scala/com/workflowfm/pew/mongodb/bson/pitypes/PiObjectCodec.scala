@@ -109,8 +109,10 @@ class PiObjectCodec(registry: CodecRegistry = DEFAULT_CODEC_REGISTRY)
 
   lazy val anyCodec: Codec[Any] = new AnyCodec(registry)
 
+  val chanCodec = new ChanCodec()
+
   updateWith(new PiItemCodec(anyCodec))
-  updateWith(new ChanCodec())
+  updateWith(chanCodec)
   updateWith(new PiPairCodec(this))
   updateWith(new PiOptCodec(this))
   updateWith(new PiLeftCodec(this))
