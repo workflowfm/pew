@@ -104,10 +104,14 @@ object PiObject {
   * @param s The name of the channel.
   * @param i An extra parameter to ensure freshness.
   */
-case class Chan(s: String, i: Int) extends PiObject {
+case class Chan(s: String, i: Int = 0) extends PiObject {
   override val isGround: Boolean = false
   override lazy val frees: Seq[Chan] = Seq(this)
   override def fresh(f: Int): Chan = Chan(s + "#" + f, i)
+}
+
+object Chan {
+  implicit def fromString(s: String): Chan = Chan(s, 0)
 }
 
 /**
