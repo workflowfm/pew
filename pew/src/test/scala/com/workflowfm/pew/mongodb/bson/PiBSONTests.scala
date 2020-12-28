@@ -20,7 +20,7 @@ import org.scalatest.{ FlatSpec, Matchers }
 import org.scalatest.junit.JUnitRunner
 
 import com.workflowfm.pew._
-import com.workflowfm.pew.mongodb.bson.pitypes.{ PiObjectCodec, TermCodec }
+import com.workflowfm.pew.mongodb.bson.pitypes.{ ChanCodec, PiObjectCodec, TermCodec }
 
 @RunWith(classOf[JUnitRunner])
 class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
@@ -97,22 +97,22 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
     val codec = new PiObjectCodec
 
     roundTrip(PiItem("Oh!"), """{"__typeID": "com.workflowfm.pew.PiItem", "i" : { "class":"java.lang.String", "child":"Oh!"} }""", codec)
-    roundTrip(Chan("Oh!"), """{"__typeID": "com.workflowfm.pew.Chan", "s":"Oh!"}""", codec)
+    roundTrip(Chan("Oh!"), """{"__typeID": "com.workflowfm.pew.Chan", "s":"Oh!", "i":0}""", codec)
     roundTrip(
       PiPair(Chan("L"), PiItem("R")),
-      """{"__typeID": "com.workflowfm.pew.PiPair", "l":{"__typeID" : "com.workflowfm.pew.Chan", "s":"L"}, "r":{"__typeID" : "com.workflowfm.pew.PiItem", "i" : { "class":"java.lang.String", "child":"R"}}}""",
+      """{"__typeID": "com.workflowfm.pew.PiPair", "l":{"__typeID" : "com.workflowfm.pew.Chan", "s":"L", "i":0}, "r":{"__typeID" : "com.workflowfm.pew.PiItem", "i" : { "class":"java.lang.String", "child":"R"}}}""",
       codec
     )
     roundTrip(
       PiOpt(Chan("L"), PiPair(Chan("RL"), Chan("RR"))),
-      """{"__typeID": "com.workflowfm.pew.PiOpt", "l":{"__typeID" : "com.workflowfm.pew.Chan", "s":"L"}, "r":{"__typeID" : "com.workflowfm.pew.PiPair", "l":{"__typeID" : "com.workflowfm.pew.Chan", "s":"RL"}, "r":{"__typeID" : "com.workflowfm.pew.Chan", "s":"RR"}}}""",
+      """{"__typeID": "com.workflowfm.pew.PiOpt", "l":{"__typeID" : "com.workflowfm.pew.Chan", "s":"L", "i":0}, "r":{"__typeID" : "com.workflowfm.pew.PiPair", "l":{"__typeID" : "com.workflowfm.pew.Chan", "s":"RL", "i":0}, "r":{"__typeID" : "com.workflowfm.pew.Chan", "s":"RR", "i":0}}}""",
       codec
     )
   }
 
   "TermCodec" should "encode/decode Terms" in {
     val objcodec = new PiObjectCodec
-    val codec = new TermCodec(fromCodecs(objcodec))
+    val codec = new TermCodec(fromCodecs(objcodec, objcodec.chanCodec))
 
     roundTrip(ParInI("XC", "LC", "RC", PiCall < ("P1", "LC", "RC", "Z")), codec)
     val ski = PiCut(
@@ -175,7 +175,7 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
   }
 
   "PiStateCodec" should "encode/decode PiStates" in {
-    val proc1 = DummyProcess("PROC", Seq("C", "R"), "R", Seq((Chan("INPUT"), "C")))
+    val proc1 = DummyProcess("PROC", "R", Seq((Chan("INPUT"), "C")))
     val procs = SimpleProcessStore(proc1)
 
     val reg = fromRegistries(fromProviders(new PiCodecProvider(procs)), DEFAULT_CODEC_REGISTRY)
@@ -210,7 +210,7 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
   }
 
   "PiInstanceCodec" should "encode/decode PiInstances" in {
-    val proc1 = DummyProcess("PROC", Seq("C", "R"), "R", Seq((Chan("INPUT"), "C")))
+    val proc1 = DummyProcess("PROC", "R", Seq((Chan("INPUT"), "C")))
     val procs = SimpleProcessStore(proc1)
 
     val reg = fromRegistries(fromProviders(new PiCodecProvider(procs)), DEFAULT_CODEC_REGISTRY)
