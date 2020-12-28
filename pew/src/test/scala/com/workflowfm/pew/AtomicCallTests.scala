@@ -8,7 +8,7 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class AtomicCallTests extends FlatSpec with Matchers with PiStateTester {
 
-  val proc1 = DummyProcess("PROC", "R", Seq((Chan("INPUT"), "C")))
+  val proc1: DummyProcess = DummyProcess("PROC", "R", Seq((Chan("INPUT"), "C")))
 
   it should "eliminate a call to a non-existing process" in {
     reduceOnce(In("A", "C", PiCall < ("PROC", "R", "C")), Out("A", Chan("X"))) should be(
@@ -43,7 +43,7 @@ class AtomicCallTests extends FlatSpec with Matchers with PiStateTester {
       Out("A", Chan("X"))
     ) withProc proc1 reduce () should be(
       Some(
-        PiState(Devour("X", "INPUT#1")) withProc proc1 withCalls proc1.getFuture(
+        PiState(Devour("X", Chan("INPUT", 1))) withProc proc1 withCalls proc1.getFuture(
               1,
               Chan("R"),
               Chan("X")
@@ -57,7 +57,7 @@ class AtomicCallTests extends FlatSpec with Matchers with PiStateTester {
       1,
       Chan("R"),
       Chan("X")
-    ) withSub ("INPUT#1", PiItem("OHHAI!")) reduce () should be(
+    ) withSub (Chan("INPUT", 1), PiItem("OHHAI!")) reduce () should be(
       Some(
         PiState() withProc proc1 withThread (0, "PROC", "R", Seq(
               PiResource(PiItem("OHHAI!"), Chan("X"))
@@ -80,7 +80,10 @@ class AtomicCallTests extends FlatSpec with Matchers with PiStateTester {
   }
 
   it should "reduce a input -> call -> processInput sequence: devour and create the thread" in {
-    PiState(Devour("X", "INPUT#1"), Out("X", PiItem("OHHAI!"))) withProc proc1 withCalls proc1
+    PiState(
+      Devour("X", Chan("INPUT", 1)),
+      Out("X", PiItem("OHHAI!"))
+    ) withProc proc1 withCalls proc1
       .getFuture(1, Chan("R"), Chan("X")) fullReduce () should be(
       PiState() withProc proc1 withThread (0, "PROC", "R", Seq(
             PiResource(PiItem("OHHAI!"), Chan("X"))
@@ -136,12 +139,14 @@ class AtomicCallTests extends FlatSpec with Matchers with PiStateTester {
 
     PiState(
       Out("C", PiItem("INPUT")),
-      Devour("R", "RESULT#1")
+      Devour("R", Chan("RESULT", 1))
     ) withProc proc1 withTerm (PiCall < ("PROC", "R", "C")) fullReduce () result (0, PiObject(
       "ResultString"
     )) map (_.fullReduce) should be(
       Some(
-        PiState() withProc proc1 withSub ("RESULT#1", PiItem("ResultString")) incTCtr () incFCtr ()
+        PiState() withProc proc1 withSub (Chan("RESULT", 1), PiItem(
+              "ResultString"
+            )) incTCtr () incFCtr ()
       )
     )
   }

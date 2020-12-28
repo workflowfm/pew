@@ -7,7 +7,7 @@ import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class CompositeCallTests extends FlatSpec with Matchers with PiStateTester {
-    val proc1 = DummyComposition("PROC", "A", "B", "V")
+  val proc1: DummyComposition = DummyComposition("PROC", "A", "B", "V")
 
   it should "reduce a composite call using handleCall" in {
     PiState(
@@ -23,20 +23,14 @@ class CompositeCallTests extends FlatSpec with Matchers with PiStateTester {
       In("A", "C", PiCall < ("PROC", "R", "C")),
       Out("A", Chan("X"))
     ) withProc proc1 reduce () should be(
-      Some(PiState() withProc proc1 withTerm PiId("X", "R", "V#1") incFCtr ())
+      Some(PiState() withProc proc1 withTerm PiId("X", "R", Chan("V", 1)) incFCtr ())
     )
   }
 
-/* proc.call does not freshen the body 
-  it should "reduce a composite call adding proc.call as a term" in {
-    PiState(
-      In("A", "C", PiCall < ("PROC", "R", "C")),
-      Out("A", Chan("X"))
-    ) withProc proc1 reduce () should be(
-      Some(PiState() withProc proc1 withTerm proc1.call(Chan("X"), Chan("R")) incFCtr ())
-    )
-  }
- */
+  /* proc.call does not freshen the body it should "reduce a composite call adding proc.call as a
+   * term" in { PiState( In("A", "C", PiCall < ("PROC", "R", "C")), Out("A", Chan("X")) ) withProc
+   * proc1 reduce () should be( Some(PiState() withProc proc1 withTerm proc1.call(Chan("X"),
+   * Chan("R")) incFCtr ()) ) } */
   it should "fully execute a dummy composition" in {
     val proc1 = DummyComposition("PROC", "A", "B", "V")
 
@@ -45,6 +39,21 @@ class CompositeCallTests extends FlatSpec with Matchers with PiStateTester {
       Devour("R", "RESULT")
     ) withProc proc1 withTerm (PiCall < ("PROC", "R", "C")) fullReduce () should be(
       PiState() withProc proc1 withSub ("RESULT", PiItem("SOMETHING")) incFCtr ()
+    )
+  }
+
+  it should "fully execute two dummy compositions in parallel" in {
+    val proc1 = DummyComposition("PROC", "A", "B", "V")
+
+    PiState(
+      Out("C1", PiItem("SOMETHING")),
+      Devour("R1", "RESULT1"),
+      Out("C2", PiItem("SOMETHING")),
+      Devour("R2", "RESULT2")
+    ) withProc proc1 withTerm (PiCall < ("PROC", "R1", "C1")) withTerm (PiCall < ("PROC", "R2", "C2")) fullReduce () should be(
+      PiState() withProc proc1 withSub ("RESULT1", PiItem("SOMETHING")) withSub ("RESULT2", PiItem(
+            "SOMETHING"
+          )) incFCtr (2)
     )
   }
 

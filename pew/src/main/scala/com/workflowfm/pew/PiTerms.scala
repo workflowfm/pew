@@ -45,17 +45,17 @@ object Input {
     */
   def of(res: PiObject, channel: Chan): Input = res match {
     case PiPair(l, r) => {
-      val lchan = channel.copy( s = channel.s + "#L" )
-      val rchan = channel.copy( s = channel.s + "#R" )
+      val lchan = channel.copy(s = channel.s + "#L")
+      val rchan = channel.copy(s = channel.s + "#R")
       ParIn(channel, lchan, rchan, of(l, lchan), of(r, rchan)) // TODO must be unique channels! Can we get these from the prover?
     }
     case PiOpt(l, r) => {
-      val lchan = channel.copy( s = channel.s + "#L" )
-      val rchan = channel.copy( s = channel.s + "#R" )
+      val lchan = channel.copy(s = channel.s + "#L")
+      val rchan = channel.copy(s = channel.s + "#R")
       WithIn(channel, lchan, rchan, of(l, lchan), of(r, rchan))
     }
     case s: Chan => Devour(channel, s)
-    case _ => Devour(channel, channel.copy( s = channel.s + "##" ))
+    case _ => Devour(channel, channel.copy(s = channel.s + "##"))
   }
 }
 
@@ -63,7 +63,7 @@ object Input {
   * c(v).0
   * Receives any PiObject through channel c and maps it to channel v.
   */
-case class Devour(override val channel: Chan, value : Chan) extends Input {
+case class Devour(override val channel: Chan, value: Chan) extends Input {
   override def admits(a: PiObject): Boolean = true
   override def sub(s: ChanMap): Devour = Devour(s.resolve(channel), value)
   override def fresh(i: Int): Devour = Devour(channel.fresh(i), value)
@@ -94,7 +94,9 @@ case class In(override val channel: Chan, value: Chan, cont: Term) extends Input
   * c(lv,rv).(left | right)
   * Parallel input. Receives a PiPair, instantiates each continuation appropriately and returns them.
   */
-case class ParIn(override val channel: Chan, lvalue: Chan, rvalue: Chan, left: Term, right: Term) extends Input {
+case class ParIn(override val channel: Chan, lvalue: Chan, rvalue: Chan, left: Term, right: Term)
+    extends Input {
+
   override def admits(a: PiObject): Boolean = a match {
     case PiPair(_, _) => true
     case _ => false
@@ -116,7 +118,8 @@ case class ParIn(override val channel: Chan, lvalue: Chan, rvalue: Chan, left: T
   * c(lv,rv).cont
   * Parallel input with single continuation. This occurs from the application of the Par CLL rule.
   */
-case class ParInI(override val channel: Chan, lvalue: Chan, rvalue: Chan, cont: Term) extends Input {
+case class ParInI(override val channel: Chan, lvalue: Chan, rvalue: Chan, cont: Term)
+    extends Input {
 
   override def admits(a: PiObject): Boolean = a match {
     case PiPair(_, _) => true
@@ -138,7 +141,8 @@ case class ParInI(override val channel: Chan, lvalue: Chan, rvalue: Chan, cont: 
   * c(lv,rv).(left + right)
   * Optional input. Can only receive a PiLeft or PiRight. Instantiates and returns the corresponding continuation.
   */
-case class WithIn(override val channel: Chan, lvalue: Chan, rvalue: Chan, left: Term, right: Term) extends Input {
+case class WithIn(override val channel: Chan, lvalue: Chan, rvalue: Chan, left: Term, right: Term)
+    extends Input {
 
   override def admits(a: PiObject): Boolean = a match {
     case PiLeft(_) => true
@@ -178,16 +182,16 @@ object Output {
     */
   def of(res: PiObject, channel: Chan): Output = res match {
     case PiPair(l, r) => {
-      val lchan = channel.copy( s = channel.s + "#L" )
-      val rchan = channel.copy( s = channel.s + "#R" )
+      val lchan = channel.copy(s = channel.s + "#L")
+      val rchan = channel.copy(s = channel.s + "#R")
       ParOut(channel, lchan, rchan, of(l, lchan), of(r, rchan)) // TODO must be unique channels! Can we get these from the prover?
     }
     case PiLeft(l) => {
-      val lchan = channel.copy( s = channel.s + "#L" )
+      val lchan = channel.copy(s = channel.s + "#L")
       LeftOut(channel, lchan, of(l, lchan))
     }
     case PiRight(r) => {
-      val rchan = channel.copy( s = channel.s + "#R" )
+      val rchan = channel.copy(s = channel.s + "#R")
       RightOut(channel, rchan, of(r, rchan))
     }
     case _ => Out(channel, res)
@@ -213,7 +217,8 @@ case class Out(override val channel: Chan, a: PiObject) extends Output {
   * This performs the output for the first stage.
   * Creates fresh versions of lc and rc and then sends them out as a pair.
   */
-case class ParOut(override val channel: Chan, lchan: Chan, rchan: Chan, left: Term, right: Term) extends Output {
+case class ParOut(override val channel: Chan, lchan: Chan, rchan: Chan, left: Term, right: Term)
+    extends Output {
 
   override def sub(s: ChanMap): ParOut =
     ParOut(s.resolve(channel), s.resolve(lchan), s.resolve(rchan), left.sub(s), right.sub(s))
@@ -263,7 +268,9 @@ case class LeftOut(override val channel: Chan, lchan: Chan, cont: Term) extends 
   * the options. We avoid this here.
   */
 case class RightOut(override val channel: Chan, rchan: Chan, cont: Term) extends Output {
-  override def sub(s: ChanMap): RightOut = RightOut(s.resolve(channel), s.resolve(rchan), cont.sub(s))
+
+  override def sub(s: ChanMap): RightOut =
+    RightOut(s.resolve(channel), s.resolve(rchan), cont.sub(s))
   override def fresh(i: Int): RightOut = RightOut(channel.fresh(i), rchan.fresh(i), cont.fresh(i))
 
   override def send(s: PiState): (List[Term], PiObject, PiState) = {

@@ -96,7 +96,11 @@ class PiBSONTests extends FlatSpec with Matchers with PiBSONTestHelper {
   "PiObjectCodec" should "encode/decode PiObjects" in {
     val codec = new PiObjectCodec
 
-    roundTrip(PiItem("Oh!"), """{"__typeID": "com.workflowfm.pew.PiItem", "i" : { "class":"java.lang.String", "child":"Oh!"} }""", codec)
+    roundTrip(
+      PiItem("Oh!"),
+      """{"__typeID": "com.workflowfm.pew.PiItem", "i" : { "class":"java.lang.String", "child":"Oh!"} }""",
+      codec
+    )
     roundTrip(Chan("Oh!"), """{"__typeID": "com.workflowfm.pew.Chan", "s":"Oh!", "i":0}""", codec)
     roundTrip(
       PiPair(Chan("L"), PiItem("R")),
