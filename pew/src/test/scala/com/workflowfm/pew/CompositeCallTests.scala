@@ -23,7 +23,7 @@ class CompositeCallTests extends FlatSpec with Matchers with PiStateTester {
       In("A", "C", PiCall < ("PROC", "R", "C")),
       Out("A", Chan("X"))
     ) withProc proc1 reduce () should be(
-      Some(PiState() withProc proc1 withTerm PiId("X", "R", "V#0") incFCtr ())
+      Some(PiState() withProc proc1 withTerm PiId("X", "R", "V#1") incFCtr ())
     )
   }
 
