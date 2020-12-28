@@ -18,7 +18,11 @@ sealed trait PiProcess {
   // Note that each workflow can only support one instance of a process.
   def output: (PiObject, String) // Type (as a PiObject pattern) and channel of the output.
   def inputs: Seq[(PiObject, String)] // List of (type,channel) for each input.
-  lazy val channels: Seq[Chan] = Chan(output._2, 0) +: (inputs map { case (_,i) => Chan(i, 0) }) // order of channels is important for correct process calls!
+  def channels: Seq[String] = output._2 +: (inputs map (_._2)) // order of channels is important for correct process calls!
+
+  protected lazy val actualChannels: Seq[Chan] = channels.map(Chan(_, 0))
+
+  implicit def chansFromStringSeq(s: Seq[String]): Seq[Chan] = s.map(Chan.fromString)
 
   val dependencies: Seq[PiProcess] // dependencies of composite processes
 
@@ -42,10 +46,10 @@ sealed trait PiProcess {
   /**
     *  Used when a process is called to map argument channels to the given values.
     */
-  def mapArgs(args: Chan*): ChanMap = ChanMap(channels zip args: _*)
+  def mapArgs(args: Chan*): ChanMap = ChanMap(actualChannels zip args: _*)
 
   def mapFreshArgs(i: Int, args: Chan*): ChanMap = ChanMap(
-    channels map (_.fresh(i)) zip args: _*
+    actualChannels map (_.fresh(i)) zip args: _*
   )
 
   def inputFrees(): Seq[Seq[Chan]] = inputs map (_._1.frees)
