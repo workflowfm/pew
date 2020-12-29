@@ -220,7 +220,6 @@ case class MetricsD3Timeline[KeyT](path: String, file: String)
 
   override def apply(aggregator: MetricsAggregator[KeyT]): Unit = {
     val result = build(aggregator, System.currentTimeMillis())
-    println(result)
     val dataFile = s"$path${file}.js"
 
     writeToFile(dataFile, result) match {
