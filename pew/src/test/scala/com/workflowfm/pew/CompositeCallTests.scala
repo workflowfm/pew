@@ -31,6 +31,7 @@ class CompositeCallTests extends FlatSpec with Matchers with PiStateTester {
    * term" in { PiState( In("A", "C", PiCall < ("PROC", "R", "C")), Out("A", Chan("X")) ) withProc
    * proc1 reduce () should be( Some(PiState() withProc proc1 withTerm proc1.call(Chan("X"),
    * Chan("R")) incFCtr ()) ) } */
+
   it should "fully execute a dummy composition" in {
     val proc1 = DummyComposition("PROC", "A", "B", "V")
 
