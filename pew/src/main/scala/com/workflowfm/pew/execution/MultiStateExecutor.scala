@@ -13,7 +13,6 @@ import com.workflowfm.pew.stream.SimplePiObservable
   * Running a second workflow after one has finished executing can be risky because
   * promises/futures from the first workflow can trigger changes on the state!
   */
-@deprecated("this executor does not function correctly", "forever")
 class MultiStateExecutor(var store: PiInstanceStore[Int])(
     implicit override val executionContext: ExecutionContext = ExecutionContext.global
 ) extends ProcessExecutor[Int]
@@ -23,42 +22,43 @@ class MultiStateExecutor(var store: PiInstanceStore[Int])(
 
   var ctr: Int = 0
 
-  override protected def init(instance: PiInstance[_]): Future[Int] = store.synchronized {
+  override protected def init(instance: PiInstance[_]): Future[Int] = this.synchronized {
     store = store.put(instance.copy(id = ctr))
     ctr = ctr + 1
     Future.successful(ctr - 1)
   }
 
-  override def start(id: Int): Unit = store.get(id) match {
-    case None => publish(PiFailureNoSuchInstance(id))
-    case Some(inst) => {
-      publish(PiEventStart(inst))
-      val ni = inst.reduce
-      if (ni.completed) ni.result match {
-        case None => {
-          publish(PiFailureNoResult(ni))
-          store = store.del(id)
+  override def start(id: Int): Unit = this.synchronized {
+    store.get(id) match {
+      case None => publish(PiFailureNoSuchInstance(id))
+      case Some(inst) => {
+        publish(PiEventStart(inst))
+        val ni = inst.reduce
+        if (ni.completed) ni.result match {
+          case None => {
+            publish(PiFailureNoResult(ni))
+            store = store.del(id)
+          }
+          case Some(res) => {
+            publish(PiEventResult(ni, res))
+            store = store.del(id)
+          }
         }
-        case Some(res) => {
-          publish(PiEventResult(ni, res))
-          store = store.del(id)
+        else {
+          val (_, resi) = ni.handleThreads(handleThread(ni))
+          store = store.put(resi)
         }
-      }
-      else {
-        val (_, resi) = ni.handleThreads(handleThread(ni))
-        store = store.put(resi)
       }
     }
   }
 
-  final def run(id: Int, f: PiInstance[Int] => PiInstance[Int]): Unit = store.synchronized {
+  final def run(id: Int, f: PiInstance[Int] => PiInstance[Int]): Unit = this.synchronized {
     store.get(id) match {
       case None => System.err.println("*** [" + id + "] No running instance! ***")
       case Some(i) =>
         if (i.id != id)
           System.err.println("*** [" + id + "] Different instance ID encountered: " + i.id)
         else {
-          System.err.println("*** [" + id + "] Running!")
           val ni = f(i).reduce
           if (ni.completed) ni.result match {
             case None => {
@@ -78,7 +78,6 @@ class MultiStateExecutor(var store: PiInstanceStore[Int])(
   }
 
   def handleThread(i: PiInstance[Int])(ref: Int, f: PiFuture): Boolean = {
-    System.err.println("*** [" + i.id + "] Handling thread: " + ref + " (" + f.fun + ")")
     f match {
       case PiFuture(name, outChan, args) =>
         i.getProc(name) match {
@@ -96,7 +95,6 @@ class MultiStateExecutor(var store: PiInstanceStore[Int])(
               }
               case Failure(ex) => publish(PiFailureAtomicProcessException(i.id, ref, ex))
             }
-            System.err.println("*** [" + i.id + "] Called process: " + p.name + " ref:" + ref)
             true
           }
           case Some(p: CompositeProcess) => {
@@ -109,7 +107,6 @@ class MultiStateExecutor(var store: PiInstanceStore[Int])(
   }
 
   def postResult(id: Int, ref: Int, res: PiObject): Unit = {
-    System.err.println("*** [" + id + "] Received result for thread " + ref + " : " + res)
     run(id, { x => x.postResult(ref, res) })
   }
 }
