@@ -18,8 +18,8 @@ object Dependencies {
   val apache = "org.apache.commons" % "commons-lang3" % "3.3.2"
 
 
-  val subakka = "uk.ac.ed.inf" %% "subakka" % "0.1-SNAPSHOT"
-  val subakkaTests = "uk.ac.ed.inf" %% "subakka" % "0.1-SNAPSHOT" % Test classifier "tests"
+  val subakka = "uk.ac.ed.inf" %% "subakka" % "1.0.0"
+  val subakkaTests = "uk.ac.ed.inf" %% "subakka" % "1.0.0" % Test classifier "tests"
 
   val simulator = "com.workflowfm" %% "wfm-simulator" % "0.3-SNAPSHOT"
 

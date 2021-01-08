@@ -20,6 +20,10 @@ sealed trait PiProcess {
   def inputs: Seq[(PiObject, String)] // List of (type,channel) for each input.
   def channels: Seq[String] = output._2 +: (inputs map (_._2)) // order of channels is important for correct process calls!
 
+  protected lazy val actualChannels: Seq[Chan] = channels.map(Chan(_))
+
+  implicit def chansFromStringSeq(s: Seq[String]): Seq[Chan] = s.map(Chan.fromString)
+
   val dependencies: Seq[PiProcess] // dependencies of composite processes
 
   lazy val allDependencies: Seq[PiProcess] = PiProcess.allDependenciesOf(this) // all ancestors (i.e. including dependencies of dependencies
@@ -31,21 +35,21 @@ sealed trait PiProcess {
     * Adds all dependencies to the state and then runs a PiCall directly.
     */
   def execState(args: Seq[PiObject]): PiState = {
-    val iTerms = args zip (inputs map (_._2)) map { case (o, c) => Output.of(o, c) }
-    val oTerm = Input.of(output._1, output._2)
+    val iTerms = args zip (inputs map (_._2)) map { case (o, c) => Output.of(o, Chan(c)) }
+    val oTerm = Input.of(output._1, Chan(output._2))
     PiState() withProc this withProcs (allDependencies: _*) withTerms iTerms withTerm oTerm withTerm PiCall(
       name,
-      channels map Chan
+      channels
     )
   }
 
   /**
     *  Used when a process is called to map argument channels to the given values.
     */
-  def mapArgs(args: Chan*): ChanMap = ChanMap(channels map Chan zip args: _*)
+  def mapArgs(args: Chan*): ChanMap = ChanMap(actualChannels zip args: _*)
 
   def mapFreshArgs(i: Int, args: Chan*): ChanMap = ChanMap(
-    channels map (_ + "#" + i) map Chan zip args: _*
+    actualChannels map (_.fresh(i)) zip args: _*
   )
 
   def inputFrees(): Seq[Seq[Chan]] = inputs map (_._1.frees)
@@ -86,7 +90,7 @@ trait MetadataAtomicProcess extends PiProcess {
   def getFuture(i: Int, m: ChanMap): PiFuture = PiFuture(
     name,
     m.resolve(Chan(output._2).fresh(i)),
-    inputs map { case (o, c) => PiResource.of(o.fresh(i), c + "#" + i, m) }
+    inputs map { case (o, c) => PiResource.of(o.fresh(i), Chan(c).fresh(i), m) }
   )
   def getFuture(i: Int, args: Chan*): PiFuture = getFuture(i, mapFreshArgs(i, args: _*))
 
@@ -94,7 +98,7 @@ trait MetadataAtomicProcess extends PiProcess {
     *  This constructs the Input terms needed to appopriately receive the process inputs.
     */
   def getInputs(i: Int, m: ChanMap): Seq[Input] = inputs map {
-      case (o, c) => Input.of(m.sub(o.fresh(i)), m.resolve(c + "#" + i))
+      case (o, c) => Input.of(m.sub(o.fresh(i)), m.resolve(Chan(c).fresh(i)))
     }
   def getInputs(i: Int, args: Chan*): Seq[Input] = getInputs(i, mapFreshArgs(i, args: _*))
 
@@ -147,7 +151,6 @@ object MetadataAtomicProcess {
 
 case class DummyProcess(
     override val name: String,
-    override val channels: Seq[String],
     outChan: String,
     override val inputs: Seq[(PiObject, String)]
 ) extends AtomicProcess {
@@ -174,8 +177,7 @@ case class DummyComposition(override val name: String, i: String, o: String, n: 
     extends CompositeProcess {
   override val output: (Chan, String) = (Chan(n), o)
   override val inputs: Seq[(Chan, String)] = Seq((Chan(n), i))
-  override val channels: Seq[String] = Seq(i, o)
-  override val body: Input = PiId(i, o, n)
+  override val body: Input = PiId(Chan(i), Chan(o), Chan(n))
   override val dependencies: Seq[PiProcess] = Seq()
 }
 

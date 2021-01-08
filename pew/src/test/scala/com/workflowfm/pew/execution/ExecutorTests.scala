@@ -14,7 +14,7 @@ trait ProcessExecutorTester {
     e.execute(p, args: Seq[Any])
   )
 
-  def await[A](f: Future[A], timeout: Duration = 15.seconds): A = try {
+  def await[A](f: Future[A], timeout: Duration = 10.seconds): A = try {
     Await.result(f, timeout)
   } catch {
     case e: Throwable => {

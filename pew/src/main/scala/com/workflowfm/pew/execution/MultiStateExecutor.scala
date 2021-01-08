@@ -13,7 +13,7 @@ import com.workflowfm.pew.stream.SimplePiObservable
   * Running a second workflow after one has finished executing can be risky because
   * promises/futures from the first workflow can trigger changes on the state!
   */
-
+@deprecated("this executor does not function correctly", "forever")
 class MultiStateExecutor(var store: PiInstanceStore[Int])(
     implicit override val executionContext: ExecutionContext = ExecutionContext.global
 ) extends ProcessExecutor[Int]

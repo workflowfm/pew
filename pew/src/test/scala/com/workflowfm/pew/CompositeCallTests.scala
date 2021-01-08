@@ -7,42 +7,43 @@ import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class CompositeCallTests extends FlatSpec with Matchers with PiStateTester {
-  it should "reduce a call after a simple input" in {
     val proc1 = DummyComposition("PROC", "A", "B", "V")
 
-    reduceOnce(In("A", "C", PiCall < ("PROC", "C", "R")), Out("A", Chan("X"))) should be(
-      Some(PiState())
-    ) // no process information throws away the call
-
+  it should "reduce a composite call using handleCall" in {
     PiState(
-      In("A", "C", PiCall < ("PROC", "C", "R")),
+      In("A", "C", PiCall < ("PROC", "R", "C")),
       Out("A", Chan("X"))
     ) withProc proc1 reduce () should be(
-      Some(PiState() withProc proc1 handleCall (PiCall < ("PROC", "X", "R")))
+      Some(PiState() withProc proc1 handleCall (PiCall < ("PROC", "R", "X")))
     ) //proc1.getFuture(Chan("X"),Chan("R")) ))
+  }
 
+  it should "reduce a composite call adding the body as a term" in {
     PiState(
-      In("A", "C", PiCall < ("PROC", "C", "R")),
+      In("A", "C", PiCall < ("PROC", "R", "C")),
       Out("A", Chan("X"))
     ) withProc proc1 reduce () should be(
-      Some(PiState() withProc proc1 withTerm PiId("X", "R", "V") incFCtr ())
+      Some(PiState() withProc proc1 withTerm PiId("X", "R", "V#1") incFCtr ())
     )
+  }
 
+/* proc.call does not freshen the body 
+  it should "reduce a composite call adding proc.call as a term" in {
     PiState(
-      In("A", "C", PiCall < ("PROC", "C", "R")),
+      In("A", "C", PiCall < ("PROC", "R", "C")),
       Out("A", Chan("X"))
     ) withProc proc1 reduce () should be(
       Some(PiState() withProc proc1 withTerm proc1.call(Chan("X"), Chan("R")) incFCtr ())
     )
   }
-
+ */
   it should "fully execute a dummy composition" in {
     val proc1 = DummyComposition("PROC", "A", "B", "V")
 
     PiState(
       Out("C", PiItem("SOMETHING")),
       Devour("R", "RESULT")
-    ) withProc proc1 withTerm (PiCall < ("PROC", "C", "R")) fullReduce () should be(
+    ) withProc proc1 withTerm (PiCall < ("PROC", "R", "C")) fullReduce () should be(
       PiState() withProc proc1 withSub ("RESULT", PiItem("SOMETHING")) incFCtr ()
     )
   }
