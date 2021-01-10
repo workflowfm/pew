@@ -7,18 +7,17 @@ import com.workflowfm.pew._
 import com.workflowfm.pew.stream.SimplePiObservable
 
 /**
-  * Executes any PiProcess asynchronously.
-  * Only holds a single state, so can only execute one workflow at a time.
+  * A multi-state mutex-based [[ProcessExecutor]].
+  * 
+  * Uses `this.synchronized` to create mutexes for safe access when adding/removing/updating states.
   *
-  * Running a second workflow after one has finished executing can be risky because
-  * promises/futures from the first workflow can trigger changes on the state!
+  * @param store An immutable [[PiInstanceStore]] to use.
+  * @param executionContext
   */
-class MultiStateExecutor(var store: PiInstanceStore[Int])(
+class MutexExecutor(var store: PiInstanceStore[Int] = SimpleInstanceStore[Int]())(
     implicit override val executionContext: ExecutionContext = ExecutionContext.global
 ) extends ProcessExecutor[Int]
     with SimplePiObservable[Int] {
-
-  def this() = this(SimpleInstanceStore[Int]())
 
   var ctr: Int = 0
 
@@ -54,7 +53,7 @@ class MultiStateExecutor(var store: PiInstanceStore[Int])(
 
   final def run(id: Int, f: PiInstance[Int] => PiInstance[Int]): Unit = this.synchronized {
     store.get(id) match {
-      case None => System.err.println("*** [" + id + "] No running instance! ***")
+      case None => publish(PiFailureNoSuchInstance(id))
       case Some(i) =>
         if (i.id != id)
           System.err.println("*** [" + id + "] Different instance ID encountered: " + i.id)
@@ -82,7 +81,7 @@ class MultiStateExecutor(var store: PiInstanceStore[Int])(
       case PiFuture(name, outChan, args) =>
         i.getProc(name) match {
           case None => {
-            System.err.println("*** [" + i.id + "] ERROR *** Unable to find process: " + name)
+            publish(PiFailureUnknownProcess(i, name))
             false
           }
           case Some(p: MetadataAtomicProcess) => {
@@ -98,9 +97,8 @@ class MultiStateExecutor(var store: PiInstanceStore[Int])(
             true
           }
           case Some(p: CompositeProcess) => {
-            System.err.println(
-              "*** [" + i.id + "] Executor encountered composite process thread: " + name
-            ); false
+            publish(PiFailureAtomicProcessIsComposite(i, name))
+            false
           } // TODO this should never happen!
         }
     }
