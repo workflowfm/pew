@@ -42,8 +42,7 @@ class AkkaExecutorTests
     val ex = new AkkaExecutor()
     val f1 = ex.execute(pbi, Seq(1))
 
-    val r1 = await(f1)
-    r1 should be("PbISleptFor1s")
+    await(f1).success.value should be("PbISleptFor1s")
   }
 
   it should "execute atomic PbI twice concurrently" in {
@@ -51,26 +50,22 @@ class AkkaExecutorTests
     val f1 = ex.execute(pbi, Seq(2))
     val f2 = ex.execute(pbi, Seq(1))
 
-    val r1 = await(f1)
-    r1 should be("PbISleptFor2s")
-    val r2 = await(f2)
-    r2 should be("PbISleptFor1s")
+    await(f1).success.value should be("PbISleptFor2s")
+    await(f2).success.value should be("PbISleptFor1s")
   }
 
   it should "execute Rexample once" in {
     val ex = new AkkaExecutor()
     val f1 = ex.execute(ri, Seq(21))
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor2s", "PcISleptFor1s"))
+    await(f1).success.value should be(("PbISleptFor2s", "PcISleptFor1s"))
   }
 
   it should "execute Rexample once with same timings" in {
     val ex = new AkkaExecutor()
     val f1 = ex.execute(ri, Seq(11))
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f1).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
   }
 
   it should "execute Rexample twice concurrently" in {
@@ -78,10 +73,8 @@ class AkkaExecutorTests
     val f1 = ex.execute(ri, Seq(31))
     val f2 = ex.execute(ri, Seq(12))
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor3s", "PcISleptFor1s"))
-    val r2 = await(f2)
-    r2 should be(("PbISleptFor1s", "PcISleptFor2s"))
+    await(f1).success.value should be(("PbISleptFor3s", "PcISleptFor1s"))
+    await(f2).success.value should be(("PbISleptFor1s", "PcISleptFor2s"))
   }
 
   it should "execute Rexample twice with same timings concurrently" in {
@@ -89,10 +82,8 @@ class AkkaExecutorTests
     val f1 = ex.execute(ri, Seq(11))
     val f2 = ex.execute(ri, Seq(11))
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor1s", "PcISleptFor1s"))
-    val r2 = await(f2)
-    r2 should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f1).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f2).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
   }
 
   it should "execute Rexample thrice concurrently" in {
@@ -101,12 +92,9 @@ class AkkaExecutorTests
     val f2 = ex.execute(ri, Seq(11))
     val f3 = ex.execute(ri, Seq(11))
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor1s", "PcISleptFor1s"))
-    val r2 = await(f2)
-    r2 should be(("PbISleptFor1s", "PcISleptFor1s"))
-    val r3 = await(f3)
-    r3 should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f1).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f2).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f3).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
   }
 
   it should "execute Rexample twice, each with a different component" in {
@@ -114,10 +102,8 @@ class AkkaExecutorTests
     val f1 = ex.execute(ri, Seq(11))
     val f2 = ex.execute(ri2, Seq(11))
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor1s", "PcISleptFor1s"))
-    val r2 = await(f2)
-    r2 should be(("PbISleptFor1s", "PcXSleptFor1s"))
+    await(f1).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f2).success.value should be(("PbISleptFor1s", "PcXSleptFor1s"))
   }
 
   it should "handle a failing atomic process" in {
@@ -125,30 +111,18 @@ class AkkaExecutorTests
     val ex = new AkkaExecutor()
     val f1 = ex.execute(p, Seq(1))
 
-    try {
-      await(f1)
-    } catch {
-      case (e: Exception) => {
-        e shouldBe a[RemoteProcessException[_]]
-        e.getMessage should be("FailP")
-      }
-    }
+    val e = await(f1).failure.exception
+    e shouldBe a[RemoteProcessException[_]]
+    e.getMessage should be("FailP")
   }
 
   it should "handle a failing composite process" in {
     val ex = new AkkaExecutor()
     val f1 = rif(21)(ex) //ex.execute(rif,Seq(21))
 
-    try {
-      await(f1)
-    } catch {
-      case (e: Exception) => {
-        // e shouldBe a [RemoteException[_]] -- TODO that is not the case... but why?
-        e shouldBe a[RemoteProcessException[_]]
-        e.getMessage shouldBe ("Fail")
-
-      }
-    }
+    val e = await(f1).failure.exception
+    e shouldBe a[RemoteProcessException[_]]
+    e.getMessage shouldBe ("Fail")
   }
 
   it should "execute Rexample with a CounterHandler" in {
@@ -158,8 +132,7 @@ class AkkaExecutorTests
 
     val f1 = ex.call(ri, Seq(21), factory) flatMap (_.future)
 
-    val r1 = await(f1)
-    r1 should be(11)
+    await(f1).success.value should be(11)
     kill.map(_.stop)
   }
 
@@ -176,8 +149,7 @@ class AkkaExecutorTests
     //    val r2 = await(f2)
     //    r2 should be (("PbISleptFor2s","PcISleptFor1s"))
 
-    val r1 = await(f1)
-    r1 should be(11)
+    await(f1).success.value should be(11)
 
     k1.map(_.stop)
     k2.map(_.stop)
@@ -193,10 +165,8 @@ class AkkaExecutorTests
     //    val r2 = await(f2)
     //    r2 should be (("PbISleptFor2s","PcISleptFor1s"))
 
-    val r1 = await(f1)
-    r1 should be(11)
-    val r2 = await(f2)
-    r2 should be(11)
+    await(f1).success.value should be(11)
+    await(f2).success.value should be(11)
 
   }
 
@@ -212,10 +182,8 @@ class AkkaExecutorTests
     //    val r2 = await(f2)
     //    r2 should be (("PbISleptFor2s","PcISleptFor1s"))
 
-    val r1 = await(f1)
-    r1 should be(11)
-    val r2 = await(f2)
-    r2 should be(11)
+    await(f1).success.value should be(11)
+    await(f2).success.value should be(11)
   }
 
   it should "execute a reduced Rexample instance" in {
@@ -224,7 +192,6 @@ class AkkaExecutorTests
     val instance = PiInstance(0, ri, PiObject(11)).reduce.postResult(0, PiObject((1, 2))).reduce
     val f1 = ex.execute(instance)
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor1s", "PcISleptFor2s"))
+    await(f1).success.value should be(("PbISleptFor1s", "PcISleptFor2s"))
   }
 }

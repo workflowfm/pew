@@ -8,7 +8,7 @@ import com.workflowfm.pew.stream.SimplePiObservable
 
 /**
   * A multi-state mutex-based [[ProcessExecutor]].
-  * 
+  *
   * Uses `this.synchronized` to create mutexes for safe access when adding/removing/updating states.
   *
   * @param store An immutable [[PiInstanceStore]] to use.

@@ -37,7 +37,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
 
   lazy val threadClassLoader: ClassLoader = await(
     Future.unit.map(_ => Thread.currentThread().getContextClassLoader)
-  )
+  ).success.value
 
   "A KafkaExecutor" should "use the same ClassLoader for Kafka as the Main thread" in {
     mainClassLoader shouldBe kafkaClassLoader
@@ -61,7 +61,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
         Done
       }
 
-      await(future) shouldBe Done
+      await(future).success.value shouldBe Done
 
     } finally {
       new MessageDrain(true)
@@ -261,7 +261,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
 
       tryBut {
         val f1 = diyEx.call(pbi, PiObject(1))
-        await(f1) should be("PbISleptFor1s")
+        await(f1).success.value should be("PbISleptFor1s")
 
       } always {
         diyEx.shutdown()
@@ -279,7 +279,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
 
       tryBut {
         val f1 = diyEx.call(ri, PiObject(21))
-        await(f1) should be(("PbISleptFor2s", "PcISleptFor1s"))
+        await(f1).success.value should be(("PbISleptFor2s", "PcISleptFor1s"))
 
       } always {
         diyEx.shutdown()
@@ -292,7 +292,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
   }
 
   def baremetalCall(ex: CustomKafkaExecutor, p: PiProcess, args: PiObject*): Future[Any] = {
-    val piiId = await(ex.init(PiInstance(0, p, args: _*)))
+    val piiId = await(ex.init(PiInstance(0, p, args: _*))).success.value
     val handler = new ResultHandler(piiId)
     ex.subscribe(handler)
 
@@ -306,7 +306,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
 
       tryBut {
         val f1 = baremetalCall(ex, pbi, PiObject(1))
-        await(f1) should be("PbISleptFor1s")
+        await(f1).success.value should be("PbISleptFor1s")
 
       } always {
         ensureShutdownThen(ex) {
@@ -325,7 +325,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
 
       tryBut {
         val f1 = baremetalCall(ex, ri, PiObject(21))
-        await(f1) should be(("PbISleptFor2s", "PcISleptFor1s"))
+        await(f1).success.value should be(("PbISleptFor2s", "PcISleptFor1s"))
 
       } always {
         ensureShutdownThen(ex) {
@@ -343,7 +343,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
       val ex = makeExecutor(completeProcess.settings)
 
       tryBut {
-        await(ex.execute(pbi, Seq(1))) should be("PbISleptFor1s")
+        await(ex.execute(pbi, Seq(1))).success.value should be("PbISleptFor1s")
 
       } always {
         ensureShutdownThen(ex) {
@@ -364,8 +364,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
         val f1 = ex.execute(pbi, Seq(2))
         val f2 = ex.execute(pbi, Seq(1))
 
-        await(f1) should be("PbISleptFor2s")
-        await(f2) should be("PbISleptFor1s")
+        await(f1).success.value should be("PbISleptFor2s")
+        await(f2).success.value should be("PbISleptFor1s")
 
       } always {
         ensureShutdownThen(ex) {
@@ -383,7 +383,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
       val ex = makeExecutor(completeProcess.settings)
 
       tryBut {
-        await(ex.execute(ri, Seq(21))) should be(("PbISleptFor2s", "PcISleptFor1s"))
+        await(ex.execute(ri, Seq(21))).success.value should be(("PbISleptFor2s", "PcISleptFor1s"))
 
       } always {
         ensureShutdownThen(ex) {
@@ -401,7 +401,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
       val ex = makeExecutor(completeProcess.settings)
 
       tryBut {
-        await(ex.execute(ri, Seq(11))) should be(("PbISleptFor1s", "PcISleptFor1s"))
+        await(ex.execute(ri, Seq(11))).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
 
       } always {
         ensureShutdownThen(ex) {
@@ -422,8 +422,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
         val f1 = ex.execute(ri, Seq(31))
         val f2 = ex.execute(ri, Seq(12))
 
-        await(f1) should be(("PbISleptFor3s", "PcISleptFor1s"))
-        await(f2) should be(("PbISleptFor1s", "PcISleptFor2s"))
+        await(f1).success.value should be(("PbISleptFor3s", "PcISleptFor1s"))
+        await(f2).success.value should be(("PbISleptFor1s", "PcISleptFor2s"))
 
       } always {
         ensureShutdownThen(ex) {
@@ -444,8 +444,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
         val f1 = ex.execute(ri, Seq(11))
         val f2 = ex.execute(ri, Seq(11))
 
-        await(f1) should be(("PbISleptFor1s", "PcISleptFor1s"))
-        await(f2) should be(("PbISleptFor1s", "PcISleptFor1s"))
+        await(f1).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+        await(f2).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
 
       } always {
         ensureShutdownThen(ex) {
@@ -463,8 +463,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
       val ex = makeExecutor(completeProcess.settings)
 
       tryBut {
-        await(ex.execute(ri, Seq(21))) should be(("PbISleptFor2s", "PcISleptFor1s"))
-        await(ex.execute(ri, Seq(21))) should be(("PbISleptFor2s", "PcISleptFor1s"))
+        await(ex.execute(ri, Seq(21))).success.value should be(("PbISleptFor2s", "PcISleptFor1s"))
+        await(ex.execute(ri, Seq(21))).success.value should be(("PbISleptFor2s", "PcISleptFor1s"))
 
       } always {
         ensureShutdownThen(ex) {
@@ -486,9 +486,9 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
         val f2 = ex.execute(ri, Seq(11))
         val f3 = ex.execute(ri, Seq(11))
 
-        await(f1) should be(("PbISleptFor1s", "PcISleptFor1s"))
-        await(f2) should be(("PbISleptFor1s", "PcISleptFor1s"))
-        await(f3) should be(("PbISleptFor1s", "PcISleptFor1s"))
+        await(f1).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+        await(f2).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+        await(f3).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
 
       } always {
         ensureShutdownThen(ex) {
@@ -509,8 +509,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
         val f1 = ex.execute(ri, Seq(11))
         val f2 = ex.execute(ri2, Seq(11))
 
-        await(f1) should be(("PbISleptFor1s", "PcISleptFor1s"))
-        await(f2) should be(("PbISleptFor1s", "PcXSleptFor1s"))
+        await(f1).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+        await(f2).success.value should be(("PbISleptFor1s", "PcXSleptFor1s"))
 
       } always {
         ensureShutdownThen(ex) {
@@ -533,8 +533,8 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
         val f1 = ex1.execute(ri, Seq(11))
         val f2 = ex2.execute(ri, Seq(11))
 
-        await(f1) should be(("PbISleptFor1s", "PcISleptFor1s"))
-        await(f2) should be(("PbISleptFor1s", "PcISleptFor1s"))
+        await(f1).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+        await(f2).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
 
       } always {
         ensureShutdownThen(ex1) {
@@ -555,7 +555,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
 
       tryBut {
         val f1 = ex.execute(failp, Seq(1))
-        a[RemoteException[ObjectId]] should be thrownBy await(f1)
+        await(f1).failure.exception shouldBe a[RemoteException[_]]
 
       } always {
         ensureShutdownThen(ex) {
@@ -574,7 +574,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
 
       tryBut {
         val f1 = ex.execute(rif, Seq(21))
-        a[RemoteException[ObjectId]] should be thrownBy await(f1)
+        await(f1).failure.exception shouldBe a[RemoteException[_]]
 
       } always {
         ensureShutdownThen(ex) {
@@ -594,13 +594,13 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
         val ex1 = makeExecutor(failureProcess.settings)
         try {
           val f1 = ex1.execute(rif, Seq(21))
-          a[RemoteException[ObjectId]] should be thrownBy await(f1)
+          await(f1).failure.exception shouldBe a[RemoteException[_]]
         } finally ensureShutdownThen(ex1) {}
 
         val ex2 = makeExecutor(completeProcess.settings)
         try {
           val f2 = ex2.execute(ri, Seq(21))
-          await(f2) should be(("PbISleptFor2s", "PcISleptFor1s"))
+          await(f2).success.value should be(("PbISleptFor2s", "PcISleptFor1s"))
         } finally ensureShutdownThen(ex2) {}
 
       } always {
@@ -636,7 +636,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
         ex.execute(pci, Seq(1))
 
         Thread.sleep(5.seconds.toMillis)
-        await(ex.forceShutdown)
+        await(ex.forceShutdown).success
 
         pciw.fail()
 
@@ -666,7 +666,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
         val futId: Future[ObjectId] = ex.call(process, args)
 
         Thread.sleep(10.seconds.toMillis)
-        await(ex.forceShutdown) // `forceShutdown` so it doesn't drain and produce.
+        await(ex.forceShutdown).success // `forceShutdown` so it doesn't drain and produce.
 
         pciw.fail() // To free the locked AtomicProcessExecutor thread.
 
@@ -691,7 +691,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
       tryBut {
         ex2.subscribe(handler)
         pciw.continue()
-        await(handler.future) shouldBe expectedResult
+        await(handler.future).success.value shouldBe expectedResult
 
       } always {
         ensureShutdownThen(ex2) {
@@ -756,7 +756,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
         KafkaConnectors.sendMessages(PiiUpdate(oldPii))(ex.environment)
 
         val f1 = ex.execute(ri, Seq(21))
-        await(f1) should be(("PbISleptFor2s", "PcISleptFor1s"))
+        await(f1).success.value should be(("PbISleptFor2s", "PcISleptFor1s"))
 
       } always {
         ensureShutdownThen(ex) {
@@ -791,7 +791,7 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
         KafkaConnectors.sendMessages(oldMsg)(ex.environment)
 
         val f1 = ex.execute(ri, Seq(21))
-        await(f1) should be(("PbISleptFor2s", "PcISleptFor1s"))
+        await(f1).success.value should be(("PbISleptFor2s", "PcISleptFor1s"))
 
       } always {
         ensureShutdownThen(ex) {
@@ -829,9 +829,9 @@ class KafkaExecutorTests extends FlatSpec with Matchers with KafkaTests {
           val f2 = ex.execute(ri, Seq(b(4) * 10 + b(5)))
 
           // Allow more time initially as 3 are running at once.
-          await(f0, 45.seconds) shouldBe (s"PbISleptFor${b(0)}s", s"PcISleptFor${b(1)}s")
-          await(f1, 30.seconds) shouldBe (s"PbISleptFor${b(2)}s", s"PcISleptFor${b(3)}s")
-          await(f2, 15.seconds) shouldBe (s"PbISleptFor${b(4)}s", s"PcISleptFor${b(5)}s")
+          await(f0, 45.seconds).success.value shouldBe (s"PbISleptFor${b(0)}s", s"PcISleptFor${b(1)}s")
+          await(f1, 30.seconds).success.value shouldBe (s"PbISleptFor${b(2)}s", s"PcISleptFor${b(3)}s")
+          await(f2, 15.seconds).success.value shouldBe (s"PbISleptFor${b(4)}s", s"PcISleptFor${b(5)}s")
         }
 
       } always {

@@ -49,7 +49,7 @@ class MetricsTests
 
     val f1 = ex.execute(ri, Seq(11))
 
-    await(f1)
+    await(f1).isSuccess should be (true)
     k1.map(_.stop)
 
     handler.keys.size shouldBe 1
@@ -68,12 +68,9 @@ class MetricsTests
     val f2 = ex.execute(ri, Seq(11))
     val f3 = ex.execute(ri, Seq(11))
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor1s", "PcISleptFor1s"))
-    val r2 = await(f2)
-    r2 should be(("PbISleptFor1s", "PcISleptFor1s"))
-    val r3 = await(f3)
-    r3 should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f1).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f2).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f3).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
 
     k1.map(_.stop)
 

@@ -1,7 +1,7 @@
 package com.workflowfm.pew.execution
 
-import java.util.concurrent.ConcurrentHashMap
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 import scala.concurrent._
 import scala.util.{ Failure, Success }
@@ -11,18 +11,18 @@ import com.workflowfm.pew.stream.SimplePiObservable
 
 /**
   * A multi-state Compare-And-Swap [[ProcessExecutor]].
-  * 
+  *
   * Uses a [[java.util.concurrent.ConcurrentHashMap ConcurrentHashMap]] to store states
-  * in a thread-safe way. 
-  * 
-  * Updates states using compare-and-swap for a finite number of attempts. 
+  * in a thread-safe way.
+  *
+  * Updates states using compare-and-swap for a finite number of attempts.
   * This is to avoid the situation of multiple asynchronous atomic processes posting their results
-  * on the same state at the same time. 
+  * on the same state at the same time.
   *
   * @param maxCASAttempts The maximum number of Compare-And-Swap attempts before we fail.
   * @param executionContext
   */
-class CASExecutor (final val maxCASAttempts: Int = 10)(
+class CASExecutor(final val maxCASAttempts: Int = 10)(
     implicit override val executionContext: ExecutionContext
 ) extends ProcessExecutor[UUID]
     with SimplePiObservable[UUID] {
@@ -72,7 +72,8 @@ class CASExecutor (final val maxCASAttempts: Int = 10)(
           }
         }
       }
-      if (cas.isDefined) publish(PiFailureExceptions(id, CASExecutor.CASFailureException(id, maxCASAttempts)))
+      if (cas.isDefined)
+        publish(PiFailureExceptions(id, CASExecutor.CASFailureException(id, maxCASAttempts)))
     }
   }
 
@@ -111,7 +112,7 @@ class CASExecutor (final val maxCASAttempts: Int = 10)(
               }
               case Failure(ex) => publish(PiFailureAtomicProcessException(i.id, ref, ex))
             }
-          } 
+          }
           case Some(_: CompositeProcess) => {
             publish(PiFailureAtomicProcessIsComposite(i, name))
           } // TODO this should never happen!
@@ -125,8 +126,12 @@ class CASExecutor (final val maxCASAttempts: Int = 10)(
 }
 
 object CASExecutor {
-  final case class CASFailureException(id: UUID, max: Int, private val cause: Throwable = None.orNull)
-      extends Exception(
+
+  final case class CASFailureException(
+      id: UUID,
+      max: Int,
+      private val cause: Throwable = None.orNull
+  ) extends Exception(
         "Compare-and-swap failed after " + max + " attempts for id: " + id,
         cause
       )

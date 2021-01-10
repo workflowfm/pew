@@ -2,25 +2,27 @@ package com.workflowfm.pew.execution
 
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
+import org.scalatest.TryValues
+import scala.util.{ Try, Failure }
 
 import com.workflowfm.pew._
 
 /**
   * Shortcut methods for unit testing
   */
-trait ProcessExecutorTester {
+trait ProcessExecutorTester extends TryValues {
 
   def exe(e: ProcessExecutor[_], p: PiProcess, args: Any*): Any = await(
     e.execute(p, args: Seq[Any])
-  )
+  ).success.value
 
-  def await[A](f: Future[A], timeout: Duration = 10.seconds): A = try {
-    Await.result(f, timeout)
-  } catch {
-    case e: Throwable => {
-      System.out.println("=== RESULT FAILED! ===: " + e.getLocalizedMessage)
-      throw e
+  def await[A](f: Future[A], timeout: Duration = 10.seconds): Try[A] = {
+    val ret = Await.ready(f, timeout).value.get
+    ret match {
+      case Failure(e) => System.out.println("=== RESULT FAILED! ===: " + e.getLocalizedMessage)
+      case _ => Unit
     }
+    ret
   }
 
   //  def awaitf[A](f:Future[Future[A]]):A = try {

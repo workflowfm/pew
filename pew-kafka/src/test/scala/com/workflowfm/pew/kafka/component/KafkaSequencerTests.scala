@@ -22,7 +22,7 @@ class KafkaSequencerTests extends PewTestSuite with KafkaExampleTypes {
       .mergeSubstreams
       .runWith(Sink.seq)(ActorMaterializer())
       .map(_.map(Tracked.fmap(new MessageMap(_))))
-  )
+  ).success.value
 
   it should "sequence 1 PiiUpdate and 1 SequenceRequest" in {
     val res = runSequencer(

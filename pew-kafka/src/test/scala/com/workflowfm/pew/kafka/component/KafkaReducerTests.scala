@@ -28,7 +28,7 @@ class KafkaReducerTests extends PewTestSuite with KafkaExampleTypes {
         .map(Tracked.flatten)
         .map(Tracked.fmap(_.flatten))
         .map(Tracked.fmap(new MessageMap(_)))
-    )
+    ).success.value
   }
 
   it should "handle a ReduceRequest for a new PiInstance" in {

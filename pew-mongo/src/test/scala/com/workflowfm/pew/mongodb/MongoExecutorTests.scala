@@ -41,8 +41,7 @@ class MongoExecutorTests
     val ex = new MongoExecutor(client, "pew", "test_exec_insts", pai, pbi, pci, ri)
     val f1 = ex.execute(pbi, Seq(2))
 
-    val r1 = await(f1)
-    r1 should be("PbISleptFor2s")
+    await(f1).success.value should be("PbISleptFor2s")
   }
 
   it should "execute atomic PbI twice concurrently" in {
@@ -50,26 +49,22 @@ class MongoExecutorTests
     val f1 = ex.execute(pbi, Seq(2))
     val f2 = ex.execute(pbi, Seq(1))
 
-    val r1 = await(f1)
-    r1 should be("PbISleptFor2s")
-    val r2 = await(f2)
-    r2 should be("PbISleptFor1s")
+    await(f1).success.value should be("PbISleptFor2s")
+    await(f2).success.value should be("PbISleptFor1s")
   }
 
   it should "execute Rexample once" in {
     val ex = new MongoExecutor(client, "pew", "test_exec_insts", pai, pbi, pci, ri)
     val f1 = ex.execute(ri, Seq(21))
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor2s", "PcISleptFor1s"))
+    await(f1).success.value should be(("PbISleptFor2s", "PcISleptFor1s"))
   }
 
   it should "execute Rexample once with same timings" in {
     val ex = new MongoExecutor(client, "pew", "test_exec_insts", pai, pbi, pci, ri)
     val f1 = ex.execute(ri, Seq(11))
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f1).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
   }
 
   it should "execute Rexample twice concurrently" in {
@@ -77,10 +72,8 @@ class MongoExecutorTests
     val f1 = ex.execute(ri, Seq(31))
     val f2 = ex.execute(ri, Seq(12))
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor3s", "PcISleptFor1s"))
-    val r2 = await(f2)
-    r2 should be(("PbISleptFor1s", "PcISleptFor2s"))
+    await(f1).success.value should be(("PbISleptFor3s", "PcISleptFor1s"))
+    await(f2).success.value should be(("PbISleptFor1s", "PcISleptFor2s"))
   }
 
   it should "execute Rexample twice with same timings concurrently" in {
@@ -88,10 +81,8 @@ class MongoExecutorTests
     val f1 = ex.execute(ri, Seq(11))
     val f2 = ex.execute(ri, Seq(11))
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor1s", "PcISleptFor1s"))
-    val r2 = await(f2)
-    r2 should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f1).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f2).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
   }
 
   it should "execute Rexample thrice concurrently" in {
@@ -100,12 +91,9 @@ class MongoExecutorTests
     val f2 = ex.execute(ri, Seq(11))
     val f3 = ex.execute(ri, Seq(11))
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor1s", "PcISleptFor1s"))
-    val r2 = await(f2)
-    r2 should be(("PbISleptFor1s", "PcISleptFor1s"))
-    val r3 = await(f3)
-    r3 should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f1).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f2).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f3).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
   }
 
   it should "execute Rexample twice, each with a differnt component" in {
@@ -113,10 +101,8 @@ class MongoExecutorTests
     val f1 = ex.execute(ri, Seq(11))
     val f2 = ex.execute(ri2, Seq(11))
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor1s", "PcISleptFor1s"))
-    val r2 = await(f2)
-    r2 should be(("PbISleptFor1s", "PcXSleptFor1s"))
+    await(f1).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f2).success.value should be(("PbISleptFor1s", "PcXSleptFor1s"))
   }
 
   it should "fail properly when a workflow doesn't exist" in {
@@ -126,7 +112,7 @@ class MongoExecutorTests
     ex.subscribe(handler)
     ex.postResult(id, 0, MetadataAtomicProcess.result(PiItem(0)))
 
-    a[NoSuchInstanceException[ObjectId]] should be thrownBy await(handler.future)
+    await(handler.future).failure.exception shouldBe a[NoSuchInstanceException[_]]
   }
 
   it should "handle a failing atomic process" in {
@@ -134,11 +120,7 @@ class MongoExecutorTests
     val ex = new MongoExecutor(client, "pew", "test_exec_insts", p)
     val f1 = ex.execute(p, Seq(1))
 
-    try {
-      await(f1)
-    } catch {
-      case (e: Exception) => e.getMessage should be("FailP")
-    }
+    await(f1).failure.exception.getMessage should be("FailP")
   }
 
 //  it should "fail properly when a process doesn't exist" in {

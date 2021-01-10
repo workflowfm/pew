@@ -23,8 +23,7 @@ class MutexExecutorTests extends FlatSpec with Matchers with ProcessExecutorTest
     val ex = new MutexExecutor()
     val f1 = ex.execute(pbi, Seq(2))
 
-    val r1 = await(f1)
-    //r1 should not be empty
+    await(f1).isSuccess should be (true)
   }
 
   "MutexExecutor" should "execute atomic PbI twice concurrently" in {
@@ -32,18 +31,15 @@ class MutexExecutorTests extends FlatSpec with Matchers with ProcessExecutorTest
     val f1 = ex.execute(pbi, Seq(2))
     val f2 = ex.execute(pbi, Seq(1))
 
-    val r1 = await(f1)
-    //r1 should not be empty
-    val r2 = await(f2)
-    //r2 should not be empty
+    await(f1).isSuccess should be (true)
+    await(f2).isSuccess should be (true)
   }
 
   "MutexExecutor" should "execute Rexample once" in {
     val ex = new MutexExecutor()
     val f1 = ex.execute(ri, Seq(21))
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor2s", "PcISleptFor1s"))
+    await(f1).success.value should be(("PbISleptFor2s", "PcISleptFor1s"))
   }
 
   "MutexExecutor" should "execute Rexample twice concurrently" in {
@@ -51,10 +47,8 @@ class MutexExecutorTests extends FlatSpec with Matchers with ProcessExecutorTest
     val f1 = ex.execute(ri, Seq(31))
     val f2 = ex.execute(ri, Seq(12))
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor3s", "PcISleptFor1s"))
-    val r2 = await(f2)
-    r2 should be(("PbISleptFor1s", "PcISleptFor2s"))
+    await(f1).success.value should be(("PbISleptFor3s", "PcISleptFor1s"))
+    await(f2).success.value should be(("PbISleptFor1s", "PcISleptFor2s"))
   }
 
   "MutexExecutor" should "execute Rexample twice with same timings concurrently" in {
@@ -62,10 +56,8 @@ class MutexExecutorTests extends FlatSpec with Matchers with ProcessExecutorTest
     val f1 = ex.execute(ri, Seq(11))
     val f2 = ex.execute(ri, Seq(11))
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor1s", "PcISleptFor1s"))
-    val r2 = await(f2)
-    r2 should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f1).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f2).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
   }
 
   "MutexExecutor" should "execute Rexample thrice concurrently" in {
@@ -74,12 +66,9 @@ class MutexExecutorTests extends FlatSpec with Matchers with ProcessExecutorTest
     val f2 = ex.execute(ri, Seq(11))
     val f3 = ex.execute(ri, Seq(11))
 
-    val r1 = await(f1)
-    r1 should be(("PbISleptFor1s", "PcISleptFor1s"))
-    val r2 = await(f2)
-    r2 should be(("PbISleptFor1s", "PcISleptFor1s"))
-    val r3 = await(f3)
-    r3 should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f1).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f2).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
+    await(f3).success.value should be(("PbISleptFor1s", "PcISleptFor1s"))
   }
 
 }

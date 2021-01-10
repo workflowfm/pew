@@ -68,7 +68,7 @@ class KafkaAtomicExecTests extends PewTestSuite with KafkaExampleTypes {
 
     val response = SequenceRequest(pii.id, (CallRef(t), PiItem("PbISleptFor1s")))
 
-    await(atomExec.respond(task)) should contain(response)
+    await(atomExec.respond(task)).success.value should contain(response)
   }
 
   def runAEx(history: (Assignment, Int)*): MockTracked[MessageMap] = {
