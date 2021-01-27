@@ -82,12 +82,14 @@ trait PiInstanceStore[T] {
   def get(id: T): Option[PiInstance[T]]
   def put(i: PiInstance[T]): PiInstanceStore[T]
   def del(id: T): PiInstanceStore[T]
+  def getAll(): Seq[PiInstance[T]]
 }
 
 trait PiInstanceMutableStore[T] {
   def get(id: T): Option[PiInstance[T]]
   def put(i: PiInstance[T]): Unit
   def del(id: T): Unit
+  def getAll(): Seq[PiInstance[T]]
 }
 
 case class SimpleInstanceStore[T](m: Map[T, PiInstance[T]]) extends PiInstanceStore[T] {
@@ -95,6 +97,7 @@ case class SimpleInstanceStore[T](m: Map[T, PiInstance[T]]) extends PiInstanceSt
   override def get(id: T): Option[PiInstance[T]] = m.get(id)
   override def put(i: PiInstance[T]): SimpleInstanceStore[T] = copy(m = m + (i.id -> i))
   override def del(id: T): SimpleInstanceStore[T] = copy(m = m - id)
+  override def getAll(): Seq[PiInstance[T]] = m.values.toSeq
 
   /* { m.values.foreach { i => { val procs = i.state.threads.values.map(_.fun).mkString(", ")
    * println(s"**> [${i.id}] is waiting for procs: $procs") } }
