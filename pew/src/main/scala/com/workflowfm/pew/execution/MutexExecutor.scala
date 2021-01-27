@@ -46,6 +46,7 @@ class MutexExecutor(var store: PiInstanceStore[Int] = SimpleInstanceStore[Int]()
         else {
           val (_, resi) = ni.handleThreads(handleThread(ni))
           store = store.put(resi)
+          publish(PiEventIdle(resi))
         }
       }
     }
@@ -71,6 +72,7 @@ class MutexExecutor(var store: PiInstanceStore[Int] = SimpleInstanceStore[Int]()
           }
           else {
             store = store.put(ni.handleThreads(handleThread(ni))._2)
+            publish(PiEventIdle(ni))
           }
         }
     }
