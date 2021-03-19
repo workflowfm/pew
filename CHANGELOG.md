@@ -7,8 +7,23 @@ Includes feature updates, bug fixes, and open issues.
 ## Known Issues
 
 * [KafkaExecutor, unhandled messages #13](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/13) - since v1.0
-* [MultiStateExecutor race condition problems #9](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/9) - since v0.1
 * [AkkaExecutor.Call may timeout #4](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/4) - since v0.1
+
+
+## [v1.5.0](https://github.com/PetrosPapapa/WorkflowFM-PEW/releases/tag/v1.5.0) - 2021-03-19
+
+First open source release under the [Apache 2.0 License](LICENSE).
+
+### Changes and fixes
+
+* Restructured the project into multiple modules.
+* Fixed long standing [issue](https://github.com/PetrosPapapa/WorkflowFM-PEW/issues/9) with `MultiStateExecutor`, which is now renamed `MutexExecutor`.
+* Introduced `CASExecutor` using Java's `ConcurrentHashMap`. 
+* Updated simulator to use [Proter](https://github.com/workflowfm/proter) v0.6 and not use Akka.
+* Improved the use of pi-calculus channels to make no assumptions about their data structure (see [#63](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/63)).
+* Fixed a race condition in `AkkaExecutor.init` (see [this commit](https://github.com/PetrosPapapa/WorkflowFM-PEW/commit/06efc291434418b69ea790b8046438cfd77ea55e)).
+* Various fixes and small improvement in the metrics outputs (e.g. see [#60](https://github.com/PetrosPapapa/WorkflowFM-PEW/pull/60)).
+* Various minor improvements in unit tests and scaladocs.
 
 
 ## [v1.4.0](https://github.com/PetrosPapapa/WorkflowFM-PEW/releases/tag/v1.4.0) - 2019-07-01
