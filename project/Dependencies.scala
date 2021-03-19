@@ -21,7 +21,7 @@ object Dependencies {
   val subakka = "uk.ac.ed.inf" %% "subakka" % "1.0.0"
   val subakkaTests = "uk.ac.ed.inf" %% "subakka" % "1.0.0" % Test classifier "tests"
 
-  val simulator = "com.workflowfm" %% "wfm-simulator" % "0.3-SNAPSHOT"
+  val simulator = "com.workflowfm" %% "proter" % "0.6"
 
   val sortImports = "com.nequissimus" %% "sort-imports" % "0.5.4"
 

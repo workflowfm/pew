@@ -1,5 +1,4 @@
 package com.workflowfm.pew.execution
-
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContextExecutor
@@ -40,7 +39,7 @@ class SingleStateExecutorTests extends FlatSpec with Matchers with ProcessExecut
     val ex = new SingleStateExecutor()
     val f1 = rif(21)(ex) //ex.execute(rif,Seq(21))
 
-    await(f1).failure.exception.getMessage.contains("Fail") should be (true)
+    await(f1).failure.exception.getMessage.contains("Fail") should be(true)
   }
 
 //  it should "fail properly when a component process doesn't exist" in {

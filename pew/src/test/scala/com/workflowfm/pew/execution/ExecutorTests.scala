@@ -2,8 +2,9 @@ package com.workflowfm.pew.execution
 
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
-import org.scalatest.TryValues
 import scala.util.{ Try, Failure }
+
+import org.scalatest.TryValues
 
 import com.workflowfm.pew._
 

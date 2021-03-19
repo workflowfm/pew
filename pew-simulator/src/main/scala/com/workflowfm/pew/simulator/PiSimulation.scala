@@ -4,10 +4,6 @@ import java.util.UUID
 
 import scala.collection.mutable.{ Map, Queue }
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.concurrent.duration._
-import scala.reflect.ClassTag
-
-import akka.actor.{ ActorRef, Props }
 
 import com.workflowfm.pew.{
   PiProcess,
@@ -17,22 +13,19 @@ import com.workflowfm.pew.{
   PiEvent,
   PiEventIdle
 }
-import com.workflowfm.pew.execution.AkkaExecutorActor
-import com.workflowfm.pew.stream.{ PiEventHandler, PiEventHandlerFactory, PrintEventHandler }
-import com.workflowfm.simulator.{ Coordinator, Task }
-import com.workflowfm.simulator.{ SimulatedProcess, AsyncSimulation, TaskGenerator }
+import com.workflowfm.pew.execution.MutexExecutor
+import com.workflowfm.proter.{ Manager, TaskInstance, AsyncSimulation, FutureTasks, Task }
 
-abstract class PiSimulation(name: String, coordinator: ActorRef)(
+abstract class PiSimulation(
+    override val name: String,
+    override protected val manager: Manager
+)(
     implicit override val executionContext: ExecutionContext
-) extends AsyncSimulation(name, coordinator)
-    with AkkaExecutorActor {
+) extends MutexExecutor()(executionContext)
+    with AsyncSimulation
+    with FutureTasks {
 
-  override var store: PiInstanceStore[UUID] = SimpleInstanceStore[UUID]()
-
-  implicit override val timeout: FiniteDuration = 10.seconds
-
-  var computing: Seq[String] = Seq[String]()
-  val waiting: Queue[String] = Queue[String]()
+  val procsWaiting: Queue[String] = Queue[String]()
   val sources: Map[UUID, String] = Map()
 
   def rootProcess: PiProcess
@@ -40,80 +33,68 @@ abstract class PiSimulation(name: String, coordinator: ActorRef)(
 
   def getProcesses(): Seq[PiProcess] = rootProcess :: rootProcess.allDependencies.toList
 
-  override def run(): Future[Any] = {
+  override def run(): Unit = {
     //subscribe(new PrintEventHandler).flatMap(_ => )
-    execute(rootProcess, args)
+    execute(rootProcess, args).onComplete(done)
   }
 
-  def readyCheck(): Unit = {
-    val q = waiting.clone()
-    val check = computing.forall { p =>
-      q.dequeueFirst(_ == p) match {
-        case None => false
-        case Some(_) => true
+  def simulate[T](
+      iname: String,
+      gen: Task,
+      resultFun: (TaskInstance, Long) => T
+  ): Future[T] = {
+    val id = gen.id.getOrElse(UUID.randomUUID())
+    sources += id -> iname
+    val f = futureTask(gen.withID(id)).map { case (task, time) => resultFun(task, time) }
+    processWaiting(iname)
+    f
+  }
+
+  def simulate[T](
+      iname: String,
+      gen: Task,
+      result: T
+  ): Future[T] = {
+    val f: (TaskInstance, Long) => T = { case (_, _) => result }
+    simulate(iname, gen, f)
+  }
+
+  protected def readyCheck(): Unit = {
+    val procs = store.getAll().flatMap(_.getCalledProcesses) // we should only have one instance though!
+    if (procs.forall(_.isInstanceOf[PiSimulatedProcess])) {
+      val computing = procs map (_.iname)
+      val q = procsWaiting.clone()
+      val check = computing.forall { p =>
+        q.dequeueFirst(_ == p) match {
+          case None => false
+          case Some(_) => true
+        }
       }
+      if (check) ready()
     }
-    if (check) ready()
   }
 
   def processWaiting(process: String): Unit = {
-    waiting += process
+    procsWaiting += process
     readyCheck()
   }
 
   def processResuming(process: String): Unit = {
-    waiting.dequeueFirst(_ == process)
+    procsWaiting.dequeueFirst(_ == process)
   }
 
-  override def complete(task: Task, time: Long): Unit = {
-    sources.get(task.id).map(processResuming)
-    super.complete(task, time)
+  override def completed(time: Long, tasks: Seq[TaskInstance]): Unit = {
+    this.synchronized {
+      tasks.map { task => sources.get(task.id).map(processResuming) }
+    }
+    super.completed(time, tasks)
   }
 
-  override def publish(evt: PiEvent[UUID]): Unit = {
+  override def publish(evt: PiEvent[Int]): Unit = {
     super.publish(evt)
     evt match {
-      case PiEventIdle(i, _) => executorReady(i)
+      case PiEventIdle(i, _) => readyCheck()
       case _ => Unit
     }
   }
-
-  def executorReady(i: PiInstance[_]): Unit = {
-    val procs = i.getCalledProcesses
-    if (procs.forall(_.isInstanceOf[PiSimulatedProcess])) {
-      computing = procs map (_.iname)
-      readyCheck()
-    }
-  }
-
-  def piActorReceive: Receive = {
-    case PiSimulation.Waiting(p) => {
-      processWaiting(p)
-      sender() ! PiSimulation.Ack
-    }
-
-    case PiSimulation.Resuming(p) => {
-      processResuming(p)
-      coordinator.forward(Coordinator.WaitFor(self))
-    }
-    case PiSimulation.AddTask(iname, t, resources) => {
-      val id = java.util.UUID.randomUUID
-      sources += id -> iname
-      task(id, t, actorCallback(sender), resources)
-    }
-  }
-
-  def wtfReceive: Receive = {
-    case m => println(s"WTF WTF WTF WTF WTF WTF WTF WTF : $m")
-  }
-
-  override def receive: PartialFunction[Any, Unit] =
-    publisherBehaviour orElse akkaReceive orElse simulationReceive orElse piActorReceive orElse wtfReceive
-}
-
-object PiSimulation {
-  case class Waiting(process: String)
-  case class Resuming(process: String)
-  case object Ack
-  case class AddTask(iname: String, t: TaskGenerator, resources: Seq[String])
 }

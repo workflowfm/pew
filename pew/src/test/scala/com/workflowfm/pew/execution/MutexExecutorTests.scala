@@ -23,7 +23,7 @@ class MutexExecutorTests extends FlatSpec with Matchers with ProcessExecutorTest
     val ex = new MutexExecutor()
     val f1 = ex.execute(pbi, Seq(2))
 
-    await(f1).isSuccess should be (true)
+    await(f1).isSuccess should be(true)
   }
 
   "MutexExecutor" should "execute atomic PbI twice concurrently" in {
@@ -31,8 +31,8 @@ class MutexExecutorTests extends FlatSpec with Matchers with ProcessExecutorTest
     val f1 = ex.execute(pbi, Seq(2))
     val f2 = ex.execute(pbi, Seq(1))
 
-    await(f1).isSuccess should be (true)
-    await(f2).isSuccess should be (true)
+    await(f1).isSuccess should be(true)
+    await(f2).isSuccess should be(true)
   }
 
   "MutexExecutor" should "execute Rexample once" in {

@@ -23,7 +23,7 @@ class CASExecutorTests extends FlatSpec with Matchers with ProcessExecutorTester
     val ex = new CASExecutor()
     val f1 = ex.execute(pbi, Seq(2))
 
-    await(f1).isSuccess should be (true)
+    await(f1).isSuccess should be(true)
     //r1 should not be empty
   }
 
@@ -32,8 +32,8 @@ class CASExecutorTests extends FlatSpec with Matchers with ProcessExecutorTester
     val f1 = ex.execute(pbi, Seq(2))
     val f2 = ex.execute(pbi, Seq(1))
 
-    await(f1).isSuccess should be (true)
-    await(f2).isSuccess should be (true)
+    await(f1).isSuccess should be(true)
+    await(f2).isSuccess should be(true)
   }
 
   "CASExecutor" should "execute Rexample once" in {
