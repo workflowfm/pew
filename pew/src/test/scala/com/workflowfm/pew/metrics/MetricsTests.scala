@@ -49,7 +49,7 @@ class MetricsTests
 
     val f1 = ex.execute(ri, Seq(11))
 
-    await(f1).isSuccess should be (true)
+    await(f1).isSuccess should be(true)
     k1.map(_.stop)
 
     handler.keys.size shouldBe 1

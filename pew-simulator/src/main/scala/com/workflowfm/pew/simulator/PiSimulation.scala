@@ -11,17 +11,16 @@ import com.workflowfm.pew.{
   PiInstanceStore,
   SimpleInstanceStore,
   PiEvent,
-  PiEventIdle,
+  PiEventIdle
 }
 import com.workflowfm.pew.execution.MutexExecutor
 import com.workflowfm.proter.{ Manager, TaskInstance, AsyncSimulation, FutureTasks, Task }
 
-
 abstract class PiSimulation(
-  override val name: String, 
-  override protected val manager: Manager
+    override val name: String,
+    override protected val manager: Manager
 )(
-  implicit override val executionContext: ExecutionContext
+    implicit override val executionContext: ExecutionContext
 ) extends MutexExecutor()(executionContext)
     with AsyncSimulation
     with FutureTasks {
@@ -40,9 +39,9 @@ abstract class PiSimulation(
   }
 
   def simulate[T](
-    iname: String,
-    gen: Task,
-    resultFun: (TaskInstance, Long) => T
+      iname: String,
+      gen: Task,
+      resultFun: (TaskInstance, Long) => T
   ): Future[T] = {
     val id = gen.id.getOrElse(UUID.randomUUID())
     sources += id -> iname
@@ -52,10 +51,10 @@ abstract class PiSimulation(
   }
 
   def simulate[T](
-    iname: String,
-    gen: Task,
-    result: T
-  ): Future[T] = { 
+      iname: String,
+      gen: Task,
+      result: T
+  ): Future[T] = {
     val f: (TaskInstance, Long) => T = { case (_, _) => result }
     simulate(iname, gen, f)
   }
