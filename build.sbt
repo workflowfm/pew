@@ -1,24 +1,53 @@
 import com.workflowfm.pew.Dependencies
 
+inThisBuild(List(
+  organization := "com.workflowfm",
+  organizationName := "WorkflowFM",
+  organizationHomepage := Some(url("http://www.workflowfm.com/")),
+  homepage := Some(url("http://www.workflowfm.com/pew/")),
+  description := "A persistent execution engine for pi-calculus workflows",
+  licenses := Seq("APL2" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
+
+  developers := List(
+    Developer(
+      id = "PetrosPapapa",
+      name = "Petros Papapanagiotou",
+      email = "petros@workflowfm.com",
+      url = url("https://homepages.inf.ed.ac.uk/ppapapan/")
+    )
+  ),
+  scmInfo := Some(
+    ScmInfo(
+      url("https://github.com/workflowfm/pew"),
+      "scm:git:git@github.com:workflowfm/pew.git"
+    )
+  ),
+  dynverSonatypeSnapshots := true,
+
+  scalafixDependencies += Dependencies.sortImports,
+  git.remoteRepo := scmInfo.value.get.connection.replace("scm:git:", "")
+))
+
+// Publish to Sonatype / Maven Central
+
+publishTo in ThisBuild := sonatypePublishToBundle.value
+pomIncludeRepository := { _ => false }
+publishMavenStyle := true
+sonatypeCredentialHost := "s01.oss.sonatype.org"
+sonatypeRepository := "https://s01.oss.sonatype.org/service/local"
+
+
 lazy val commonSettings = Seq (
-	organization := "com.workflowfm",
-	scalaVersion := Dependencies.scalaVer,
-    semanticdbEnabled := true,
-    semanticdbVersion := scalafixSemanticdb.revision,
-    scalacOptions += "-Ywarn-unused" // required by `RemoveUnused` rule
+  scalaVersion := Dependencies.scalaVer,
+
+  semanticdbEnabled := true,
+  semanticdbVersion := scalafixSemanticdb.revision,
+
+  scalacOptions += "-Ywarn-unused", // required by `RemoveUnused` rule
+  autoAPIMappings := true,
+  Compile / doc / scalacOptions ++= Seq("-groups", "-implicits", "-diagrams", "-diagrams-debug"),
+
 )
-
-autoAPIMappings := true
-
-/* Only invoked when you do `doc` in SBT */
-scalacOptions in (Compile, doc) += "-groups"
-scalacOptions in (Compile, doc) += "-diagrams"
-scalacOptions in (Compile, doc) += "-diagrams-debug"
-
-// The %% means that it will automatically add the specific Scala version to the dependency name.  
-// For instance, this will actually download scalatest_2.9.2
-
-ThisBuild / scalafixDependencies += Dependencies.sortImports
 
 lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   pew,
@@ -42,7 +71,14 @@ def pewExample(name: String): Project =
     .dependsOn(pew)
 
 lazy val root = Project(id = "pew-root", base = file("."))
+  .settings(commonSettings)
+  .settings( 
+    publishArtifact := false,
+    siteSubdirName in ScalaUnidoc := "api",
+    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), siteSubdirName in ScalaUnidoc)
+  )
   .aggregate(aggregatedProjects: _*)
+  .enablePlugins(ScalaUnidocPlugin)
 
 //lazy val rootRef = LocalProject("root")
 
