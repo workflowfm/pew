@@ -68,7 +68,7 @@ class MongoDBTests
 //  }
 
   it should "put new PiInstances as Documents and read them back" in {
-    val proc1 = DummyProcess("PROC", Seq("C", "R"), "R", Seq((Chan("INPUT"), "C")))
+    val proc1 = DummyProcess("PROC", "R", Seq((Chan("INPUT"), "C")))
     val procs = SimpleProcessStore(proc1)
 
     val reg = fromRegistries(fromProviders(new PiCodecProvider(procs)), DEFAULT_CODEC_REGISTRY)
@@ -94,7 +94,7 @@ class MongoDBTests
   }
 
   it should "put/get new PiInstances directly" in {
-    val proc1 = DummyProcess("PROC", Seq("C", "R"), "R", Seq((Chan("INPUT"), "C")))
+    val proc1 = DummyProcess("PROC", "R", Seq((Chan("INPUT"), "C")))
     val procs = SimpleProcessStore(proc1)
 
     val reg = fromRegistries(fromProviders(new PiCodecProvider(procs)), DEFAULT_CODEC_REGISTRY)
@@ -121,7 +121,7 @@ class MongoDBTests
   }
 
   it should "update PiInstances directly" in {
-    val proc1 = DummyProcess("PROC", Seq("C", "R"), "R", Seq((Chan("INPUT"), "C")))
+    val proc1 = DummyProcess("PROC", "R", Seq((Chan("INPUT"), "C")))
     val procs = SimpleProcessStore(proc1)
 
     val reg = fromRegistries(fromProviders(new PiCodecProvider(procs)), DEFAULT_CODEC_REGISTRY)
@@ -156,7 +156,7 @@ class MongoDBTests
   }
 
   it should "update PiInstances with chained observables" in {
-    val proc1 = DummyProcess("PROC", Seq("C", "R"), "R", Seq((Chan("INPUT"), "C")))
+    val proc1 = DummyProcess("PROC", "R", Seq((Chan("INPUT"), "C")))
     val procs = SimpleProcessStore(proc1)
 
     val reg = fromRegistries(fromProviders(new PiCodecProvider(procs)), DEFAULT_CODEC_REGISTRY)

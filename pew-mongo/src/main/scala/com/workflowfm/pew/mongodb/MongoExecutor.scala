@@ -7,12 +7,12 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-import com.mongodb.session.ClientSession
 import org.bson._
 import org.bson.codecs._
 import org.bson.codecs.configuration.{ CodecProvider, CodecRegistries, CodecRegistry }
 import org.bson.codecs.configuration.CodecRegistries.{ fromCodecs, fromProviders, fromRegistries }
 import org.bson.types._
+import org.mongodb.scala.ClientSession
 import org.mongodb.scala.ClientSessionOptions
 import org.mongodb.scala.MongoClient
 import org.mongodb.scala.MongoCollection

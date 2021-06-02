@@ -1,8 +1,5 @@
 package com.workflowfm.pew.mongodb
 
-import scala.concurrent.Promise
-
-import akka.actor.ActorSystem
 import org.bson.types.ObjectId
 import org.junit.runner.RunWith
 import org.mongodb.scala.MongoClient
@@ -20,9 +17,7 @@ class MongoExecutorTests
     with Matchers
     with BeforeAndAfterAll
     with ProcessExecutorTester {
-  implicit val system: ActorSystem = ActorSystem("MongoExecutorTests")
-  //implicit val executionContext = system.dispatchers.lookup("akka.my-dispatcher")
-
+ 
   val pai = new PaI
   val pbi = new PbI
   val pci = new PcI

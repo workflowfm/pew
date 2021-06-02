@@ -21,11 +21,11 @@ object Dependencies {
   val subakka = "uk.ac.ed.inf" %% "subakka" % "1.0.0"
   val subakkaTests = "uk.ac.ed.inf" %% "subakka" % "1.0.0" % Test classifier "tests"
 
-  val simulator = "com.workflowfm" %% "proter" % "0.6"
+  val simulator = "com.workflowfm" %% "proter" % "0.7.3"
 
   val sortImports = "com.nequissimus" %% "sort-imports" % "0.5.4"
 
-  val mongo = "org.mongodb.scala" %% "mongo-scala-driver" % "2.2.1"
+  val mongo = "org.mongodb.scala" %% "mongo-scala-driver" % "2.9.0"
 
   val akkaStreamKafka = "com.typesafe.akka" %% "akka-stream-kafka" % "1.1.0"
   val akkaStream = "com.typesafe.akka" %% "akka-stream"       % "2.6.1"
