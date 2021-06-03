@@ -206,7 +206,7 @@ case class MetricsCSVFileOutput[KeyT](path: String, prefix: String, separator: S
 /** Outputs metrics to a file using the d3-timeline format.
   * Generates 1 file with a "-data.js" suffix.
   * This can then be combined with the resources at
-  * [[https://github.com/PetrosPapapa/WorkflowFM-PEW/tree/master/resources/d3-timeline]]
+  * [[https://github.com/workflowfm/d3-workflow-timeline]]
   * to render the timeline in a browser.
   *
   * @tparam KeyT the type used for workflow IDs

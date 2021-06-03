@@ -1,7 +1,10 @@
 #+TITLE: PEW: Persistent Execution of Workflows
 #+AUTHOR: Petros Papapanagiotou
 
-[[../../releases/latest][https://img.shields.io/badge/version-1.5.0-brightgreen.svg]]
+#+ATTR_ORG: :width 100
+[[https://raw.githubusercontent.com/workflowfm/pew/master/docs/static/images/PEW.png]]
+
+[[../../releases/latest][https://img.shields.io/badge/version-1.6.0-brightgreen.svg]]
 [[https://opensource.org/licenses/Apache-2.0][https://img.shields.io/badge/license-Apache%202.0-yellowgreen.svg]]
 
 A library for the execution of [[https://en.wikipedia.org/wiki/%CE%A0-calculus][\pi-calculus]] workflows, particularly those constructed by the WorkflowFM Reasoner using persistent (serializable) state.
@@ -12,6 +15,8 @@ A library for the execution of [[https://en.wikipedia.org/wiki/%CE%A0-calculus][
 | [[https://www.ed.ac.uk/informatics/][School of Informatics, University of Edinburgh]] |
 
 This is part of the [[https://github.com/workflowfm/][WorkflowFM]] framework for correct-by-construction process and resource workflows.
+
+[[http://docs.workflowfm.com/pew][More info and documentation can be found in the main webpage.]]
 
 * Modules
 
@@ -26,18 +31,16 @@ In addition to the core \pi-calculus model and execution engine, a list of addit
 
 Requirements:
 - Java 8, Scala 2.12.12
-- [[https://www.scala-sbt.org/][sbt]] v1.3.13
+- [[https://www.scala-sbt.org/][sbt]] v1.4.5 or higher
 
-Installation is manual (at least for now) using ~sbt publishLocal~.
 
-This will publish PEW in a local ivy repository.
-
-You can then add it as a dependency in your own project.
+You can then add Proter as [[https://search.maven.org/artifact/com.workflowfm/pew_2.12][a dependency from Maven]].
 
 e.g. in sbt: 
 #+BEGIN_SRC scala
-libraryDependencies += "com.workflowfm" %% "pew" % "1.5.0"
+libraryDependencies += "com.workflowfm" %% "pew" % "1.6.0"
 #+END_SRC 
+
 
 * Authors
 :PROPERTIES:
