@@ -92,6 +92,7 @@ lazy val pew = Project(id = "pew", base = file("pew"))
   ))
 
 lazy val pewMongo =  pewModule("pew-mongo")
+  .settings(publishArtifact := false)
 
 lazy val pewKafka =  pewModule("pew-kafka")
   .settings(libraryDependencies ++= Dependencies.kafkaAll)
