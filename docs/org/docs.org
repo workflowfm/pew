@@ -1,0 +1,40 @@
+#+TITLE: Documentation
+#+AUTHOR: Petros Papapanagiotou
+#+EMAIL: petros@workflowfm.com
+#+OPTIONS: toc:nil email:t
+#+EXCLUDE_TAGS: noexport
+#+PROPERTY: header-args :results output drawer :session proter :exports both :eval no-export :dir ../../
+#+HUGO_AUTO_SET_LASTMOD: t
+
+#+HUGO_BASE_DIR: ../
+#+HUGO_SECTION: docs
+
+* Setup Amm :noexport:
+#+BEGIN_SRC amm
+import $ivy.`com.workflowfm:proter_2.12:0.7`, com.workflowfm.proter._
+#+END_SRC
+
+* Reference
+  :PROPERTIES:
+  :EXPORT_FILE_NAME: _index
+  :EXPORT_HUGO_MENU: :menu "main" :weight 100
+  :END:
+
+Welcome to the WorkflowFM PEW documentation. This guide shows you how to get started creating creating simulations using Proter and the key concepts involved.
+
+{{< button "./getting-started/" "Get started" >}}
+* Getting Started
+  :PROPERTIES:
+  :EXPORT_FILE_NAME: getting-started
+  :EXPORT_HUGO_WEIGHT: 100
+  :END:
+
+WorkflowFM PEW is available as a library from Maven Central, so you can add it as a dependency in your project. For example, in sbt:
+
+#+BEGIN_SRC scala :eval no
+libraryDependencies += "com.workflowfm" %% "pew" % "{{< version >}}"
+#+END_SRC
+
+PEW is currently only available in *Scala 2.12.12*.
+
+

@@ -1,0 +1,78 @@
+baseURL = "https://dev.workflowfm.com/pew/"
+title = "WorkflowFM PEW"
+enableRobotsTXT = true
+# this example loads the theme as hugo module
+# comment out line below, and uncomment the line after it if you prefer to load the theme normally
+# theme = ["github.com/onweru/compose"] # edit this if you'ld rather use a fork of this repo
+theme = "compose"
+enableGitInfo = true
+
+disableKinds = ["taxonomy", "taxonomyTerm"]
+
+[outputs]
+  home = ["HTML", "RSS", "JSON"]
+
+# menu items
+[[menu.main]]
+  name = "API"
+  weight = 1000
+  url = "api/com/workflowfm/pew/"
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+    [markup.goldmark.extensions]
+      typographer = false
+  [markup.highlight]
+    codeFences = true
+    guessSyntax = false
+    hl_Lines = ""
+    lineNoStart = 1
+    lineNos = true
+    lineNumbersInTable = false
+    noClasses = false
+    style = "monokai"
+    tabWidth = 2
+  [markup.tableOfContents]
+    endLevel = 4
+    ordered = false
+    startLevel = 2
+
+# Everything below this are Site Params
+
+[params]
+  uniqueHomePage = true # change to false to add sidebar to homepage
+
+  repo = "https://github.com/workflowfm/pew"
+  version = "1.6.0"
+
+  time_format_blog = "Monday, 02 January 2006"
+  time_format_default = "2 January 2006"
+  enableDarkMode = true # set to false to disable darkmode by default # user will still have the option to use dark mode
+
+  # sets the maximum number of lines per codeblock. The codeblock will however be scrollable and expandable.
+  codeMaxLines = 7
+
+  # disable showing line numbers by default. Switch to `true` if you'd rather have them on.
+  codeLineNumbers = false
+
+  customCSS = ["css/workflowfm.css"]
+
+  # Site logo
+  [params.logo]
+    lightMode = "images/PEW.png"
+    darkMode = "images/PEW-white.png"
+
+  [params.source]
+    name = "GitHub"
+    iconLight = "images/GitHubMarkLight.svg"
+    iconDark = "images/GitHubMarkDark.svg"
+    url = "https://github.com/workflowfm/pew"
+
+  # optional
+  # attribution. Feel free to delete this
+  [params.author]
+    name = "WorkflowFM"
+    url = "http://www.workflowfm.com/"
+
