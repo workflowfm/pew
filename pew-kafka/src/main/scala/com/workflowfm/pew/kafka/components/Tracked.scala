@@ -161,11 +161,11 @@ object Tracked {
     * this reduces the number of system resources used (such as file handles))
     * Note on the note: lazyProducer is no longer available in the latest version
     */
-  def createProducer[K, V](
+  /*def createProducer[K, V](
       settings: ProducerSettings[K, V]
   ): org.apache.kafka.clients.producer.Producer[K, V] = withClassLoader(null) {
     settings.createKafkaProducer()
-  }
+  }*/
 }
 
 /** A Tracked type which uses a `Committable` as tracking information.
@@ -187,7 +187,7 @@ trait HasCommittableSinks[T[X] <: HasCommittable[X]]
   override def sink[V <: AnyMsg](
       implicit s: KafkaExecutorEnvironment
   ): Sink[HasCommittable[V], Future[Done]] = Producer
-    .commitableSink(s.psAllMessages, Tracked.createProducer(s.psAllMessages))
+    .commitableSink(s.psAllMessages, s.producer)
     .contramap(msg =>
       ProducerMessage.Message(
         s.settings.record(msg.value),
@@ -198,7 +198,7 @@ trait HasCommittableSinks[T[X] <: HasCommittable[X]]
   override def sinkMulti[V <: AnyMsg](
       implicit s: KafkaExecutorEnvironment
   ): Sink[HasCommittable[Seq[V]], Future[Done]] = Producer
-    .commitableSink(s.psAllMessages, Tracked.createProducer(s.psAllMessages))
+    .commitableSink(s.psAllMessages, s.producer)
     .contramap(msgs =>
       ProducerMessage.MultiMessage(
         msgs.value.map(s.settings.record).to,
@@ -446,7 +446,7 @@ object Untracked extends TrackedSource[Untracked] with TrackedSink[Untracked] {
   override def sink[Value <: AnyMsg](
       implicit s: KafkaExecutorEnvironment
   ): Sink[Untracked[Value], Future[Done]] = Producer
-    .plainSink(s.psAllMessages, Tracked.createProducer(s.psAllMessages))
+    .plainSink(s.psAllMessages, s.producer)
     .contramap((msg: Untracked[Value]) => s.settings.record(msg.value))
 
 }

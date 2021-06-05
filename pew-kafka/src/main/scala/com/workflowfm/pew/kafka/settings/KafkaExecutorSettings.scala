@@ -11,6 +11,7 @@ import org.bson.types.ObjectId
 import com.workflowfm.pew.kafka.settings.KafkaExecutorSettings.{ AnyKey, KeyPiiId, KeyPiiIdCall }
 import com.workflowfm.pew.stateless.{ CallRef, StatelessMessages }
 import com.workflowfm.pew.stateless.StatelessMessages._
+import com.workflowfm.pew.util.ClassLoaderUtil.withClassLoader
 
 abstract class KafkaExecutorEnvironment {
 
@@ -31,6 +32,23 @@ abstract class KafkaExecutorEnvironment {
 
   // Kafka - All producer settings
   val psAllMessages: ProducerSettings[AnyKey, AnyMsg]
+
+
+  /** Create a KafkaProducer from settings whilst explicitly un-setting the ClassLoader.
+    * This by-passes errors encountered in the KafkaProducer constructor where Threads
+    * within an ExecutionContext do not list the necessary key or value serialiser classes.
+    * Explicitly setting `null` causes the constructor to use the Kafka ClassLoader
+    * which should contain these values.
+    *
+    * (Note: Use `lazyProducer` to minimize the number of new Producers which are created,
+    * this reduces the number of system resources used (such as file handles))
+    * Note on the note: lazyProducer is no longer available in the latest version
+    * Note on the note on the note: Reintroducing a custom lazy producer here.
+    */
+  lazy val producer: org.apache.kafka.clients.producer.Producer[AnyKey, AnyMsg] = 
+    withClassLoader(null) {
+      psAllMessages.createKafkaProducer()
+    }
 
 }
 

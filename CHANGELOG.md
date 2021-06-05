@@ -11,7 +11,7 @@ Includes feature updates, bug fixes, and open issues.
 * [AkkaExecutor.Call may timeout #4](https://github.com/workflowfm/pew/issues/4) - since v0.1
 
 
-## [v1.6.0](https://github.com/workflowfm/pew/releases/tag/v1.6.0) - 2021-06-03
+## [v1.6.0](https://github.com/workflowfm/pew/releases/tag/v1.6.0) - 2021-06-06
 
 * First release in Maven Central! 
 * Project moved from https://github.com/PetrosPapapa/WorkflowFM-PEW to https://github.com/workflowfm/pew . 

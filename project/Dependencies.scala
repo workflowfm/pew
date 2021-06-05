@@ -27,7 +27,7 @@ object Dependencies {
 
   val mongo = "org.mongodb.scala" %% "mongo-scala-driver" % "2.9.0"
 
-  val akkaStreamKafka = "com.typesafe.akka" %% "akka-stream-kafka" % "1.1.0"
+  val akkaStreamKafka = "com.typesafe.akka" %% "akka-stream-kafka" % "0.22"
   val akkaStream = "com.typesafe.akka" %% "akka-stream"       % "2.6.1"
   val akkaHttp = "com.typesafe.akka" %% "akka-http"         % "10.1.11"
   val akkaHttpJackson = "de.heikoseeberger" %% "akka-http-jackson" % "1.27.0"
