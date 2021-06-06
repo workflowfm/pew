@@ -115,3 +115,4 @@ lazy val pewSimulator =  pewModule("pew-simulator")
   .settings(libraryDependencies += Dependencies.simulator)
 
 lazy val skiexample = pewExample("skiexample")
+  .settings(publishArtifact := false)
