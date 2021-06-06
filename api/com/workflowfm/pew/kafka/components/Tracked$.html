@@ -394,29 +394,6 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="com.workflowfm.pew.kafka.components.Tracked#createProducer" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="createProducer[K,V](settings:akka.kafka.ProducerSettings[K,V]):org.apache.kafka.clients.producer.Producer[K,V]"></a><a id="createProducer[K,V](ProducerSettings[K,V]):Producer[K,V]"></a>
-      <span class="permalink">
-      <a href="../../../../../com/workflowfm/pew/kafka/components/Tracked$.html#createProducer[K,V](settings:akka.kafka.ProducerSettings[K,V]):org.apache.kafka.clients.producer.Producer[K,V]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">createProducer</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="params">(<span name="settings">settings: <span class="extype" name="akka.kafka.ProducerSettings">ProducerSettings</span>[<span class="extype" name="com.workflowfm.pew.kafka.components.Tracked.createProducer.K">K</span>, <span class="extype" name="com.workflowfm.pew.kafka.components.Tracked.createProducer.V">V</span>]</span>)</span><span class="result">: <span class="extype" name="org.apache.kafka.clients.producer.Producer">Producer</span>[<span class="extype" name="com.workflowfm.pew.kafka.components.Tracked.createProducer.K">K</span>, <span class="extype" name="com.workflowfm.pew.kafka.components.Tracked.createProducer.V">V</span>]</span>
-      </span>
-      
-      <p class="shortcomment cmt">Create a KafkaProducer from settings whilst explicitly un-setting the ClassLoader.</p><div class="fullcomment"><div class="comment cmt"><p>Create a KafkaProducer from settings whilst explicitly un-setting the ClassLoader.
-This by-passes errors encountered in the KafkaProducer constructor where Threads
-within an ExecutionContext do not list the necessary key or value serialiser classes.
-Explicitly setting <code>null</code> causes the constructor to use the Kafka ClassLoader
-which should contain these values.</p><p>(Note: Use <code>lazyProducer</code> to minimize the number of new Producers which are created,
-this reduces the number of system resources used (such as file handles))
-Note on the note: lazyProducer is no longer available in the latest version
-</p></div></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">

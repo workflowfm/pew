@@ -851,6 +851,30 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="com.workflowfm.pew.kafka.settings.KafkaExecutorEnvironment#producer" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="producer:org.apache.kafka.clients.producer.Producer[com.workflowfm.pew.kafka.settings.KafkaExecutorSettings.AnyKey,com.workflowfm.pew.stateless.StatelessMessages.AnyMsg]"></a><a id="producer:Producer[AnyKey,AnyMsg]"></a>
+      <span class="permalink">
+      <a href="../../../../../com/workflowfm/pew/kafka/settings/KafkaExecutorEnvironment.html#producer:org.apache.kafka.clients.producer.Producer[com.workflowfm.pew.kafka.settings.KafkaExecutorSettings.AnyKey,com.workflowfm.pew.stateless.StatelessMessages.AnyMsg]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">producer</span><span class="result">: <span class="extype" name="org.apache.kafka.clients.producer.Producer">Producer</span>[<a href="KafkaExecutorSettings$$AnyKey.html" class="extype" name="com.workflowfm.pew.kafka.settings.KafkaExecutorSettings.AnyKey">AnyKey</a>, <a href="../../stateless/StatelessMessages$$AnyMsg.html" class="extype" name="com.workflowfm.pew.stateless.StatelessMessages.AnyMsg">AnyMsg</a>]</span>
+      </span>
+      
+      <p class="shortcomment cmt">Create a KafkaProducer from settings whilst explicitly un-setting the ClassLoader.</p><div class="fullcomment"><div class="comment cmt"><p>Create a KafkaProducer from settings whilst explicitly un-setting the ClassLoader.
+This by-passes errors encountered in the KafkaProducer constructor where Threads
+within an ExecutionContext do not list the necessary key or value serialiser classes.
+Explicitly setting <code>null</code> causes the constructor to use the Kafka ClassLoader
+which should contain these values.</p><p>(Note: Use <code>lazyProducer</code> to minimize the number of new Producers which are created,
+this reduces the number of system resources used (such as file handles))
+Note on the note: lazyProducer is no longer available in the latest version
+Note on the note on the note: Reintroducing a custom lazy producer here.
+</p></div></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
