@@ -16,6 +16,7 @@ Includes feature updates, bug fixes, and open issues.
 * First release in Maven Central! 
 * Project moved from https://github.com/PetrosPapapa/WorkflowFM-PEW to https://github.com/workflowfm/pew . 
 * Documentation website added: http://docs.workflowfm.com/pew/
+* Reverts alpakka dependency to v0.22 (see [#66](https://github.com/workflowfm/pew/issues/66))
 
 
 ## [v1.5.0](https://github.com/workflowfm/pew/releases/tag/v1.5.0) - 2021-03-19
