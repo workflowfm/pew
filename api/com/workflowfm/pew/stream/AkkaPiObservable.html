@@ -135,6 +135,18 @@
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="com.workflowfm.pew">pew</a></dd></dl></div>
     </li><li class="current-entities indented4">
                         <span class="separator"></span>
+                        <a class="trait" href="" title=""></a>
+                        <a href="" title="">AkkaPiObservable</a>
+                      </li><li class="current-entities indented4">
+                        <a class="object" href="AkkaPiStream$.html" title=""></a>
+                        <a class="trait" href="AkkaPiStream.html" title=""></a>
+                        <a href="AkkaPiStream.html" title="">AkkaPiStream</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="AkkaPiSwitch.html" title=""></a>
+                        <a href="AkkaPiSwitch.html" title="">AkkaPiSwitch</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
                         <a class="class" href="CounterHandler.html" title=""></a>
                         <a href="CounterHandler.html" title="">CounterHandler</a>
                       </li><li class="current-entities indented4">
@@ -159,10 +171,6 @@
                         <a href="PiEventHandlerFactory.html" title="A factory that generates a handler that is related to a particular workflow ID.">PiEventHandlerFactory</a>
                       </li><li class="current-entities indented4">
                         <span class="separator"></span>
-                        <a class="class" href="" title="A wrapper of akka.stream.KillSwitch to stop PiEventHandlers."></a>
-                        <a href="" title="A wrapper of akka.stream.KillSwitch to stop PiEventHandlers.">PiKillSwitch</a>
-                      </li><li class="current-entities indented4">
-                        <span class="separator"></span>
                         <a class="trait" href="PiObservable.html" title="Anything that can be observed by a PiEventHandler."></a>
                         <a href="PiObservable.html" title="Anything that can be observed by a PiEventHandler.">PiObservable</a>
                       </li><li class="current-entities indented4">
@@ -170,11 +178,7 @@
                         <a class="trait" href="PiPublisher.html" title="Has the ability to publish PiEvents."></a>
                         <a href="PiPublisher.html" title="Has the ability to publish PiEvents.">PiPublisher</a>
                       </li><li class="current-entities indented4">
-                        <span class="separator"></span>
-                        <a class="trait" href="PiStream.html" title="A PiSource that also implements PiPublisher with Akka Streams."></a>
-                        <a href="PiStream.html" title="A PiSource that also implements PiPublisher with Akka Streams.">PiStream</a>
-                      </li><li class="current-entities indented4">
-                        <span class="separator"></span>
+                        <a class="object" href="PiSubscriber$.html" title=""></a>
                         <a class="class" href="PiSubscriber.html" title=""></a>
                         <a href="PiSubscriber.html" title="">PiSubscriber</a>
                       </li><li class="current-entities indented4">
@@ -206,12 +210,12 @@
             </div>
           </div>
           <div id="content">
-            <body class="class type">
+            <body class="trait type">
       <div id="definition">
-        <div class="big-circle class">c</div>
+        <div class="big-circle trait">t</div>
         <p id="owner"><a href="../../../index.html" class="extype" name="com">com</a>.<a href="../../index.html" class="extype" name="com.workflowfm">workflowfm</a>.<a href="../index.html" class="extype" name="com.workflowfm.pew">pew</a>.<a href="index.html" class="extype" name="com.workflowfm.pew.stream">stream</a></p>
-        <h1>PiKillSwitch<span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html" title="Permalink">
+        <h1>AkkaPiObservable<span class="permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
@@ -221,24 +225,29 @@
       <h4 id="signature" class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">case class</span>
+        <span class="kind">trait</span>
       </span>
       <span class="symbol">
-        <span class="name">PiKillSwitch</span><span class="params">(<span name="switch">switch: <span class="extype" name="uk.ac.ed.inf.ppapapan.subakka.SubscriptionSwitch">SubscriptionSwitch</span></span>)</span><span class="result"> extends <a href="PiSwitch.html" class="extype" name="com.workflowfm.pew.stream.PiSwitch">PiSwitch</a> with <a href="https://www.scala-lang.org/api/2.12.12/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a> with <a href="https://www.scala-lang.org/api/2.12.12/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></span>
+        <span class="name">AkkaPiObservable</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="PiObservable.html" class="extype" name="com.workflowfm.pew.stream.PiObservable">PiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]</span>
       </span>
       </h4>
 
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A wrapper of <a href="https://doc.akka.io/api/akka/2.6.1/akka/stream/KillSwitch.html" class="extype" name="akka.stream.KillSwitch">akka.stream.KillSwitch</a> to stop <a href="PiEventHandler.html" class="extype" name="com.workflowfm.pew.stream.PiEventHandler">PiEventHandler</a>s.</p></div><div class="toggleContainer block">
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="https://www.scala-lang.org/api/2.12.12/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="https://www.scala-lang.org/api/2.12.12/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a>, <a href="https://www.scala-lang.org/api/2.12.12/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a>, <a href="PiSwitch.html" class="extype" name="com.workflowfm.pew.stream.PiSwitch">PiSwitch</a>, <a href="https://www.scala-lang.org/api/2.12.12/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.12/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
-        </div><div class="toggleContainer block diagram-container" id="inheritance-diagram-container">
+          <div class="superTypes hiddenContent"><a href="PiObservable.html" class="extype" name="com.workflowfm.pew.stream.PiObservable">PiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>], <a href="https://www.scala-lang.org/api/2.12.12/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.12/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+        </div><div class="toggleContainer block">
+            <span class="toggle">
+              Known Subclasses
+            </span>
+            <div class="subClasses hiddenContent"><a href="../execution/AkkaExecutor.html" class="extype" name="com.workflowfm.pew.execution.AkkaExecutor">AkkaExecutor</a></div>
+          </div><div class="toggleContainer block diagram-container" id="inheritance-diagram-container">
                 <span class="toggle diagram-link">
                   Type Hierarchy
                 </span>
-                <div class="diagram" id="inheritance-diagram"><svg class="class-diagram" id="graph1" viewBox="0.00 0.00 330.00 120.00" height="120pt" width="330pt" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><g transform="scale(1 1) rotate(0) translate(4 116)" class="graph" id="graph1"><polygon points="-4,5 -4,-116 327,-116 327,5 -4,5" stroke="white" fill="white"></polygon><g class="cluster" id="graph2"></g><g class="cluster" id="graph3"></g><!-- node0 --><g class="node this class" id="graph1_0"><a xlink:title="com.workflowfm.pew.stream.PiKillSwitch (this class)" xlink:href="#inheritance-diagram"><polygon points="197.583,-50 104.417,-50 95.75,-41.3333 95.75,-32.6667 104.417,-24 197.583,-24 206.25,-32.6667 206.25,-41.3333 197.583,-50" stroke="#418565" fill="#418565"></polygon><path d="M104.417,-50C100.083,-50 95.75,-45.6667 95.75,-41.3333" stroke="#418565" fill="#418565"></path><path d="M95.75,-32.6667C95.75,-28.3333 100.083,-24 104.417,-24" stroke="#418565" fill="#418565"></path><path d="M197.583,-24C201.917,-24 206.25,-28.3333 206.25,-32.6667" stroke="#418565" fill="#418565"></path><path d="M206.25,-41.3333C206.25,-45.6667 201.917,-50 197.583,-50" stroke="#418565" fill="#418565"></path><polyline points="197.583,-50 104.417,-50 " stroke="#418565" fill="none"></polyline><path d="M104.417,-50C100.083,-50 95.75,-45.6667 95.75,-41.3333" stroke="#418565" fill="none"></path><polyline points="95.75,-41.3333 95.75,-32.6667 " stroke="#418565" fill="none"></polyline><path d="M95.75,-32.6667C95.75,-28.3333 100.083,-24 104.417,-24" stroke="#418565" fill="none"></path><polyline points="104.417,-24 197.583,-24 " stroke="#418565" fill="none"></polyline><path d="M197.583,-24C201.917,-24 206.25,-28.3333 206.25,-32.6667" stroke="#418565" fill="none"></path><polyline points="206.25,-32.6667 206.25,-41.3333 " stroke="#418565" fill="none"></polyline><path d="M206.25,-41.3333C206.25,-45.6667 201.917,-50 197.583,-50" stroke="#418565" fill="none"></path><image xlink:href="../../../../lib/class_diagram.png" y="-45" x="106" preserveAspectRatio="xMinYMin meet" height="16px" width="16px"></image><text fill="#ffffff" font-size="8.00" font-family="Source Code Pro" y="-35.6" x="128" text-anchor="start">PiKillSwitch</text></a></g><!-- node1 --><g class="node trait" id="graph1_1"><a xlink:title="com.workflowfm.pew.stream.PiSwitch" xlink:href="PiSwitch.html#inheritance-diagram"><polygon points="81.3333,-112 8.66667,-112 0,-103.333 0,-94.6667 8.66667,-86 81.3333,-86 90,-94.6667 90,-103.333 81.3333,-112" stroke="#2e6d82" fill="#2e6d82"></polygon><path d="M8.66667,-112C4.33333,-112 0,-107.667 0,-103.333" stroke="#2e6d82" fill="#2e6d82"></path><path d="M0,-94.6667C0,-90.3333 4.33333,-86 8.66667,-86" stroke="#2e6d82" fill="#2e6d82"></path><path d="M81.3333,-86C85.6667,-86 90,-90.3333 90,-94.6667" stroke="#2e6d82" fill="#2e6d82"></path><path d="M90,-103.333C90,-107.667 85.6667,-112 81.3333,-112" stroke="#2e6d82" fill="#2e6d82"></path><polyline points="81.3333,-112 8.66667,-112 " stroke="#2e6d82" fill="none"></polyline><path d="M8.66667,-112C4.33333,-112 0,-107.667 0,-103.333" stroke="#2e6d82" fill="none"></path><polyline points="0,-103.333 0,-94.6667 " stroke="#2e6d82" fill="none"></polyline><path d="M0,-94.6667C0,-90.3333 4.33333,-86 8.66667,-86" stroke="#2e6d82" fill="none"></path><polyline points="8.66667,-86 81.3333,-86 " stroke="#2e6d82" fill="none"></polyline><path d="M81.3333,-86C85.6667,-86 90,-90.3333 90,-94.6667" stroke="#2e6d82" fill="none"></path><polyline points="90,-94.6667 90,-103.333 " stroke="#2e6d82" fill="none"></polyline><path d="M90,-103.333C90,-107.667 85.6667,-112 81.3333,-112" stroke="#2e6d82" fill="none"></path><image xlink:href="../../../../lib/trait_diagram.png" y="-107" x="10" preserveAspectRatio="xMinYMin meet" height="16px" width="16px"></image><text fill="#ffffff" font-size="8.00" font-family="Source Code Pro" y="-97.6" x="32" text-anchor="start">PiSwitch</text></a></g><!-- node1&#45;&gt;node0 --><g class="edge inheritance" id="graph1_1_0"><a xlink:title="PiKillSwitch is a subtype of PiSwitch"><path d="M72.7502,-82.2924C90.5117,-72.2386 113.21,-59.3904 129.581,-50.1238" stroke="#d4d4d4" fill="none"></path><polygon points="71.3356,-80.2777 66.4507,-85.8581 73.7494,-84.542 71.3356,-80.2777" stroke="#d4d4d4" fill="none"></polygon></a></g><!-- node2 --><g class="node trait" id="graph1_2"><a xlink:title="scala.Product"><polygon points="184.583,-112 117.417,-112 108.75,-103.333 108.75,-94.6667 117.417,-86 184.583,-86 193.25,-94.6667 193.25,-103.333 184.583,-112" stroke="#2e6d82" fill="#2e6d82"></polygon><path d="M117.417,-112C113.083,-112 108.75,-107.667 108.75,-103.333" stroke="#2e6d82" fill="#2e6d82"></path><path d="M108.75,-94.6667C108.75,-90.3333 113.083,-86 117.417,-86" stroke="#2e6d82" fill="#2e6d82"></path><path d="M184.583,-86C188.917,-86 193.25,-90.3333 193.25,-94.6667" stroke="#2e6d82" fill="#2e6d82"></path><path d="M193.25,-103.333C193.25,-107.667 188.917,-112 184.583,-112" stroke="#2e6d82" fill="#2e6d82"></path><polyline points="184.583,-112 117.417,-112 " stroke="#2e6d82" fill="none"></polyline><path d="M117.417,-112C113.083,-112 108.75,-107.667 108.75,-103.333" stroke="#2e6d82" fill="none"></path><polyline points="108.75,-103.333 108.75,-94.6667 " stroke="#2e6d82" fill="none"></polyline><path d="M108.75,-94.6667C108.75,-90.3333 113.083,-86 117.417,-86" stroke="#2e6d82" fill="none"></path><polyline points="117.417,-86 184.583,-86 " stroke="#2e6d82" fill="none"></polyline><path d="M184.583,-86C188.917,-86 193.25,-90.3333 193.25,-94.6667" stroke="#2e6d82" fill="none"></path><polyline points="193.25,-94.6667 193.25,-103.333 " stroke="#2e6d82" fill="none"></polyline><path d="M193.25,-103.333C193.25,-107.667 188.917,-112 184.583,-112" stroke="#2e6d82" fill="none"></path><image xlink:href="../../../../lib/trait_diagram.png" y="-107" x="119" preserveAspectRatio="xMinYMin meet" height="16px" width="16px"></image><text fill="#ffffff" font-size="8.00" font-family="Source Code Pro" y="-97.6" x="141" text-anchor="start">Product</text></a></g><!-- node2&#45;&gt;node0 --><g class="edge inheritance" id="graph1_2_0"><a xlink:title="PiKillSwitch is a subtype of Product"><path d="M151,-78.7534C151,-69.3549 151,-58.3336 151,-50.1238" stroke="#d4d4d4" fill="none"></path><polygon points="148.55,-78.8581 151,-85.8581 153.45,-78.8581 148.55,-78.8581" stroke="#d4d4d4" fill="none"></polygon></a></g><!-- node3 --><g class="node trait" id="graph1_3"><a xlink:title="scala.Serializable"><polygon points="313.583,-112 220.417,-112 211.75,-103.333 211.75,-94.6667 220.417,-86 313.583,-86 322.25,-94.6667 322.25,-103.333 313.583,-112" stroke="#2e6d82" fill="#2e6d82"></polygon><path d="M220.417,-112C216.083,-112 211.75,-107.667 211.75,-103.333" stroke="#2e6d82" fill="#2e6d82"></path><path d="M211.75,-94.6667C211.75,-90.3333 216.083,-86 220.417,-86" stroke="#2e6d82" fill="#2e6d82"></path><path d="M313.583,-86C317.917,-86 322.25,-90.3333 322.25,-94.6667" stroke="#2e6d82" fill="#2e6d82"></path><path d="M322.25,-103.333C322.25,-107.667 317.917,-112 313.583,-112" stroke="#2e6d82" fill="#2e6d82"></path><polyline points="313.583,-112 220.417,-112 " stroke="#2e6d82" fill="none"></polyline><path d="M220.417,-112C216.083,-112 211.75,-107.667 211.75,-103.333" stroke="#2e6d82" fill="none"></path><polyline points="211.75,-103.333 211.75,-94.6667 " stroke="#2e6d82" fill="none"></polyline><path d="M211.75,-94.6667C211.75,-90.3333 216.083,-86 220.417,-86" stroke="#2e6d82" fill="none"></path><polyline points="220.417,-86 313.583,-86 " stroke="#2e6d82" fill="none"></polyline><path d="M313.583,-86C317.917,-86 322.25,-90.3333 322.25,-94.6667" stroke="#2e6d82" fill="none"></path><polyline points="322.25,-94.6667 322.25,-103.333 " stroke="#2e6d82" fill="none"></polyline><path d="M322.25,-103.333C322.25,-107.667 317.917,-112 313.583,-112" stroke="#2e6d82" fill="none"></path><image xlink:href="../../../../lib/trait_diagram.png" y="-107" x="222" preserveAspectRatio="xMinYMin meet" height="16px" width="16px"></image><text fill="#ffffff" font-size="8.00" font-family="Source Code Pro" y="-97.6" x="244" text-anchor="start">Serializable</text></a></g><!-- node3&#45;&gt;node0 --><g class="edge inheritance" id="graph1_3_0"><a xlink:title="PiKillSwitch is a subtype of Serializable"><path d="M237.142,-82.5563C217.631,-72.4643 192.512,-59.4716 174.439,-50.1238" stroke="#d4d4d4" fill="none"></path><polygon points="236.183,-84.8182 243.526,-85.8581 238.434,-80.466 236.183,-84.8182" stroke="#d4d4d4" fill="none"></polygon></a></g></g></svg></div>
+                <div class="diagram" id="inheritance-diagram"><svg class="class-diagram" id="graph1" viewBox="0.00 0.00 204.00 158.00" height="158pt" width="204pt" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><g transform="scale(1 1) rotate(0) translate(4 154)" class="graph" id="graph1"><polygon points="-4,5 -4,-154 201,-154 201,5 -4,5" stroke="white" fill="white"></polygon><g class="cluster" id="graph2"></g><g class="cluster" id="graph3"></g><!-- node0 --><g class="node this trait" id="graph1_0"><a xlink:title="com.workflowfm.pew.stream.AkkaPiObservable (this trait)" xlink:href="#inheritance-diagram"><polygon points="163.333,-88 32.6667,-88 24,-79.3333 24,-70.6667 32.6667,-62 163.333,-62 172,-70.6667 172,-79.3333 163.333,-88" stroke="#2e6d82" fill="#2e6d82"></polygon><path d="M32.6667,-88C28.3333,-88 24,-83.6667 24,-79.3333" stroke="#2e6d82" fill="#2e6d82"></path><path d="M24,-70.6667C24,-66.3333 28.3333,-62 32.6667,-62" stroke="#2e6d82" fill="#2e6d82"></path><path d="M163.333,-62C167.667,-62 172,-66.3333 172,-70.6667" stroke="#2e6d82" fill="#2e6d82"></path><path d="M172,-79.3333C172,-83.6667 167.667,-88 163.333,-88" stroke="#2e6d82" fill="#2e6d82"></path><polyline points="163.333,-88 32.6667,-88 " stroke="#2e6d82" fill="none"></polyline><path d="M32.6667,-88C28.3333,-88 24,-83.6667 24,-79.3333" stroke="#2e6d82" fill="none"></path><polyline points="24,-79.3333 24,-70.6667 " stroke="#2e6d82" fill="none"></polyline><path d="M24,-70.6667C24,-66.3333 28.3333,-62 32.6667,-62" stroke="#2e6d82" fill="none"></path><polyline points="32.6667,-62 163.333,-62 " stroke="#2e6d82" fill="none"></polyline><path d="M163.333,-62C167.667,-62 172,-66.3333 172,-70.6667" stroke="#2e6d82" fill="none"></path><polyline points="172,-70.6667 172,-79.3333 " stroke="#2e6d82" fill="none"></polyline><path d="M172,-79.3333C172,-83.6667 167.667,-88 163.333,-88" stroke="#2e6d82" fill="none"></path><image xlink:href="../../../../lib/trait_diagram.png" y="-83" x="34" preserveAspectRatio="xMinYMin meet" height="16px" width="16px"></image><text fill="#ffffff" font-size="8.00" font-family="Source Code Pro" y="-73.6" x="56" text-anchor="start">AkkaPiObservable[T]</text></a></g><!-- node1 --><g class="node class" id="graph1_1"><a xlink:title="com.workflowfm.pew.execution.AkkaExecutor" xlink:href="../execution/AkkaExecutor.html#inheritance-diagram"><polygon points="144.583,-26 51.4167,-26 42.75,-17.3333 42.75,-8.66667 51.4167,-0 144.583,-0 153.25,-8.66667 153.25,-17.3333 144.583,-26" stroke="#418565" fill="#418565"></polygon><path d="M51.4167,-26C47.0833,-26 42.75,-21.6667 42.75,-17.3333" stroke="#418565" fill="#418565"></path><path d="M42.75,-8.66667C42.75,-4.33333 47.0833,-0 51.4167,-0" stroke="#418565" fill="#418565"></path><path d="M144.583,-0C148.917,-0 153.25,-4.33333 153.25,-8.66667" stroke="#418565" fill="#418565"></path><path d="M153.25,-17.3333C153.25,-21.6667 148.917,-26 144.583,-26" stroke="#418565" fill="#418565"></path><polyline points="144.583,-26 51.4167,-26 " stroke="#418565" fill="none"></polyline><path d="M51.4167,-26C47.0833,-26 42.75,-21.6667 42.75,-17.3333" stroke="#418565" fill="none"></path><polyline points="42.75,-17.3333 42.75,-8.66667 " stroke="#418565" fill="none"></polyline><path d="M42.75,-8.66667C42.75,-4.33333 47.0833,-0 51.4167,-0" stroke="#418565" fill="none"></path><polyline points="51.4167,-0 144.583,-0 " stroke="#418565" fill="none"></polyline><path d="M144.583,-0C148.917,-0 153.25,-4.33333 153.25,-8.66667" stroke="#418565" fill="none"></path><polyline points="153.25,-8.66667 153.25,-17.3333 " stroke="#418565" fill="none"></polyline><path d="M153.25,-17.3333C153.25,-21.6667 148.917,-26 144.583,-26" stroke="#418565" fill="none"></path><image xlink:href="../../../../lib/class_diagram.png" y="-21" x="53" preserveAspectRatio="xMinYMin meet" height="16px" width="16px"></image><text fill="#ffffff" font-size="8.00" font-family="Source Code Pro" y="-11.6" x="75" text-anchor="start">AkkaExecutor</text></a></g><!-- node0&#45;&gt;node1 --><g class="edge inheritance" id="graph1_0_1"><a xlink:title="AkkaExecutor is a subtype of AkkaPiObservable[T]"><path d="M98,-54.7534C98,-45.3549 98,-34.3336 98,-26.1238" stroke="#d4d4d4" fill="none"></path><polygon points="95.5501,-54.8581 98,-61.8581 100.45,-54.8581 95.5501,-54.8581" stroke="#d4d4d4" fill="none"></polygon></a></g><!-- node2 --><g class="node trait" id="graph1_2"><a xlink:title="com.workflowfm.pew.stream.PiObservable" xlink:href="PiObservable.html#inheritance-diagram"><polygon points="152.583,-150 43.4167,-150 34.75,-141.333 34.75,-132.667 43.4167,-124 152.583,-124 161.25,-132.667 161.25,-141.333 152.583,-150" stroke="#2e6d82" fill="#2e6d82"></polygon><path d="M43.4167,-150C39.0833,-150 34.75,-145.667 34.75,-141.333" stroke="#2e6d82" fill="#2e6d82"></path><path d="M34.75,-132.667C34.75,-128.333 39.0833,-124 43.4167,-124" stroke="#2e6d82" fill="#2e6d82"></path><path d="M152.583,-124C156.917,-124 161.25,-128.333 161.25,-132.667" stroke="#2e6d82" fill="#2e6d82"></path><path d="M161.25,-141.333C161.25,-145.667 156.917,-150 152.583,-150" stroke="#2e6d82" fill="#2e6d82"></path><polyline points="152.583,-150 43.4167,-150 " stroke="#2e6d82" fill="none"></polyline><path d="M43.4167,-150C39.0833,-150 34.75,-145.667 34.75,-141.333" stroke="#2e6d82" fill="none"></path><polyline points="34.75,-141.333 34.75,-132.667 " stroke="#2e6d82" fill="none"></polyline><path d="M34.75,-132.667C34.75,-128.333 39.0833,-124 43.4167,-124" stroke="#2e6d82" fill="none"></path><polyline points="43.4167,-124 152.583,-124 " stroke="#2e6d82" fill="none"></polyline><path d="M152.583,-124C156.917,-124 161.25,-128.333 161.25,-132.667" stroke="#2e6d82" fill="none"></path><polyline points="161.25,-132.667 161.25,-141.333 " stroke="#2e6d82" fill="none"></polyline><path d="M161.25,-141.333C161.25,-145.667 156.917,-150 152.583,-150" stroke="#2e6d82" fill="none"></path><image xlink:href="../../../../lib/trait_diagram.png" y="-145" x="45" preserveAspectRatio="xMinYMin meet" height="16px" width="16px"></image><text fill="#ffffff" font-size="8.00" font-family="Source Code Pro" y="-135.6" x="67" text-anchor="start">PiObservable[T]</text></a></g><!-- node2&#45;&gt;node0 --><g class="edge inheritance" id="graph1_2_0"><a xlink:title="AkkaPiObservable[T] is a subtype of PiObservable[T]"><path d="M98,-116.753C98,-107.355 98,-96.3336 98,-88.1238" stroke="#d4d4d4" fill="none"></path><polygon points="95.5501,-116.858 98,-123.858 100.45,-116.858 95.5501,-116.858" stroke="#d4d4d4" fill="none"></polygon></a></g></g></svg></div>
                 <div id="diagram-controls" class="hiddenContent">
                   <button id="diagram-zoom-out" class="diagram-btn"><i class="material-icons"></i></button>
                   <button id="diagram-zoom-in" class="diagram-btn"><i class="material-icons"></i></button>
@@ -269,7 +278,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="com.workflowfm.pew.stream.PiKillSwitch"><span>PiKillSwitch</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.Product"><span>Product</span></li><li class="in" name="scala.Equals"><span>Equals</span></li><li class="in" name="com.workflowfm.pew.stream.PiSwitch"><span>PiSwitch</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="com.workflowfm.pew.stream.AkkaPiObservable"><span>AkkaPiObservable</span></li><li class="in" name="com.workflowfm.pew.stream.PiObservable"><span>PiObservable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
                   <span class="filtertype">Implicitly<br />
@@ -292,38 +301,70 @@
 
       <div id="template">
         <div id="allMembers">
-        <div id="constructors" class="members">
-              <h3>Instance Constructors</h3>
-              <ol><li name="com.workflowfm.pew.stream.PiKillSwitch#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(switch:uk.ac.ed.inf.ppapapan.subakka.SubscriptionSwitch):com.workflowfm.pew.stream.PiKillSwitch"></a><a id="&lt;init&gt;:PiKillSwitch"></a>
+        
+
+        
+
+        <div class="values members">
+              <h3>Abstract Value Members</h3>
+              <ol><li name="com.workflowfm.pew.stream.AkkaPiObservable#publisher" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="publisher:akka.actor.ActorRef"></a><a id="publisher:ActorRef"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#&lt;init&gt;(switch:uk.ac.ed.inf.ppapapan.subakka.SubscriptionSwitch):com.workflowfm.pew.stream.PiKillSwitch" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#publisher:akka.actor.ActorRef" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">new</span>
+        <span class="modifier">abstract </span>
+        <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">PiKillSwitch</span><span class="params">(<span name="switch">switch: <span class="extype" name="uk.ac.ed.inf.ppapapan.subakka.SubscriptionSwitch">SubscriptionSwitch</span></span>)</span>
+        <span class="name">publisher</span><span class="result">: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>
+      </span>
+      
+      
+    </li><li name="com.workflowfm.pew.stream.AkkaPiObservable#system" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="system:akka.actor.ActorSystem"></a><a id="system:ActorSystem"></a>
+      <span class="permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#system:akka.actor.ActorSystem" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit abstract </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">system</span><span class="result">: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorSystem.html#akka.actor.ActorSystem" class="extype" name="akka.actor.ActorSystem">ActorSystem</a></span>
+      </span>
+      
+      
+    </li><li name="com.workflowfm.pew.stream.AkkaPiObservable#timeout" visbl="pub" class="indented0 " data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="timeout:scala.concurrent.duration.FiniteDuration"></a><a id="timeout:FiniteDuration"></a>
+      <span class="permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#timeout:scala.concurrent.duration.FiniteDuration" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit abstract </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">timeout</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/concurrent/duration/FiniteDuration.html#scala.concurrent.duration.FiniteDuration" class="extype" name="scala.concurrent.duration.FiniteDuration">FiniteDuration</a></span>
       </span>
       
       
     </li></ol>
             </div>
 
-        
-
-        
-
         <div class="values members">
-              <h3>Value Members</h3>
+              <h3>Concrete Value Members</h3>
               <ol>
                 <li name="scala.AnyRef#!=" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="!=(x$1:Any):Boolean"></a><a id="!=(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#!=(x$1:Any):Boolean" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#!=(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -339,7 +380,7 @@
     </li><li name="scala.AnyRef###" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="##():Int"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html###():Int" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html###():Int" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -355,7 +396,7 @@
     </li><li name="scala.Predef.any2stringadd#+" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="+(other:String):String"></a><a id="+(String):String"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#+(other:String):String" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#+(other:String):String" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -368,14 +409,14 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt class="implicit">Implicit</dt><dd>
-            This member is added by an implicit conversion from <a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a> to
-            <span class="extype" name="scala.Predef.any2stringadd">any2stringadd</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a>] performed by method any2stringadd in scala.Predef.
+            This member is added by an implicit conversion from <a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>] to
+            <span class="extype" name="scala.Predef.any2stringadd">any2stringadd</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]] performed by method any2stringadd in scala.Predef.
             
           </dd><dt>Definition Classes</dt><dd>any2stringadd</dd></dl></div>
     </li><li name="scala.Predef.ArrowAssoc#-&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="-&gt;[B](y:B):(A,B)"></a><a id="-&gt;[B](B):(PiKillSwitch,B)"></a>
+      <a id="-&gt;[B](y:B):(A,B)"></a><a id="-&gt;[B](B):(AkkaPiObservable[T],B)"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#-&gt;[B](y:B):(A,B)" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#-&gt;[B](y:B):(A,B)" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -384,12 +425,12 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span title="gt4s: $minus$greater" class="implicit">-&gt;</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="y">y: <span class="extype" name="scala.Predef.ArrowAssoc.-&gt;.B">B</span></span>)</span><span class="result">: (<a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a>, <span class="extype" name="scala.Predef.ArrowAssoc.-&gt;.B">B</span>)</span>
+        <span title="gt4s: $minus$greater" class="implicit">-&gt;</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="y">y: <span class="extype" name="scala.Predef.ArrowAssoc.-&gt;.B">B</span></span>)</span><span class="result">: (<a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>], <span class="extype" name="scala.Predef.ArrowAssoc.-&gt;.B">B</span>)</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt class="implicit">Implicit</dt><dd>
-            This member is added by an implicit conversion from <a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a> to
-            <span class="extype" name="scala.Predef.ArrowAssoc">ArrowAssoc</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a>] performed by method ArrowAssoc in scala.Predef.
+            This member is added by an implicit conversion from <a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>] to
+            <span class="extype" name="scala.Predef.ArrowAssoc">ArrowAssoc</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]] performed by method ArrowAssoc in scala.Predef.
             
           </dd><dt>Definition Classes</dt><dd>ArrowAssoc</dd><dt>Annotations</dt><dd>
                 <span class="name">@inline</span><span class="args">()</span>
@@ -398,7 +439,7 @@
     </li><li name="scala.AnyRef#==" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="==(x$1:Any):Boolean"></a><a id="==(Any):Boolean"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#==(x$1:Any):Boolean" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#==(x$1:Any):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -414,7 +455,7 @@
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#asInstanceOf[T0]:T0" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#asInstanceOf[T0]:T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -430,7 +471,7 @@
     </li><li name="scala.AnyRef#clone" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a><a id="clone():AnyRef"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#clone():Object" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#clone():Object" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -452,9 +493,9 @@
               
         </dd></dl></div>
     </li><li name="scala.Predef.Ensuring#ensuring" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ensuring(cond:A=&gt;Boolean,msg:=&gt;Any):A"></a><a id="ensuring((PiKillSwitch)⇒Boolean,⇒Any):PiKillSwitch"></a>
+      <a id="ensuring(cond:A=&gt;Boolean,msg:=&gt;Any):A"></a><a id="ensuring((AkkaPiObservable[T])⇒Boolean,⇒Any):AkkaPiObservable[T]"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#ensuring(cond:A=&gt;Boolean,msg:=&gt;Any):A" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#ensuring(cond:A=&gt;Boolean,msg:=&gt;Any):A" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -463,18 +504,18 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="implicit">ensuring</span><span class="params">(<span name="cond">cond: (<a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a>) ⇒ <a href="https://www.scala-lang.org/api/2.12.12/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>, <span name="msg">msg: ⇒ <a href="https://www.scala-lang.org/api/2.12.12/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a></span>
+        <span class="implicit">ensuring</span><span class="params">(<span name="cond">cond: (<a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]) ⇒ <a href="https://www.scala-lang.org/api/2.12.12/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>, <span name="msg">msg: ⇒ <a href="https://www.scala-lang.org/api/2.12.12/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt class="implicit">Implicit</dt><dd>
-            This member is added by an implicit conversion from <a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a> to
-            <span class="extype" name="scala.Predef.Ensuring">Ensuring</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a>] performed by method Ensuring in scala.Predef.
+            This member is added by an implicit conversion from <a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>] to
+            <span class="extype" name="scala.Predef.Ensuring">Ensuring</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]] performed by method Ensuring in scala.Predef.
             
           </dd><dt>Definition Classes</dt><dd>Ensuring</dd></dl></div>
     </li><li name="scala.Predef.Ensuring#ensuring" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ensuring(cond:A=&gt;Boolean):A"></a><a id="ensuring((PiKillSwitch)⇒Boolean):PiKillSwitch"></a>
+      <a id="ensuring(cond:A=&gt;Boolean):A"></a><a id="ensuring((AkkaPiObservable[T])⇒Boolean):AkkaPiObservable[T]"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#ensuring(cond:A=&gt;Boolean):A" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#ensuring(cond:A=&gt;Boolean):A" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -483,18 +524,18 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="implicit">ensuring</span><span class="params">(<span name="cond">cond: (<a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a>) ⇒ <a href="https://www.scala-lang.org/api/2.12.12/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>)</span><span class="result">: <a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a></span>
+        <span class="implicit">ensuring</span><span class="params">(<span name="cond">cond: (<a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]) ⇒ <a href="https://www.scala-lang.org/api/2.12.12/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>)</span><span class="result">: <a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt class="implicit">Implicit</dt><dd>
-            This member is added by an implicit conversion from <a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a> to
-            <span class="extype" name="scala.Predef.Ensuring">Ensuring</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a>] performed by method Ensuring in scala.Predef.
+            This member is added by an implicit conversion from <a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>] to
+            <span class="extype" name="scala.Predef.Ensuring">Ensuring</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]] performed by method Ensuring in scala.Predef.
             
           </dd><dt>Definition Classes</dt><dd>Ensuring</dd></dl></div>
     </li><li name="scala.Predef.Ensuring#ensuring" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ensuring(cond:Boolean,msg:=&gt;Any):A"></a><a id="ensuring(Boolean,⇒Any):PiKillSwitch"></a>
+      <a id="ensuring(cond:Boolean,msg:=&gt;Any):A"></a><a id="ensuring(Boolean,⇒Any):AkkaPiObservable[T]"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#ensuring(cond:Boolean,msg:=&gt;Any):A" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#ensuring(cond:Boolean,msg:=&gt;Any):A" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -503,18 +544,18 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="implicit">ensuring</span><span class="params">(<span name="cond">cond: <a href="https://www.scala-lang.org/api/2.12.12/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>, <span name="msg">msg: ⇒ <a href="https://www.scala-lang.org/api/2.12.12/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a></span>
+        <span class="implicit">ensuring</span><span class="params">(<span name="cond">cond: <a href="https://www.scala-lang.org/api/2.12.12/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>, <span name="msg">msg: ⇒ <a href="https://www.scala-lang.org/api/2.12.12/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt class="implicit">Implicit</dt><dd>
-            This member is added by an implicit conversion from <a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a> to
-            <span class="extype" name="scala.Predef.Ensuring">Ensuring</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a>] performed by method Ensuring in scala.Predef.
+            This member is added by an implicit conversion from <a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>] to
+            <span class="extype" name="scala.Predef.Ensuring">Ensuring</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]] performed by method Ensuring in scala.Predef.
             
           </dd><dt>Definition Classes</dt><dd>Ensuring</dd></dl></div>
     </li><li name="scala.Predef.Ensuring#ensuring" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="ensuring(cond:Boolean):A"></a><a id="ensuring(Boolean):PiKillSwitch"></a>
+      <a id="ensuring(cond:Boolean):A"></a><a id="ensuring(Boolean):AkkaPiObservable[T]"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#ensuring(cond:Boolean):A" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#ensuring(cond:Boolean):A" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -523,18 +564,18 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="implicit">ensuring</span><span class="params">(<span name="cond">cond: <a href="https://www.scala-lang.org/api/2.12.12/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>)</span><span class="result">: <a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a></span>
+        <span class="implicit">ensuring</span><span class="params">(<span name="cond">cond: <a href="https://www.scala-lang.org/api/2.12.12/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>)</span><span class="result">: <a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt class="implicit">Implicit</dt><dd>
-            This member is added by an implicit conversion from <a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a> to
-            <span class="extype" name="scala.Predef.Ensuring">Ensuring</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a>] performed by method Ensuring in scala.Predef.
+            This member is added by an implicit conversion from <a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>] to
+            <span class="extype" name="scala.Predef.Ensuring">Ensuring</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]] performed by method Ensuring in scala.Predef.
             
           </dd><dt>Definition Classes</dt><dd>Ensuring</dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a><a id="eq(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#eq(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#eq(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -547,10 +588,26 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a><a id="equals(Any):Boolean"></a>
+      <span class="permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#equals(x$1:Any):Boolean" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <a href="https://www.scala-lang.org/api/2.12.12/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#finalize():Unit" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#finalize():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -572,7 +629,7 @@
     </li><li name="scala.Predef.StringFormat#formatted" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="formatted(fmtstr:String):String"></a><a id="formatted(String):String"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#formatted(fmtstr:String):String" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#formatted(fmtstr:String):String" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -585,8 +642,8 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt class="implicit">Implicit</dt><dd>
-            This member is added by an implicit conversion from <a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a> to
-            <span class="extype" name="scala.Predef.StringFormat">StringFormat</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a>] performed by method StringFormat in scala.Predef.
+            This member is added by an implicit conversion from <a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>] to
+            <span class="extype" name="scala.Predef.StringFormat">StringFormat</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]] performed by method StringFormat in scala.Predef.
             
           </dd><dt>Definition Classes</dt><dd>StringFormat</dd><dt>Annotations</dt><dd>
                 <span class="name">@inline</span><span class="args">()</span>
@@ -595,7 +652,7 @@
     </li><li name="scala.AnyRef#getClass" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#getClass():Class[_]" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#getClass():Class[_]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -611,10 +668,29 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <span class="permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#hashCode():Int" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Int.html#scala.Int" class="extype" name="scala.Int">Int</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd><dt>Annotations</dt><dd>
+                <span class="name">@native</span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#isInstanceOf[T0]:Boolean" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#isInstanceOf[T0]:Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -630,7 +706,7 @@
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#ne(x$1:AnyRef):Boolean" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#ne(x$1:AnyRef):Boolean" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -646,7 +722,7 @@
     </li><li name="scala.AnyRef#notify" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#notify():Unit" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#notify():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -665,7 +741,7 @@
     </li><li name="scala.AnyRef#notifyAll" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notifyAll():Unit"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#notifyAll():Unit" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#notifyAll():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -681,10 +757,10 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="com.workflowfm.pew.stream.PiKillSwitch#stop" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="stop:Unit"></a>
+    </li><li name="com.workflowfm.pew.stream.AkkaPiObservable#subscribe" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="subscribe(handler:com.workflowfm.pew.stream.PiEventHandler[T]):scala.concurrent.Future[com.workflowfm.pew.stream.PiSwitch]"></a><a id="subscribe(PiEventHandler[T]):Future[PiSwitch]"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#stop:Unit" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#subscribe(handler:com.workflowfm.pew.stream.PiEventHandler[T]):scala.concurrent.Future[com.workflowfm.pew.stream.PiSwitch]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -693,30 +769,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">stop</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+        <span class="name">subscribe</span><span class="params">(<span name="handler">handler: <a href="PiEventHandler.html" class="extype" name="com.workflowfm.pew.stream.PiEventHandler">PiEventHandler</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]</span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/concurrent/Future.html#scala.concurrent.Future" class="extype" name="scala.concurrent.Future">Future</a>[<a href="PiSwitch.html" class="extype" name="com.workflowfm.pew.stream.PiSwitch">PiSwitch</a>]</span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a> → <a href="PiSwitch.html" class="extype" name="com.workflowfm.pew.stream.PiSwitch">PiSwitch</a></dd></dl></div>
-    </li><li name="com.workflowfm.pew.stream.PiKillSwitch#switch" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="switch:uk.ac.ed.inf.ppapapan.subakka.SubscriptionSwitch"></a><a id="switch:SubscriptionSwitch"></a>
-      <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#switch:uk.ac.ed.inf.ppapapan.subakka.SubscriptionSwitch" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">switch</span><span class="result">: <span class="extype" name="uk.ac.ed.inf.ppapapan.subakka.SubscriptionSwitch">SubscriptionSwitch</span></span>
-      </span>
-      
-      
+      <p class="shortcomment cmt">Subscribes a <a href="PiEventHandler.html" class="extype" name="com.workflowfm.pew.stream.PiEventHandler">com.workflowfm.pew.stream.PiEventHandler</a> to observe.</p><div class="fullcomment"><div class="comment cmt"><p>Subscribes a <a href="PiEventHandler.html" class="extype" name="com.workflowfm.pew.stream.PiEventHandler">com.workflowfm.pew.stream.PiEventHandler</a> to observe.</p></div><dl class="paramcmts block"><dt class="param">handler</dt><dd class="cmt"><p>the handler to subscribe</p></dd><dt>returns</dt><dd class="cmt"><p>the <a href="PiSwitch.html" class="extype" name="com.workflowfm.pew.stream.PiSwitch">com.workflowfm.pew.stream.PiSwitch</a> that allows us to stop/unsubscribe the subscribed handler</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a> → <a href="PiObservable.html" class="extype" name="com.workflowfm.pew.stream.PiObservable">PiObservable</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a><a id="synchronized[T0](⇒T0):T0"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#synchronized[T0](x$1:=&gt;T0):T0" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -729,10 +789,26 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <span class="permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#toString():String" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#wait():Unit" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#wait():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -754,7 +830,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long,x$2:Int):Unit"></a><a id="wait(Long,Int):Unit"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#wait(x$1:Long,x$2:Int):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -776,7 +852,7 @@
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait(x$1:Long):Unit"></a><a id="wait(Long):Unit"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#wait(x$1:Long):Unit" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#wait(x$1:Long):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -798,9 +874,9 @@
               
         </dd></dl></div>
     </li><li name="scala.Predef.ArrowAssoc#→" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="→[B](y:B):(A,B)"></a><a id="→[B](B):(PiKillSwitch,B)"></a>
+      <a id="→[B](y:B):(A,B)"></a><a id="→[B](B):(AkkaPiObservable[T],B)"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiKillSwitch.html#→[B](y:B):(A,B)" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/AkkaPiObservable.html#→[B](y:B):(A,B)" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -809,12 +885,12 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span title="gt4s: $u2192" class="implicit">→</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="y">y: <span class="extype" name="scala.Predef.ArrowAssoc.→.B">B</span></span>)</span><span class="result">: (<a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a>, <span class="extype" name="scala.Predef.ArrowAssoc.→.B">B</span>)</span>
+        <span title="gt4s: $u2192" class="implicit">→</span><span class="tparams">[<span name="B">B</span>]</span><span class="params">(<span name="y">y: <span class="extype" name="scala.Predef.ArrowAssoc.→.B">B</span></span>)</span><span class="result">: (<a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>], <span class="extype" name="scala.Predef.ArrowAssoc.→.B">B</span>)</span>
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt class="implicit">Implicit</dt><dd>
-            This member is added by an implicit conversion from <a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a> to
-            <span class="extype" name="scala.Predef.ArrowAssoc">ArrowAssoc</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a>] performed by method ArrowAssoc in scala.Predef.
+            This member is added by an implicit conversion from <a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>] to
+            <span class="extype" name="scala.Predef.ArrowAssoc">ArrowAssoc</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]] performed by method ArrowAssoc in scala.Predef.
             
           </dd><dt>Definition Classes</dt><dd>ArrowAssoc</dd></dl></div>
     </li>
@@ -827,16 +903,8 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="scala.Serializable">
-              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.12/scala/Serializable.html#scala.Serializable" class="extype" name="scala.Serializable">Serializable</a></h3>
-            </div><div class="parent" name="java.io.Serializable">
-              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
-            </div><div class="parent" name="scala.Product">
-              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.12/scala/Product.html#scala.Product" class="extype" name="scala.Product">Product</a></h3>
-            </div><div class="parent" name="scala.Equals">
-              <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.12/scala/Equals.html#scala.Equals" class="extype" name="scala.Equals">Equals</a></h3>
-            </div><div class="parent" name="com.workflowfm.pew.stream.PiSwitch">
-              <h3>Inherited from <a href="PiSwitch.html" class="extype" name="com.workflowfm.pew.stream.PiSwitch">PiSwitch</a></h3>
+        <div class="parent" name="com.workflowfm.pew.stream.PiObservable">
+              <h3>Inherited from <a href="PiObservable.html" class="extype" name="com.workflowfm.pew.stream.PiObservable">PiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]</h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.12/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">
@@ -844,19 +912,19 @@
             </div>
         <div class="conversion" name="scala.Predef.any2stringadd">
               <h3>Inherited by implicit conversion any2stringadd from
-                <a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a> to <span class="extype" name="scala.Predef.any2stringadd">any2stringadd</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a>]
+                <a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>] to <span class="extype" name="scala.Predef.any2stringadd">any2stringadd</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]]
               </h3>
             </div><div class="conversion" name="scala.Predef.StringFormat">
               <h3>Inherited by implicit conversion StringFormat from
-                <a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a> to <span class="extype" name="scala.Predef.StringFormat">StringFormat</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a>]
+                <a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>] to <span class="extype" name="scala.Predef.StringFormat">StringFormat</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]]
               </h3>
             </div><div class="conversion" name="scala.Predef.Ensuring">
               <h3>Inherited by implicit conversion Ensuring from
-                <a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a> to <span class="extype" name="scala.Predef.Ensuring">Ensuring</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a>]
+                <a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>] to <span class="extype" name="scala.Predef.Ensuring">Ensuring</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]]
               </h3>
             </div><div class="conversion" name="scala.Predef.ArrowAssoc">
               <h3>Inherited by implicit conversion ArrowAssoc from
-                <a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a> to <span class="extype" name="scala.Predef.ArrowAssoc">ArrowAssoc</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.PiKillSwitch">PiKillSwitch</a>]
+                <a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>] to <span class="extype" name="scala.Predef.ArrowAssoc">ArrowAssoc</span>[<a href="" class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable">AkkaPiObservable</a>[<span class="extype" name="com.workflowfm.pew.stream.AkkaPiObservable.T">T</span>]]
               </h3>
             </div>
         </div>

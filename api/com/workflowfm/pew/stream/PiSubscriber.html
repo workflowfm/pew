@@ -135,6 +135,18 @@
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../index.html" class="extype" name="com.workflowfm.pew">pew</a></dd></dl></div>
     </li><li class="current-entities indented4">
                         <span class="separator"></span>
+                        <a class="trait" href="AkkaPiObservable.html" title=""></a>
+                        <a href="AkkaPiObservable.html" title="">AkkaPiObservable</a>
+                      </li><li class="current-entities indented4">
+                        <a class="object" href="AkkaPiStream$.html" title=""></a>
+                        <a class="trait" href="AkkaPiStream.html" title=""></a>
+                        <a href="AkkaPiStream.html" title="">AkkaPiStream</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
+                        <a class="class" href="AkkaPiSwitch.html" title=""></a>
+                        <a href="AkkaPiSwitch.html" title="">AkkaPiSwitch</a>
+                      </li><li class="current-entities indented4">
+                        <span class="separator"></span>
                         <a class="class" href="CounterHandler.html" title=""></a>
                         <a href="CounterHandler.html" title="">CounterHandler</a>
                       </li><li class="current-entities indented4">
@@ -159,10 +171,6 @@
                         <a href="PiEventHandlerFactory.html" title="A factory that generates a handler that is related to a particular workflow ID.">PiEventHandlerFactory</a>
                       </li><li class="current-entities indented4">
                         <span class="separator"></span>
-                        <a class="class" href="PiKillSwitch.html" title="A wrapper of akka.stream.KillSwitch to stop PiEventHandlers."></a>
-                        <a href="PiKillSwitch.html" title="A wrapper of akka.stream.KillSwitch to stop PiEventHandlers.">PiKillSwitch</a>
-                      </li><li class="current-entities indented4">
-                        <span class="separator"></span>
                         <a class="trait" href="PiObservable.html" title="Anything that can be observed by a PiEventHandler."></a>
                         <a href="PiObservable.html" title="Anything that can be observed by a PiEventHandler.">PiObservable</a>
                       </li><li class="current-entities indented4">
@@ -170,11 +178,7 @@
                         <a class="trait" href="PiPublisher.html" title="Has the ability to publish PiEvents."></a>
                         <a href="PiPublisher.html" title="Has the ability to publish PiEvents.">PiPublisher</a>
                       </li><li class="current-entities indented4">
-                        <span class="separator"></span>
-                        <a class="trait" href="PiStream.html" title="A PiSource that also implements PiPublisher with Akka Streams."></a>
-                        <a href="PiStream.html" title="A PiSource that also implements PiPublisher with Akka Streams.">PiStream</a>
-                      </li><li class="current-entities indented4">
-                        <span class="separator"></span>
+                        <a class="object" href="PiSubscriber$.html" title=""></a>
                         <a class="class" href="" title=""></a>
                         <a href="" title="">PiSubscriber</a>
                       </li><li class="current-entities indented4">
@@ -208,14 +212,16 @@
           <div id="content">
             <body class="class type">
       <div id="definition">
-        <div class="big-circle class">c</div>
+        <a href="PiSubscriber$.html" title="See companion object"><div class="big-circle class-companion-object">c</div></a>
         <p id="owner"><a href="../../../index.html" class="extype" name="com">com</a>.<a href="../../index.html" class="extype" name="com.workflowfm">workflowfm</a>.<a href="../index.html" class="extype" name="com.workflowfm.pew">pew</a>.<a href="index.html" class="extype" name="com.workflowfm.pew.stream">stream</a></p>
-        <h1>PiSubscriber<span class="permalink">
+        <h1><a href="PiSubscriber$.html" title="See companion object">PiSubscriber</a><span class="permalink">
       <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span></h1>
-        <h3><span class="morelinks"></span></h3>
+        <h3><span class="morelinks"><div>
+            Companion <a href="PiSubscriber$.html" title="See companion object">object PiSubscriber</a>
+          </div></span></h3>
       </div>
 
       <h4 id="signature" class="signature">
@@ -224,7 +230,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">PiSubscriber</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <span class="extype" name="uk.ac.ed.inf.ppapapan.subakka.Subscriber">Subscriber</span>[<a href="../PiEvent.html" class="extype" name="com.workflowfm.pew.PiEvent">PiEvent</a>[<span class="extype" name="com.workflowfm.pew.stream.PiSubscriber.T">T</span>]]</span>
+        <span class="name">PiSubscriber</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/Actor.html#akka.actor.Actor" class="extype" name="akka.actor.Actor">Actor</a></span>
       </span>
       </h4>
 
@@ -233,12 +239,12 @@
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><span class="extype" name="uk.ac.ed.inf.ppapapan.subakka.Subscriber">Subscriber</span>[<a href="../PiEvent.html" class="extype" name="com.workflowfm.pew.PiEvent">PiEvent</a>[<span class="extype" name="com.workflowfm.pew.stream.PiSubscriber.T">T</span>]], <a href="https://www.scala-lang.org/api/2.12.12/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.12/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/Actor.html#akka.actor.Actor" class="extype" name="akka.actor.Actor">Actor</a>, <a href="https://www.scala-lang.org/api/2.12.12/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.12/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div><div class="toggleContainer block diagram-container" id="inheritance-diagram-container">
                 <span class="toggle diagram-link">
                   Type Hierarchy
                 </span>
-                <div class="diagram" id="inheritance-diagram"><svg class="class-diagram" id="graph1" viewBox="0.00 0.00 184.00 120.00" height="120pt" width="184pt" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><g transform="scale(1 1) rotate(0) translate(4 116)" class="graph" id="graph1"><polygon points="-4,5 -4,-116 181,-116 181,5 -4,5" stroke="white" fill="white"></polygon><g class="cluster" id="graph2"></g><g class="cluster" id="graph3"></g><!-- node0 --><g class="node this class" id="graph1_0"><a xlink:title="com.workflowfm.pew.stream.PiSubscriber (this class)" xlink:href="#inheritance-diagram"><polygon points="142.583,-50 33.4167,-50 24.75,-41.3333 24.75,-32.6667 33.4167,-24 142.583,-24 151.25,-32.6667 151.25,-41.3333 142.583,-50" stroke="#418565" fill="#418565"></polygon><path d="M33.4167,-50C29.0833,-50 24.75,-45.6667 24.75,-41.3333" stroke="#418565" fill="#418565"></path><path d="M24.75,-32.6667C24.75,-28.3333 29.0833,-24 33.4167,-24" stroke="#418565" fill="#418565"></path><path d="M142.583,-24C146.917,-24 151.25,-28.3333 151.25,-32.6667" stroke="#418565" fill="#418565"></path><path d="M151.25,-41.3333C151.25,-45.6667 146.917,-50 142.583,-50" stroke="#418565" fill="#418565"></path><polyline points="142.583,-50 33.4167,-50 " stroke="#418565" fill="none"></polyline><path d="M33.4167,-50C29.0833,-50 24.75,-45.6667 24.75,-41.3333" stroke="#418565" fill="none"></path><polyline points="24.75,-41.3333 24.75,-32.6667 " stroke="#418565" fill="none"></polyline><path d="M24.75,-32.6667C24.75,-28.3333 29.0833,-24 33.4167,-24" stroke="#418565" fill="none"></path><polyline points="33.4167,-24 142.583,-24 " stroke="#418565" fill="none"></polyline><path d="M142.583,-24C146.917,-24 151.25,-28.3333 151.25,-32.6667" stroke="#418565" fill="none"></path><polyline points="151.25,-32.6667 151.25,-41.3333 " stroke="#418565" fill="none"></polyline><path d="M151.25,-41.3333C151.25,-45.6667 146.917,-50 142.583,-50" stroke="#418565" fill="none"></path><image xlink:href="../../../../lib/class_diagram.png" y="-45" x="35" preserveAspectRatio="xMinYMin meet" height="16px" width="16px"></image><text fill="#ffffff" font-size="8.00" font-family="Source Code Pro" y="-35.6" x="57" text-anchor="start">PiSubscriber[T]</text></a></g><!-- node1 --><g class="node trait" id="graph1_1"><a xlink:title="uk.ac.ed.inf.ppapapan.subakka.Subscriber"><polygon points="160.583,-112 15.4167,-112 6.75,-103.333 6.75,-94.6667 15.4167,-86 160.583,-86 169.25,-94.6667 169.25,-103.333 160.583,-112" stroke="#2e6d82" fill="#2e6d82"></polygon><path d="M15.4167,-112C11.0833,-112 6.75,-107.667 6.75,-103.333" stroke="#2e6d82" fill="#2e6d82"></path><path d="M6.75,-94.6667C6.75,-90.3333 11.0833,-86 15.4167,-86" stroke="#2e6d82" fill="#2e6d82"></path><path d="M160.583,-86C164.917,-86 169.25,-90.3333 169.25,-94.6667" stroke="#2e6d82" fill="#2e6d82"></path><path d="M169.25,-103.333C169.25,-107.667 164.917,-112 160.583,-112" stroke="#2e6d82" fill="#2e6d82"></path><polyline points="160.583,-112 15.4167,-112 " stroke="#2e6d82" fill="none"></polyline><path d="M15.4167,-112C11.0833,-112 6.75,-107.667 6.75,-103.333" stroke="#2e6d82" fill="none"></path><polyline points="6.75,-103.333 6.75,-94.6667 " stroke="#2e6d82" fill="none"></polyline><path d="M6.75,-94.6667C6.75,-90.3333 11.0833,-86 15.4167,-86" stroke="#2e6d82" fill="none"></path><polyline points="15.4167,-86 160.583,-86 " stroke="#2e6d82" fill="none"></polyline><path d="M160.583,-86C164.917,-86 169.25,-90.3333 169.25,-94.6667" stroke="#2e6d82" fill="none"></path><polyline points="169.25,-94.6667 169.25,-103.333 " stroke="#2e6d82" fill="none"></polyline><path d="M169.25,-103.333C169.25,-107.667 164.917,-112 160.583,-112" stroke="#2e6d82" fill="none"></path><image xlink:href="../../../../lib/trait_diagram.png" y="-107" x="17" preserveAspectRatio="xMinYMin meet" height="16px" width="16px"></image><text fill="#ffffff" font-size="8.00" font-family="Source Code Pro" y="-97.6" x="39" text-anchor="start">Subscriber[PiEvent[T]]</text></a></g><!-- node1&#45;&gt;node0 --><g class="edge inheritance" id="graph1_1_0"><a xlink:title="PiSubscriber[T] is a subtype of Subscriber[PiEvent[T]]"><path d="M88,-78.7534C88,-69.3549 88,-58.3336 88,-50.1238" stroke="#d4d4d4" fill="none"></path><polygon points="85.5501,-78.8581 88,-85.8581 90.4501,-78.8581 85.5501,-78.8581" stroke="#d4d4d4" fill="none"></polygon></a></g></g></svg></div>
+                <div class="diagram" id="inheritance-diagram"><svg class="class-diagram" id="graph1" viewBox="0.00 0.00 184.00 120.00" height="120pt" width="184pt" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"><g transform="scale(1 1) rotate(0) translate(4 116)" class="graph" id="graph1"><polygon points="-4,5 -4,-116 181,-116 181,5 -4,5" stroke="white" fill="white"></polygon><g class="cluster" id="graph2"></g><g class="cluster" id="graph3"></g><!-- node0 --><g class="node this class" id="graph1_0"><a xlink:title="com.workflowfm.pew.stream.PiSubscriber (this class)" xlink:href="#inheritance-diagram"><polygon points="142.583,-50 33.4167,-50 24.75,-41.3333 24.75,-32.6667 33.4167,-24 142.583,-24 151.25,-32.6667 151.25,-41.3333 142.583,-50" stroke="#418565" fill="#418565"></polygon><path d="M33.4167,-50C29.0833,-50 24.75,-45.6667 24.75,-41.3333" stroke="#418565" fill="#418565"></path><path d="M24.75,-32.6667C24.75,-28.3333 29.0833,-24 33.4167,-24" stroke="#418565" fill="#418565"></path><path d="M142.583,-24C146.917,-24 151.25,-28.3333 151.25,-32.6667" stroke="#418565" fill="#418565"></path><path d="M151.25,-41.3333C151.25,-45.6667 146.917,-50 142.583,-50" stroke="#418565" fill="#418565"></path><polyline points="142.583,-50 33.4167,-50 " stroke="#418565" fill="none"></polyline><path d="M33.4167,-50C29.0833,-50 24.75,-45.6667 24.75,-41.3333" stroke="#418565" fill="none"></path><polyline points="24.75,-41.3333 24.75,-32.6667 " stroke="#418565" fill="none"></polyline><path d="M24.75,-32.6667C24.75,-28.3333 29.0833,-24 33.4167,-24" stroke="#418565" fill="none"></path><polyline points="33.4167,-24 142.583,-24 " stroke="#418565" fill="none"></polyline><path d="M142.583,-24C146.917,-24 151.25,-28.3333 151.25,-32.6667" stroke="#418565" fill="none"></path><polyline points="151.25,-32.6667 151.25,-41.3333 " stroke="#418565" fill="none"></polyline><path d="M151.25,-41.3333C151.25,-45.6667 146.917,-50 142.583,-50" stroke="#418565" fill="none"></path><image xlink:href="../../../../lib/class_diagram.png" y="-45" x="35" preserveAspectRatio="xMinYMin meet" height="16px" width="16px"></image><text fill="#ffffff" font-size="8.00" font-family="Source Code Pro" y="-35.6" x="57" text-anchor="start">PiSubscriber[T]</text></a></g><!-- node1 --><g class="node trait" id="graph1_1"><a xlink:title="akka.actor.Actor"><polygon points="116.333,-112 59.6667,-112 51,-103.333 51,-94.6667 59.6667,-86 116.333,-86 125,-94.6667 125,-103.333 116.333,-112" stroke="#2e6d82" fill="#2e6d82"></polygon><path d="M59.6667,-112C55.3333,-112 51,-107.667 51,-103.333" stroke="#2e6d82" fill="#2e6d82"></path><path d="M51,-94.6667C51,-90.3333 55.3333,-86 59.6667,-86" stroke="#2e6d82" fill="#2e6d82"></path><path d="M116.333,-86C120.667,-86 125,-90.3333 125,-94.6667" stroke="#2e6d82" fill="#2e6d82"></path><path d="M125,-103.333C125,-107.667 120.667,-112 116.333,-112" stroke="#2e6d82" fill="#2e6d82"></path><polyline points="116.333,-112 59.6667,-112 " stroke="#2e6d82" fill="none"></polyline><path d="M59.6667,-112C55.3333,-112 51,-107.667 51,-103.333" stroke="#2e6d82" fill="none"></path><polyline points="51,-103.333 51,-94.6667 " stroke="#2e6d82" fill="none"></polyline><path d="M51,-94.6667C51,-90.3333 55.3333,-86 59.6667,-86" stroke="#2e6d82" fill="none"></path><polyline points="59.6667,-86 116.333,-86 " stroke="#2e6d82" fill="none"></polyline><path d="M116.333,-86C120.667,-86 125,-90.3333 125,-94.6667" stroke="#2e6d82" fill="none"></path><polyline points="125,-94.6667 125,-103.333 " stroke="#2e6d82" fill="none"></polyline><path d="M125,-103.333C125,-107.667 120.667,-112 116.333,-112" stroke="#2e6d82" fill="none"></path><image xlink:href="../../../../lib/trait_diagram.png" y="-107" x="61" preserveAspectRatio="xMinYMin meet" height="16px" width="16px"></image><text fill="#ffffff" font-size="8.00" font-family="Source Code Pro" y="-97.6" x="83" text-anchor="start">Actor</text></a></g><!-- node1&#45;&gt;node0 --><g class="edge inheritance" id="graph1_1_0"><a xlink:title="PiSubscriber[T] is a subtype of Actor"><path d="M88,-78.7534C88,-69.3549 88,-58.3336 88,-50.1238" stroke="#d4d4d4" fill="none"></path><polygon points="85.5501,-78.8581 88,-85.8581 90.4501,-78.8581 85.5501,-78.8581" stroke="#d4d4d4" fill="none"></polygon></a></g></g></svg></div>
                 <div id="diagram-controls" class="hiddenContent">
                   <button id="diagram-zoom-out" class="diagram-btn"><i class="material-icons"></i></button>
                   <button id="diagram-zoom-in" class="diagram-btn"><i class="material-icons"></i></button>
@@ -269,7 +275,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="com.workflowfm.pew.stream.PiSubscriber"><span>PiSubscriber</span></li><li class="in" name="uk.ac.ed.inf.ppapapan.subakka.Subscriber"><span>Subscriber</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="com.workflowfm.pew.stream.PiSubscriber"><span>PiSubscriber</span></li><li class="in" name="akka.actor.Actor"><span>Actor</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
                   <span class="filtertype">Implicitly<br />
@@ -295,9 +301,9 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="com.workflowfm.pew.stream.PiSubscriber#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(handler:com.workflowfm.pew.stream.PiEventHandler[T]):com.workflowfm.pew.stream.PiSubscriber[T]"></a><a id="&lt;init&gt;:PiSubscriber[T]"></a>
+      <a id="&lt;init&gt;(handler:com.workflowfm.pew.stream.PiEventHandler[T],publisher:akka.actor.ActorRef):com.workflowfm.pew.stream.PiSubscriber[T]"></a><a id="&lt;init&gt;:PiSubscriber[T]"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#&lt;init&gt;(handler:com.workflowfm.pew.stream.PiEventHandler[T]):com.workflowfm.pew.stream.PiSubscriber[T]" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#&lt;init&gt;(handler:com.workflowfm.pew.stream.PiEventHandler[T],publisher:akka.actor.ActorRef):com.workflowfm.pew.stream.PiSubscriber[T]" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -306,14 +312,33 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">PiSubscriber</span><span class="params">(<span name="handler">handler: <a href="PiEventHandler.html" class="extype" name="com.workflowfm.pew.stream.PiEventHandler">PiEventHandler</a>[<span class="extype" name="com.workflowfm.pew.stream.PiSubscriber.T">T</span>]</span>)</span>
+        <span class="name">PiSubscriber</span><span class="params">(<span name="handler">handler: <a href="PiEventHandler.html" class="extype" name="com.workflowfm.pew.stream.PiEventHandler">PiEventHandler</a>[<span class="extype" name="com.workflowfm.pew.stream.PiSubscriber.T">T</span>]</span>, <span name="publisher">publisher: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>)</span>
       </span>
       
       
     </li></ol>
             </div>
 
-        
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="akka.actor.Actor.Receive" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Receive=akka.actor.Actor.Receive"></a><a id="Receive:Receive"></a>
+      <span class="permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#Receive=akka.actor.Actor.Receive" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Receive</span><span class="result alias"> = <a href="https://www.scala-lang.org/api/2.12.12/scala/PartialFunction.html#scala.PartialFunction" class="extype" name="scala.PartialFunction">PartialFunction</a>[<a href="https://www.scala-lang.org/api/2.12.12/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a>, <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Actor</dd></dl></div>
+    </li></ol>
+            </div>
 
         
 
@@ -411,6 +436,101 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="akka.actor.Actor#aroundPostRestart" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="aroundPostRestart(reason:Throwable):Unit"></a><a id="aroundPostRestart(Throwable):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#aroundPostRestart(reason:Throwable):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">aroundPostRestart</span><span class="params">(<span name="reason">reason: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../akka/index.html" class="extype" name="akka">akka</a>] </dd><dt>Definition Classes</dt><dd>Actor</dd><dt>Annotations</dt><dd>
+                <span class="name">@InternalApi</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="akka.actor.Actor#aroundPostStop" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="aroundPostStop():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#aroundPostStop():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">aroundPostStop</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../akka/index.html" class="extype" name="akka">akka</a>] </dd><dt>Definition Classes</dt><dd>Actor</dd><dt>Annotations</dt><dd>
+                <span class="name">@InternalApi</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="akka.actor.Actor#aroundPreRestart" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="aroundPreRestart(reason:Throwable,message:Option[Any]):Unit"></a><a id="aroundPreRestart(Throwable,Option[Any]):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#aroundPreRestart(reason:Throwable,message:Option[Any]):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">aroundPreRestart</span><span class="params">(<span name="reason">reason: <span class="extype" name="scala.Throwable">Throwable</span></span>, <span name="message">message: <a href="https://www.scala-lang.org/api/2.12.12/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="https://www.scala-lang.org/api/2.12.12/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a>]</span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../akka/index.html" class="extype" name="akka">akka</a>] </dd><dt>Definition Classes</dt><dd>Actor</dd><dt>Annotations</dt><dd>
+                <span class="name">@InternalApi</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="akka.actor.Actor#aroundPreStart" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="aroundPreStart():Unit"></a>
+      <span class="permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#aroundPreStart():Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">aroundPreStart</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../akka/index.html" class="extype" name="akka">akka</a>] </dd><dt>Definition Classes</dt><dd>Actor</dd><dt>Annotations</dt><dd>
+                <span class="name">@InternalApi</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="akka.actor.Actor#aroundReceive" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="aroundReceive(receive:akka.actor.Actor.Receive,msg:Any):Unit"></a><a id="aroundReceive(akka.actor.Actor.Receive,Any):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#aroundReceive(receive:akka.actor.Actor.Receive,msg:Any):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">aroundReceive</span><span class="params">(<span name="receive">receive: <span class="extype" name="akka.actor.Actor.Receive">akka.actor.Actor.Receive</span></span>, <span name="msg">msg: <a href="https://www.scala-lang.org/api/2.12.12/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../akka/index.html" class="extype" name="akka">akka</a>] </dd><dt>Definition Classes</dt><dd>Actor</dd><dt>Annotations</dt><dd>
+                <span class="name">@InternalApi</span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="scala.Any#asInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <span class="permalink">
@@ -451,6 +571,22 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="akka.actor.Actor#context" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="context:akka.actor.ActorContext"></a><a id="context:ActorContext"></a>
+      <span class="permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#context:akka.actor.ActorContext" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">context</span><span class="result">: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorContext.html#akka.actor.ActorContext" class="extype" name="akka.actor.ActorContext">ActorContext</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Actor</dd></dl></div>
     </li><li name="scala.Predef.Ensuring#ensuring" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ensuring(cond:A=&gt;Boolean,msg:=&gt;Any):A"></a><a id="ensuring((PiSubscriber[T])⇒Boolean,⇒Any):PiSubscriber[T]"></a>
       <span class="permalink">
@@ -716,23 +852,7 @@
                 <span class="name">@native</span><span class="args">()</span>
               
         </dd></dl></div>
-    </li><li name="uk.ac.ed.inf.ppapapan.subakka.Subscriber#onDone" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="onDone(publisher:akka.actor.ActorRef,subscriber:akka.actor.ActorRef):Unit"></a><a id="onDone(ActorRef,ActorRef):Unit"></a>
-      <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#onDone(publisher:akka.actor.ActorRef,subscriber:akka.actor.ActorRef):Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">onDone</span><span class="params">(<span name="publisher">publisher: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>, <span name="subscriber">subscriber: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Subscriber</dd></dl></div>
-    </li><li name="com.workflowfm.pew.stream.PiSubscriber#onEvent" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="com.workflowfm.pew.stream.PiSubscriber#onEvent" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="onEvent(event:com.workflowfm.pew.PiEvent[T]):Unit"></a><a id="onEvent(PiEvent[T]):Unit"></a>
       <span class="permalink">
       <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#onEvent(event:com.workflowfm.pew.PiEvent[T]):Unit" title="Permalink">
@@ -747,11 +867,11 @@
         <span class="name">onEvent</span><span class="params">(<span name="event">event: <a href="../PiEvent.html" class="extype" name="com.workflowfm.pew.PiEvent">PiEvent</a>[<span class="extype" name="com.workflowfm.pew.stream.PiSubscriber.T">T</span>]</span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.workflowfm.pew.stream.PiSubscriber">PiSubscriber</a> → Subscriber</dd></dl></div>
-    </li><li name="uk.ac.ed.inf.ppapapan.subakka.Subscriber#onFail" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="onFail(e:Throwable,publisher:akka.actor.ActorRef,subscriber:akka.actor.ActorRef):Unit"></a><a id="onFail(Throwable,ActorRef,ActorRef):Unit"></a>
+      
+    </li><li name="akka.actor.Actor#postRestart" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="postRestart(reason:Throwable):Unit"></a><a id="postRestart(Throwable):Unit"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#onFail(e:Throwable,publisher:akka.actor.ActorRef,subscriber:akka.actor.ActorRef):Unit" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#postRestart(reason:Throwable):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -760,14 +880,20 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">onFail</span><span class="params">(<span name="e">e: <span class="extype" name="scala.Throwable">Throwable</span></span>, <span name="publisher">publisher: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>, <span name="subscriber">subscriber: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+        <span class="name">postRestart</span><span class="params">(<span name="reason">reason: <span class="extype" name="scala.Throwable">Throwable</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Subscriber</dd></dl></div>
-    </li><li name="com.workflowfm.pew.stream.PiSubscriber#onInit" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="onInit(publisher:akka.actor.ActorRef,killSwitch:uk.ac.ed.inf.ppapapan.subakka.SubscriptionSwitch):Unit"></a><a id="onInit(ActorRef,SubscriptionSwitch):Unit"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Actor</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Exception]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="akka.actor.Actor#postStop" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="postStop():Unit"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#onInit(publisher:akka.actor.ActorRef,killSwitch:uk.ac.ed.inf.ppapapan.subakka.SubscriptionSwitch):Unit" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#postStop():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -776,14 +902,20 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">onInit</span><span class="params">(<span name="publisher">publisher: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>, <span name="killSwitch">killSwitch: <span class="extype" name="uk.ac.ed.inf.ppapapan.subakka.SubscriptionSwitch">SubscriptionSwitch</span></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+        <span class="name">postStop</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.workflowfm.pew.stream.PiSubscriber">PiSubscriber</a> → Subscriber</dd></dl></div>
-    </li><li name="uk.ac.ed.inf.ppapapan.subakka.Subscriber#onInit" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="onInit(publisher:akka.actor.ActorRef):Unit"></a><a id="onInit(ActorRef):Unit"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Actor</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Exception]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="akka.actor.Actor#preRestart" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="preRestart(reason:Throwable,message:Option[Any]):Unit"></a><a id="preRestart(Throwable,Option[Any]):Unit"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#onInit(publisher:akka.actor.ActorRef):Unit" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#preRestart(reason:Throwable,message:Option[Any]):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -792,14 +924,20 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">onInit</span><span class="params">(<span name="publisher">publisher: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+        <span class="name">preRestart</span><span class="params">(<span name="reason">reason: <span class="extype" name="scala.Throwable">Throwable</span></span>, <span name="message">message: <a href="https://www.scala-lang.org/api/2.12.12/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<a href="https://www.scala-lang.org/api/2.12.12/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a>]</span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Subscriber</dd></dl></div>
-    </li><li name="uk.ac.ed.inf.ppapapan.subakka.Subscriber#subAndForgetTo" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="subAndForgetTo(publisher:akka.actor.ActorRef,name:Option[String],timeout:scala.concurrent.duration.FiniteDuration)(implicitsystem:akka.actor.ActorSystem,implicittag:scala.reflect.ClassTag[Event]):scala.concurrent.Future[Any]"></a><a id="subAndForgetTo(ActorRef,Option[String],FiniteDuration)(ActorSystem,ClassTag[PiEvent[T]]):Future[Any]"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Actor</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Exception]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="akka.actor.Actor#preStart" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="preStart():Unit"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#subAndForgetTo(publisher:akka.actor.ActorRef,name:Option[String],timeout:scala.concurrent.duration.FiniteDuration)(implicitsystem:akka.actor.ActorSystem,implicittag:scala.reflect.ClassTag[Event]):scala.concurrent.Future[Any]" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#preStart():Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -808,14 +946,20 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">subAndForgetTo</span><span class="params">(<span name="publisher">publisher: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>, <span name="name">name: <a href="https://www.scala-lang.org/api/2.12.12/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="timeout">timeout: <a href="https://www.scala-lang.org/api/2.12.12/scala/concurrent/duration/FiniteDuration.html#scala.concurrent.duration.FiniteDuration" class="extype" name="scala.concurrent.duration.FiniteDuration">FiniteDuration</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="system">system: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorSystem.html#akka.actor.ActorSystem" class="extype" name="akka.actor.ActorSystem">ActorSystem</a></span>, <span name="tag">tag: <a href="https://www.scala-lang.org/api/2.12.12/scala/reflect/ClassTag.html#scala.reflect.ClassTag" class="extype" name="scala.reflect.ClassTag">ClassTag</a>[<a href="../PiEvent.html" class="extype" name="com.workflowfm.pew.PiEvent">PiEvent</a>[<span class="extype" name="com.workflowfm.pew.stream.PiSubscriber.T">T</span>]]</span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/concurrent/Future.html#scala.concurrent.Future" class="extype" name="scala.concurrent.Future">Future</a>[<a href="https://www.scala-lang.org/api/2.12.12/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a>]</span>
+        <span class="name">preStart</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Subscriber</dd></dl></div>
-    </li><li name="uk.ac.ed.inf.ppapapan.subakka.Subscriber#subscribeTo" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="subscribeTo(publisher:akka.actor.ActorRef,name:Option[String],timeout:scala.concurrent.duration.FiniteDuration)(implicitsystem:akka.actor.ActorSystem,implicittag:scala.reflect.ClassTag[Event]):scala.concurrent.Future[uk.ac.ed.inf.ppapapan.subakka.Publisher.StreamInit]"></a><a id="subscribeTo(ActorRef,Option[String],FiniteDuration)(ActorSystem,ClassTag[PiEvent[T]]):Future[StreamInit]"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Actor</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Exception]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="com.workflowfm.pew.stream.PiSubscriber#receive" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="receive:PiSubscriber.this.Receive"></a><a id="receive:Receive"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#subscribeTo(publisher:akka.actor.ActorRef,name:Option[String],timeout:scala.concurrent.duration.FiniteDuration)(implicitsystem:akka.actor.ActorSystem,implicittag:scala.reflect.ClassTag[Event]):scala.concurrent.Future[uk.ac.ed.inf.ppapapan.subakka.Publisher.StreamInit]" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#receive:PiSubscriber.this.Receive" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -824,23 +968,71 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">subscribeTo</span><span class="params">(<span name="publisher">publisher: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>, <span name="name">name: <a href="https://www.scala-lang.org/api/2.12.12/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="timeout">timeout: <a href="https://www.scala-lang.org/api/2.12.12/scala/concurrent/duration/FiniteDuration.html#scala.concurrent.duration.FiniteDuration" class="extype" name="scala.concurrent.duration.FiniteDuration">FiniteDuration</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="system">system: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorSystem.html#akka.actor.ActorSystem" class="extype" name="akka.actor.ActorSystem">ActorSystem</a></span>, <span name="tag">tag: <a href="https://www.scala-lang.org/api/2.12.12/scala/reflect/ClassTag.html#scala.reflect.ClassTag" class="extype" name="scala.reflect.ClassTag">ClassTag</a>[<a href="../PiEvent.html" class="extype" name="com.workflowfm.pew.PiEvent">PiEvent</a>[<span class="extype" name="com.workflowfm.pew.stream.PiSubscriber.T">T</span>]]</span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/concurrent/Future.html#scala.concurrent.Future" class="extype" name="scala.concurrent.Future">Future</a>[<span class="extype" name="uk.ac.ed.inf.ppapapan.subakka.Publisher.StreamInit">StreamInit</span>]</span>
+        <span class="name">receive</span><span class="result">: <a href="#Receive=akka.actor.Actor.Receive" class="extmbr" name="com.workflowfm.pew.stream.PiSubscriber.Receive">Receive</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Subscriber</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.workflowfm.pew.stream.PiSubscriber">PiSubscriber</a> → Actor</dd></dl></div>
+    </li><li name="akka.actor.Actor#self" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="self:akka.actor.ActorRef"></a><a id="self:ActorRef"></a>
+      <span class="permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#self:akka.actor.ActorRef" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">implicit final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">self</span><span class="result">: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Actor</dd></dl></div>
+    </li><li name="akka.actor.Actor#sender" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="sender():akka.actor.ActorRef"></a><a id="sender():ActorRef"></a>
+      <span class="permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#sender():akka.actor.ActorRef" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sender</span><span class="params">()</span><span class="result">: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Actor</dd></dl></div>
+    </li><li name="akka.actor.Actor#supervisorStrategy" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="supervisorStrategy:akka.actor.SupervisorStrategy"></a><a id="supervisorStrategy:SupervisorStrategy"></a>
+      <span class="permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#supervisorStrategy:akka.actor.SupervisorStrategy" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">supervisorStrategy</span><span class="result">: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/SupervisorStrategy.html#akka.actor.SupervisorStrategy" class="extype" name="akka.actor.SupervisorStrategy">SupervisorStrategy</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Actor</dd></dl></div>
     </li><li name="com.workflowfm.pew.stream.PiSubscriber#switch" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="switch:Option[uk.ac.ed.inf.ppapapan.subakka.SubscriptionSwitch]"></a><a id="switch:Option[SubscriptionSwitch]"></a>
+      <a id="switch:com.workflowfm.pew.stream.PiSwitch"></a><a id="switch:PiSwitch"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#switch:Option[uk.ac.ed.inf.ppapapan.subakka.SubscriptionSwitch]" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#switch:com.workflowfm.pew.stream.PiSwitch" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
       <span class="modifier_kind">
         <span class="modifier"></span>
-        <span class="kind">var</span>
+        <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">switch</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Option.html#scala.Option" class="extype" name="scala.Option">Option</a>[<span class="extype" name="uk.ac.ed.inf.ppapapan.subakka.SubscriptionSwitch">SubscriptionSwitch</span>]</span>
+        <span class="name">switch</span><span class="result">: <a href="PiSwitch.html" class="extype" name="com.workflowfm.pew.stream.PiSwitch">PiSwitch</a></span>
       </span>
       
       
@@ -876,6 +1068,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="akka.actor.Actor#unhandled" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="unhandled(message:Any):Unit"></a><a id="unhandled(Any):Unit"></a>
+      <span class="permalink">
+      <a href="../../../../com/workflowfm/pew/stream/PiSubscriber.html#unhandled(message:Any):Unit" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">unhandled</span><span class="params">(<span name="message">message: <a href="https://www.scala-lang.org/api/2.12.12/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Actor</dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <span class="permalink">
@@ -974,8 +1182,8 @@
         </div>
 
         <div id="inheritedMembers">
-        <div class="parent" name="uk.ac.ed.inf.ppapapan.subakka.Subscriber">
-              <h3>Inherited from <span class="extype" name="uk.ac.ed.inf.ppapapan.subakka.Subscriber">Subscriber</span>[<a href="../PiEvent.html" class="extype" name="com.workflowfm.pew.PiEvent">PiEvent</a>[<span class="extype" name="com.workflowfm.pew.stream.PiSubscriber.T">T</span>]]</h3>
+        <div class="parent" name="akka.actor.Actor">
+              <h3>Inherited from <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/Actor.html#akka.actor.Actor" class="extype" name="akka.actor.Actor">Actor</a></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="https://www.scala-lang.org/api/2.12.12/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">

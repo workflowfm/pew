@@ -201,7 +201,7 @@
           <span class="toggle">
             Linear Supertypes
           </span>
-          <div class="superTypes hiddenContent"><a href="AkkaExecutorActor.html" class="extype" name="com.workflowfm.pew.execution.AkkaExecutorActor">AkkaExecutorActor</a>, <a href="../stream/PiStream.html" class="extype" name="com.workflowfm.pew.stream.PiStream">PiStream</a>[<span class="extype" name="java.util.UUID">UUID</span>], <a href="../stream/PiObservable.html" class="extype" name="com.workflowfm.pew.stream.PiObservable">PiObservable</a>[<span class="extype" name="java.util.UUID">UUID</span>], <span class="extype" name="uk.ac.ed.inf.ppapapan.subakka.HashSetPublisher">HashSetPublisher</span>[<a href="../PiEvent.html" class="extype" name="com.workflowfm.pew.PiEvent">PiEvent</a>[<span class="extype" name="java.util.UUID">UUID</span>]], <span class="extype" name="uk.ac.ed.inf.ppapapan.subakka.Publisher">Publisher</span>[<a href="../PiEvent.html" class="extype" name="com.workflowfm.pew.PiEvent">PiEvent</a>[<span class="extype" name="java.util.UUID">UUID</span>]], <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorLogging.html#akka.actor.ActorLogging" class="extype" name="akka.actor.ActorLogging">ActorLogging</a>, <a href="../stream/PiPublisher.html" class="extype" name="com.workflowfm.pew.stream.PiPublisher">PiPublisher</a>[<span class="extype" name="java.util.UUID">UUID</span>], <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/Actor.html#akka.actor.Actor" class="extype" name="akka.actor.Actor">Actor</a>, <a href="https://www.scala-lang.org/api/2.12.12/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.12/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
+          <div class="superTypes hiddenContent"><a href="AkkaExecutorActor.html" class="extype" name="com.workflowfm.pew.execution.AkkaExecutorActor">AkkaExecutorActor</a>, <a href="../stream/AkkaPiStream.html" class="extype" name="com.workflowfm.pew.stream.AkkaPiStream">AkkaPiStream</a>[<span class="extype" name="java.util.UUID">UUID</span>], <a href="../stream/PiPublisher.html" class="extype" name="com.workflowfm.pew.stream.PiPublisher">PiPublisher</a>[<span class="extype" name="java.util.UUID">UUID</span>], <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/Actor.html#akka.actor.Actor" class="extype" name="akka.actor.Actor">Actor</a>, <a href="https://www.scala-lang.org/api/2.12.12/scala/AnyRef.html#scala.AnyRef" class="extype" name="scala.AnyRef">AnyRef</a>, <a href="https://www.scala-lang.org/api/2.12.12/scala/Any.html#scala.Any" class="extype" name="scala.Any">Any</a></div>
         </div><div class="toggleContainer block diagram-container" id="inheritance-diagram-container">
                 <span class="toggle diagram-link">
                   Type Hierarchy
@@ -237,7 +237,7 @@
                   <span class="filtertype">Inherited<br />
                   </span>
                   <ol id="linearization">
-                    <li class="in" name="com.workflowfm.pew.execution.AkkaExecActor"><span>AkkaExecActor</span></li><li class="in" name="com.workflowfm.pew.execution.AkkaExecutorActor"><span>AkkaExecutorActor</span></li><li class="in" name="com.workflowfm.pew.stream.PiStream"><span>PiStream</span></li><li class="in" name="com.workflowfm.pew.stream.PiObservable"><span>PiObservable</span></li><li class="in" name="uk.ac.ed.inf.ppapapan.subakka.HashSetPublisher"><span>HashSetPublisher</span></li><li class="in" name="uk.ac.ed.inf.ppapapan.subakka.Publisher"><span>Publisher</span></li><li class="in" name="akka.actor.ActorLogging"><span>ActorLogging</span></li><li class="in" name="com.workflowfm.pew.stream.PiPublisher"><span>PiPublisher</span></li><li class="in" name="akka.actor.Actor"><span>Actor</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                    <li class="in" name="com.workflowfm.pew.execution.AkkaExecActor"><span>AkkaExecActor</span></li><li class="in" name="com.workflowfm.pew.execution.AkkaExecutorActor"><span>AkkaExecutorActor</span></li><li class="in" name="com.workflowfm.pew.stream.AkkaPiStream"><span>AkkaPiStream</span></li><li class="in" name="com.workflowfm.pew.stream.PiPublisher"><span>PiPublisher</span></li><li class="in" name="akka.actor.Actor"><span>Actor</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
                   </ol>
                 </div><div class="ancestors">
                   <span class="filtertype">Implicitly<br />
@@ -263,9 +263,9 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="com.workflowfm.pew.execution.AkkaExecActor#&lt;init&gt;" visbl="pub" class="indented0 " data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(store:com.workflowfm.pew.PiInstanceStore[java.util.UUID])(implicitexecutionContext:scala.concurrent.ExecutionContext,implicittimeout:scala.concurrent.duration.FiniteDuration):com.workflowfm.pew.execution.AkkaExecActor"></a><a id="&lt;init&gt;:AkkaExecActor"></a>
+      <a id="&lt;init&gt;(store:com.workflowfm.pew.PiInstanceStore[java.util.UUID])(implicitexecutionContext:scala.concurrent.ExecutionContext):com.workflowfm.pew.execution.AkkaExecActor"></a><a id="&lt;init&gt;:AkkaExecActor"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#&lt;init&gt;(store:com.workflowfm.pew.PiInstanceStore[java.util.UUID])(implicitexecutionContext:scala.concurrent.ExecutionContext,implicittimeout:scala.concurrent.duration.FiniteDuration):com.workflowfm.pew.execution.AkkaExecActor" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#&lt;init&gt;(store:com.workflowfm.pew.PiInstanceStore[java.util.UUID])(implicitexecutionContext:scala.concurrent.ExecutionContext):com.workflowfm.pew.execution.AkkaExecActor" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -274,7 +274,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">AkkaExecActor</span><span class="params">(<span name="store">store: <a href="../PiInstanceStore.html" class="extype" name="com.workflowfm.pew.PiInstanceStore">PiInstanceStore</a>[<span class="extype" name="java.util.UUID">UUID</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="executionContext">executionContext: <a href="https://www.scala-lang.org/api/2.12.12/scala/concurrent/ExecutionContext.html#scala.concurrent.ExecutionContext" class="extype" name="scala.concurrent.ExecutionContext">ExecutionContext</a></span>, <span name="timeout">timeout: <a href="https://www.scala-lang.org/api/2.12.12/scala/concurrent/duration/FiniteDuration.html#scala.concurrent.duration.FiniteDuration" class="extype" name="scala.concurrent.duration.FiniteDuration">FiniteDuration</a></span>)</span>
+        <span class="name">AkkaExecActor</span><span class="params">(<span name="store">store: <a href="../PiInstanceStore.html" class="extype" name="com.workflowfm.pew.PiInstanceStore">PiInstanceStore</a>[<span class="extype" name="java.util.UUID">UUID</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="executionContext">executionContext: <a href="https://www.scala-lang.org/api/2.12.12/scala/concurrent/ExecutionContext.html#scala.concurrent.ExecutionContext" class="extype" name="scala.concurrent.ExecutionContext">ExecutionContext</a></span>)</span>
       </span>
       
       
@@ -565,22 +565,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Actor</dd></dl></div>
-    </li><li name="uk.ac.ed.inf.ppapapan.subakka.HashSetPublisher#doPublish" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="doPublish(evt:Event):Unit"></a><a id="doPublish(PiEvent[UUID]):Unit"></a>
-      <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#doPublish(evt:Event):Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">doPublish</span><span class="params">(<span name="evt">evt: <a href="../PiEvent.html" class="extype" name="com.workflowfm.pew.PiEvent">PiEvent</a>[<span class="extype" name="java.util.UUID">UUID</span>]</span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HashSetPublisher → Publisher</dd></dl></div>
     </li><li name="scala.Predef.Ensuring#ensuring" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ensuring(cond:A=&gt;Boolean,msg:=&gt;Any):A"></a><a id="ensuring((AkkaExecActor)⇒Boolean,⇒Any):AkkaExecActor"></a>
       <span class="permalink">
@@ -708,7 +692,7 @@
         <span class="name">executionContext</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/concurrent/ExecutionContext.html#scala.concurrent.ExecutionContext" class="extype" name="scala.concurrent.ExecutionContext">ExecutionContext</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.workflowfm.pew.execution.AkkaExecActor">AkkaExecActor</a> → <a href="AkkaExecutorActor.html" class="extype" name="com.workflowfm.pew.execution.AkkaExecutorActor">AkkaExecutorActor</a> → <a href="../stream/PiStream.html" class="extype" name="com.workflowfm.pew.stream.PiStream">PiStream</a></dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.workflowfm.pew.execution.AkkaExecActor">AkkaExecActor</a> → <a href="AkkaExecutorActor.html" class="extype" name="com.workflowfm.pew.execution.AkkaExecutorActor">AkkaExecutorActor</a> → <a href="../stream/AkkaPiStream.html" class="extype" name="com.workflowfm.pew.stream.AkkaPiStream">AkkaPiStream</a></dd></dl></div>
     </li><li name="scala.AnyRef#finalize" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="finalize():Unit"></a>
       <span class="permalink">
@@ -789,6 +773,22 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AkkaExecutorActor.html" class="extype" name="com.workflowfm.pew.execution.AkkaExecutorActor">AkkaExecutorActor</a></dd></dl></div>
+    </li><li name="com.workflowfm.pew.stream.AkkaPiStream#handlers" visbl="prt" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="handlers:scala.collection.mutable.HashSet[akka.actor.ActorRef]"></a><a id="handlers:HashSet[ActorRef]"></a>
+      <span class="permalink">
+      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#handlers:scala.collection.mutable.HashSet[akka.actor.ActorRef]" title="Permalink">
+        <i class="material-icons"></i>
+      </a>
+    </span>
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">handlers</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/collection/mutable/HashSet.html#scala.collection.mutable.HashSet" class="extype" name="scala.collection.mutable.HashSet">HashSet</a>[<a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a>]</span>
+      </span>
+      
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../stream/AkkaPiStream.html" class="extype" name="com.workflowfm.pew.stream.AkkaPiStream">AkkaPiStream</a></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <span class="permalink">
@@ -824,22 +824,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AkkaExecutorActor.html" class="extype" name="com.workflowfm.pew.execution.AkkaExecutorActor">AkkaExecutorActor</a></dd></dl></div>
-    </li><li name="uk.ac.ed.inf.ppapapan.subakka.Publisher#isFinalEvent" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="isFinalEvent(e:Event):Boolean"></a><a id="isFinalEvent(PiEvent[UUID]):Boolean"></a>
-      <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#isFinalEvent(e:Event):Boolean" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">isFinalEvent</span><span class="params">(<span name="e">e: <a href="../PiEvent.html" class="extype" name="com.workflowfm.pew.PiEvent">PiEvent</a>[<span class="extype" name="java.util.UUID">UUID</span>]</span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Boolean.html#scala.Boolean" class="extype" name="scala.Boolean">Boolean</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Publisher</dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <span class="permalink">
@@ -856,22 +840,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="akka.actor.ActorLogging#log" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="log:akka.event.LoggingAdapter"></a><a id="log:LoggingAdapter"></a>
-      <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#log:akka.event.LoggingAdapter" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">log</span><span class="result">: <a href="https://doc.akka.io/api/akka/2.6.1/akka/event/LoggingAdapter.html#akka.event.LoggingAdapter" class="extype" name="akka.event.LoggingAdapter">LoggingAdapter</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ActorLogging</dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a><a id="ne(AnyRef):Boolean"></a>
       <span class="permalink">
@@ -1030,10 +998,10 @@
     </span>)</span>
               
         </dd></dl></div>
-    </li><li name="uk.ac.ed.inf.ppapapan.subakka.Publisher#publish" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="publish(evt:Event):Unit"></a><a id="publish(PiEvent[UUID]):Unit"></a>
+    </li><li name="com.workflowfm.pew.stream.AkkaPiStream#publish" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="publish(evt:com.workflowfm.pew.PiEvent[T]):Unit"></a><a id="publish(PiEvent[UUID]):Unit"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#publish(evt:Event):Unit" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#publish(evt:com.workflowfm.pew.PiEvent[T]):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1045,11 +1013,11 @@
         <span class="name">publish</span><span class="params">(<span name="evt">evt: <a href="../PiEvent.html" class="extype" name="com.workflowfm.pew.PiEvent">PiEvent</a>[<span class="extype" name="java.util.UUID">UUID</span>]</span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Publisher</dd></dl></div>
-    </li><li name="uk.ac.ed.inf.ppapapan.subakka.HashSetPublisher#publisherBehaviour" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="publisherBehaviour:HashSetPublisher.this.Receive"></a><a id="publisherBehaviour:Receive"></a>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../stream/AkkaPiStream.html" class="extype" name="com.workflowfm.pew.stream.AkkaPiStream">AkkaPiStream</a> → <a href="../stream/PiPublisher.html" class="extype" name="com.workflowfm.pew.stream.PiPublisher">PiPublisher</a></dd></dl></div>
+    </li><li name="com.workflowfm.pew.stream.AkkaPiStream#publisherReceive" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="publisherReceive:AkkaPiStream.this.Receive"></a><a id="publisherReceive:Receive"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#publisherBehaviour:HashSetPublisher.this.Receive" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#publisherReceive:AkkaPiStream.this.Receive" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1058,10 +1026,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">publisherBehaviour</span><span class="result">: <a href="#Receive=akka.actor.Actor.Receive" class="extmbr" name="com.workflowfm.pew.execution.AkkaExecActor.Receive">Receive</a></span>
+        <span class="name">publisherReceive</span><span class="result">: <a href="#Receive=akka.actor.Actor.Receive" class="extmbr" name="com.workflowfm.pew.execution.AkkaExecActor.Receive">Receive</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HashSetPublisher → Publisher</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../stream/AkkaPiStream.html" class="extype" name="com.workflowfm.pew.stream.AkkaPiStream">AkkaPiStream</a></dd></dl></div>
     </li><li name="com.workflowfm.pew.execution.AkkaExecutorActor#receive" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="receive:AkkaExecutorActor.this.Receive"></a><a id="receive:Receive"></a>
       <span class="permalink">
@@ -1077,7 +1045,7 @@
         <span class="name">receive</span><span class="result">: <a href="#Receive=akka.actor.Actor.Receive" class="extmbr" name="com.workflowfm.pew.execution.AkkaExecActor.Receive">Receive</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AkkaExecutorActor.html" class="extype" name="com.workflowfm.pew.execution.AkkaExecutorActor">AkkaExecutorActor</a> → HashSetPublisher → Publisher → Actor</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AkkaExecutorActor.html" class="extype" name="com.workflowfm.pew.execution.AkkaExecutorActor">AkkaExecutorActor</a> → Actor</dd></dl></div>
     </li><li name="com.workflowfm.pew.execution.AkkaExecutorActor#runThread" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="runThread(i:com.workflowfm.pew.PiInstance[java.util.UUID])(t:(Int,com.workflowfm.pew.PiFuture)):Unit"></a><a id="runThread(PiInstance[UUID])((Int,PiFuture)):Unit"></a>
       <span class="permalink">
@@ -1142,22 +1110,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AkkaExecutorActor.html" class="extype" name="com.workflowfm.pew.execution.AkkaExecutorActor">AkkaExecutorActor</a></dd></dl></div>
-    </li><li name="uk.ac.ed.inf.ppapapan.subakka.HashSetPublisher#stopStream" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="stopStream():Unit"></a>
-      <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#stopStream():Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">stopStream</span><span class="params">()</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HashSetPublisher → Publisher</dd></dl></div>
     </li><li name="com.workflowfm.pew.execution.AkkaExecActor#store" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="store:com.workflowfm.pew.PiInstanceStore[java.util.UUID]"></a><a id="store:PiInstanceStore[UUID]"></a>
       <span class="permalink">
@@ -1174,10 +1126,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.workflowfm.pew.execution.AkkaExecActor">AkkaExecActor</a> → <a href="AkkaExecutorActor.html" class="extype" name="com.workflowfm.pew.execution.AkkaExecutorActor">AkkaExecutorActor</a></dd></dl></div>
-    </li><li name="uk.ac.ed.inf.ppapapan.subakka.HashSetPublisher#subAndForget" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="subAndForget(actor:akka.actor.ActorRef,ack:akka.actor.ActorRef):Unit"></a><a id="subAndForget(ActorRef,ActorRef):Unit"></a>
+    </li><li name="com.workflowfm.pew.stream.AkkaPiStream#subscribe" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="subscribe(handler:akka.actor.ActorRef):Unit"></a><a id="subscribe(ActorRef):Unit"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#subAndForget(actor:akka.actor.ActorRef,ack:akka.actor.ActorRef):Unit" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#subscribe(handler:akka.actor.ActorRef):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1186,58 +1138,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">subAndForget</span><span class="params">(<span name="actor">actor: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>, <span name="ack">ack: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
+        <span class="name">subscribe</span><span class="params">(<span name="handler">handler: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HashSetPublisher → Publisher</dd></dl></div>
-    </li><li name="com.workflowfm.pew.stream.PiStream#subscribe" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="subscribe(handler:com.workflowfm.pew.stream.PiEventHandler[T]):scala.concurrent.Future[com.workflowfm.pew.stream.PiSwitch]"></a><a id="subscribe(PiEventHandler[UUID]):Future[PiSwitch]"></a>
-      <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#subscribe(handler:com.workflowfm.pew.stream.PiEventHandler[T]):scala.concurrent.Future[com.workflowfm.pew.stream.PiSwitch]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">subscribe</span><span class="params">(<span name="handler">handler: <a href="../stream/PiEventHandler.html" class="extype" name="com.workflowfm.pew.stream.PiEventHandler">PiEventHandler</a>[<span class="extype" name="java.util.UUID">UUID</span>]</span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/concurrent/Future.html#scala.concurrent.Future" class="extype" name="scala.concurrent.Future">Future</a>[<a href="../stream/PiSwitch.html" class="extype" name="com.workflowfm.pew.stream.PiSwitch">PiSwitch</a>]</span>
-      </span>
-      
-      <p class="shortcomment cmt">Subscribes a <a href="../stream/PiEventHandler.html" class="extype" name="com.workflowfm.pew.stream.PiEventHandler">com.workflowfm.pew.stream.PiEventHandler</a> to observe.</p><div class="fullcomment"><div class="comment cmt"><p>Subscribes a <a href="../stream/PiEventHandler.html" class="extype" name="com.workflowfm.pew.stream.PiEventHandler">com.workflowfm.pew.stream.PiEventHandler</a> to observe.</p></div><dl class="paramcmts block"><dt class="param">handler</dt><dd class="cmt"><p>the handler to subscribe</p></dd><dt>returns</dt><dd class="cmt"><p>the <a href="../stream/PiSwitch.html" class="extype" name="com.workflowfm.pew.stream.PiSwitch">com.workflowfm.pew.stream.PiSwitch</a> that allows us to stop/unsubscribe the subscribed handler</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../stream/PiStream.html" class="extype" name="com.workflowfm.pew.stream.PiStream">PiStream</a> → <a href="../stream/PiObservable.html" class="extype" name="com.workflowfm.pew.stream.PiObservable">PiObservable</a></dd></dl></div>
-    </li><li name="uk.ac.ed.inf.ppapapan.subakka.HashSetPublisher#subscribe" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="subscribe(name:String,actor:akka.actor.ActorRef,ack:akka.actor.ActorRef):uk.ac.ed.inf.ppapapan.subakka.SubscriptionSwitch"></a><a id="subscribe(String,ActorRef,ActorRef):SubscriptionSwitch"></a>
-      <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#subscribe(name:String,actor:akka.actor.ActorRef,ack:akka.actor.ActorRef):uk.ac.ed.inf.ppapapan.subakka.SubscriptionSwitch" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">subscribe</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="actor">actor: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>, <span name="ack">ack: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>)</span><span class="result">: <span class="extype" name="uk.ac.ed.inf.ppapapan.subakka.SubscriptionSwitch">SubscriptionSwitch</span></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HashSetPublisher → Publisher</dd></dl></div>
-    </li><li name="uk.ac.ed.inf.ppapapan.subakka.HashSetPublisher#subscribers" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="subscribers:scala.collection.mutable.HashSet[akka.actor.ActorRef]"></a><a id="subscribers:HashSet[ActorRef]"></a>
-      <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#subscribers:scala.collection.mutable.HashSet[akka.actor.ActorRef]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">subscribers</span><span class="result">: <span class="extype" name="scala.collection.mutable.HashSet">HashSet</span>[<a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a>]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HashSetPublisher</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../stream/AkkaPiStream.html" class="extype" name="com.workflowfm.pew.stream.AkkaPiStream">AkkaPiStream</a></dd></dl></div>
     </li><li name="akka.actor.Actor#supervisorStrategy" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="supervisorStrategy:akka.actor.SupervisorStrategy"></a><a id="supervisorStrategy:SupervisorStrategy"></a>
       <span class="permalink">
@@ -1270,38 +1174,6 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="com.workflowfm.pew.execution.AkkaExecutorActor#tag" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="tag:scala.reflect.ClassTag[com.workflowfm.pew.PiEvent[java.util.UUID]]"></a><a id="tag:ClassTag[PiEvent[UUID]]"></a>
-      <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#tag:scala.reflect.ClassTag[com.workflowfm.pew.PiEvent[java.util.UUID]]" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">implicit </span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">tag</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/reflect/ClassTag.html#scala.reflect.ClassTag" class="extype" name="scala.reflect.ClassTag">ClassTag</a>[<a href="../PiEvent.html" class="extype" name="com.workflowfm.pew.PiEvent">PiEvent</a>[<span class="extype" name="java.util.UUID">UUID</span>]]</span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="AkkaExecutorActor.html" class="extype" name="com.workflowfm.pew.execution.AkkaExecutorActor">AkkaExecutorActor</a> → <a href="../stream/PiStream.html" class="extype" name="com.workflowfm.pew.stream.PiStream">PiStream</a></dd></dl></div>
-    </li><li name="com.workflowfm.pew.execution.AkkaExecActor#timeout" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="timeout:scala.concurrent.duration.FiniteDuration"></a><a id="timeout:FiniteDuration"></a>
-      <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#timeout:scala.concurrent.duration.FiniteDuration" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier">implicit </span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">timeout</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/concurrent/duration/FiniteDuration.html#scala.concurrent.duration.FiniteDuration" class="extype" name="scala.concurrent.duration.FiniteDuration">FiniteDuration</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="com.workflowfm.pew.execution.AkkaExecActor">AkkaExecActor</a> → <a href="AkkaExecutorActor.html" class="extype" name="com.workflowfm.pew.execution.AkkaExecutorActor">AkkaExecutorActor</a> → <a href="../stream/PiStream.html" class="extype" name="com.workflowfm.pew.stream.PiStream">PiStream</a></dd></dl></div>
     </li><li name="scala.AnyRef#toString" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="toString():String"></a>
       <span class="permalink">
@@ -1334,10 +1206,10 @@
       </span>
       
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Actor</dd></dl></div>
-    </li><li name="uk.ac.ed.inf.ppapapan.subakka.HashSetPublisher#unsubBehaviour" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="unsubBehaviour:HashSetPublisher.this.Receive"></a><a id="unsubBehaviour:Receive"></a>
+    </li><li name="com.workflowfm.pew.stream.AkkaPiStream#unsubscribe" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="unsubscribe(handler:akka.actor.ActorRef):Unit"></a><a id="unsubscribe(ActorRef):Unit"></a>
       <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#unsubBehaviour:HashSetPublisher.this.Receive" title="Permalink">
+      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#unsubscribe(handler:akka.actor.ActorRef):Unit" title="Permalink">
         <i class="material-icons"></i>
       </a>
     </span>
@@ -1346,26 +1218,10 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">unsubBehaviour</span><span class="result">: <a href="#Receive=akka.actor.Actor.Receive" class="extmbr" name="com.workflowfm.pew.execution.AkkaExecActor.Receive">Receive</a></span>
+        <span class="name">unsubscribe</span><span class="params">(<span name="handler">handler: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
       </span>
       
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HashSetPublisher</dd></dl></div>
-    </li><li name="uk.ac.ed.inf.ppapapan.subakka.HashSetPublisher#unsubscribe" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="unsubscribe(actor:akka.actor.ActorRef):Unit"></a><a id="unsubscribe(ActorRef):Unit"></a>
-      <span class="permalink">
-      <a href="../../../../com/workflowfm/pew/execution/AkkaExecActor.html#unsubscribe(actor:akka.actor.ActorRef):Unit" title="Permalink">
-        <i class="material-icons"></i>
-      </a>
-    </span>
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">unsubscribe</span><span class="params">(<span name="actor">actor: <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorRef.html#akka.actor.ActorRef" class="extype" name="akka.actor.ActorRef">ActorRef</a></span>)</span><span class="result">: <a href="https://www.scala-lang.org/api/2.12.12/scala/Unit.html#scala.Unit" class="extype" name="scala.Unit">Unit</a></span>
-      </span>
-      
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>HashSetPublisher</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../stream/AkkaPiStream.html" class="extype" name="com.workflowfm.pew.stream.AkkaPiStream">AkkaPiStream</a></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" class="indented0 " data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <span class="permalink">
@@ -1466,16 +1322,8 @@
         <div id="inheritedMembers">
         <div class="parent" name="com.workflowfm.pew.execution.AkkaExecutorActor">
               <h3>Inherited from <a href="AkkaExecutorActor.html" class="extype" name="com.workflowfm.pew.execution.AkkaExecutorActor">AkkaExecutorActor</a></h3>
-            </div><div class="parent" name="com.workflowfm.pew.stream.PiStream">
-              <h3>Inherited from <a href="../stream/PiStream.html" class="extype" name="com.workflowfm.pew.stream.PiStream">PiStream</a>[<span class="extype" name="java.util.UUID">UUID</span>]</h3>
-            </div><div class="parent" name="com.workflowfm.pew.stream.PiObservable">
-              <h3>Inherited from <a href="../stream/PiObservable.html" class="extype" name="com.workflowfm.pew.stream.PiObservable">PiObservable</a>[<span class="extype" name="java.util.UUID">UUID</span>]</h3>
-            </div><div class="parent" name="uk.ac.ed.inf.ppapapan.subakka.HashSetPublisher">
-              <h3>Inherited from <span class="extype" name="uk.ac.ed.inf.ppapapan.subakka.HashSetPublisher">HashSetPublisher</span>[<a href="../PiEvent.html" class="extype" name="com.workflowfm.pew.PiEvent">PiEvent</a>[<span class="extype" name="java.util.UUID">UUID</span>]]</h3>
-            </div><div class="parent" name="uk.ac.ed.inf.ppapapan.subakka.Publisher">
-              <h3>Inherited from <span class="extype" name="uk.ac.ed.inf.ppapapan.subakka.Publisher">Publisher</span>[<a href="../PiEvent.html" class="extype" name="com.workflowfm.pew.PiEvent">PiEvent</a>[<span class="extype" name="java.util.UUID">UUID</span>]]</h3>
-            </div><div class="parent" name="akka.actor.ActorLogging">
-              <h3>Inherited from <a href="https://doc.akka.io/api/akka/2.6.1/akka/actor/ActorLogging.html#akka.actor.ActorLogging" class="extype" name="akka.actor.ActorLogging">ActorLogging</a></h3>
+            </div><div class="parent" name="com.workflowfm.pew.stream.AkkaPiStream">
+              <h3>Inherited from <a href="../stream/AkkaPiStream.html" class="extype" name="com.workflowfm.pew.stream.AkkaPiStream">AkkaPiStream</a>[<span class="extype" name="java.util.UUID">UUID</span>]</h3>
             </div><div class="parent" name="com.workflowfm.pew.stream.PiPublisher">
               <h3>Inherited from <a href="../stream/PiPublisher.html" class="extype" name="com.workflowfm.pew.stream.PiPublisher">PiPublisher</a>[<span class="extype" name="java.util.UUID">UUID</span>]</h3>
             </div><div class="parent" name="akka.actor.Actor">

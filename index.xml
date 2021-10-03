@@ -12,7 +12,7 @@
       
       <guid>http://docs.workflowfm.com/pew/docs/getting-started/</guid>
       <description>WorkflowFM PEW is available as a library from Maven Central, so you can add it as a dependency in your project. For example, in sbt:
-1libraryDependencies += &amp;#34;com.workflowfm&amp;#34; %% &amp;#34;pew&amp;#34; % &amp;#34;1.6.0&amp;#34; PEW is currently only available in Scala 2.12.12.</description>
+1libraryDependencies += &amp;#34;com.workflowfm&amp;#34; %% &amp;#34;pew&amp;#34; % &amp;#34;1.6.1&amp;#34; PEW is currently only available in Scala 2.12.12.</description>
     </item>
     
     <item>
