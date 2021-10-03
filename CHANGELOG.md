@@ -11,6 +11,12 @@ Includes feature updates, bug fixes, and open issues.
 * [AkkaExecutor.Call may timeout #4](https://github.com/workflowfm/pew/issues/4) - since v0.1
 
 
+## [v1.6.1](https://github.com/workflowfm/pew/releases/tag/v1.6.1) - 2021-10-03
+
+* Introduces `AkkaPiObservable` and `AkkaPiStream`.
+* Removes dependency to [SubAkka](https://github.com/PetrosPapapa/SubAkka) (see [#67](https://github.com/workflowfm/pew/pull/67)).
+
+
 ## [v1.6.0](https://github.com/workflowfm/pew/releases/tag/v1.6.0) - 2021-06-06
 
 * First release in Maven Central! 

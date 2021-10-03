@@ -4,7 +4,7 @@
 #+ATTR_ORG: :width 100
 [[https://raw.githubusercontent.com/workflowfm/pew/master/docs/static/images/PEW.png]]
 
-[[../../releases/latest][https://img.shields.io/badge/version-1.6.0-brightgreen.svg]]
+[[../../releases/latest][https://img.shields.io/badge/version-1.6.1-brightgreen.svg]]
 [[https://opensource.org/licenses/Apache-2.0][https://img.shields.io/badge/license-Apache%202.0-yellowgreen.svg]]
 
 A library for the execution of [[https://en.wikipedia.org/wiki/%CE%A0-calculus][\pi-calculus]] workflows, particularly those constructed by the WorkflowFM Reasoner using persistent (serializable) state.
@@ -38,7 +38,7 @@ You can then add Proter as [[https://search.maven.org/artifact/com.workflowfm/pe
 
 e.g. in sbt: 
 #+BEGIN_SRC scala
-libraryDependencies += "com.workflowfm" %% "pew" % "1.6.0"
+libraryDependencies += "com.workflowfm" %% "pew" % "1.6.1"
 #+END_SRC 
 
 

@@ -45,7 +45,7 @@ disableKinds = ["taxonomy", "taxonomyTerm"]
   uniqueHomePage = true # change to false to add sidebar to homepage
 
   repo = "https://github.com/workflowfm/pew"
-  version = "1.6.0"
+  version = "1.6.1"
 
   time_format_blog = "Monday, 02 January 2006"
   time_format_default = "2 January 2006"
