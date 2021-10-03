@@ -14,7 +14,7 @@ trait PiPublisher[T] {
 
 /** A kill switch allowing us to stop a [[PiEventHandler]]. */
 trait PiSwitch {
-  def stop: Unit
+  def stop(): Unit
 }
 
 /** Anything that can be observed by a [[PiEventHandler]].

@@ -4,16 +4,15 @@ import java.util.UUID
 
 import scala.concurrent._
 import scala.concurrent.duration._
-import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
 
 import akka.actor._
 import akka.event.LoggingReceive
-import akka.pattern.{ ask, pipe }
+import akka.pattern.ask
 import akka.util.Timeout
 
 import com.workflowfm.pew._
-import com.workflowfm.pew.stream.{ PiEventHandler, PiObservable, PiStream, PiSwitch }
+import com.workflowfm.pew.stream.{ PiEventHandler, AkkaPiObservable, AkkaPiStream }
 
 class AkkaExecutor(
     store: PiInstanceStore[UUID] = SimpleInstanceStore[UUID]()
@@ -21,22 +20,18 @@ class AkkaExecutor(
     implicit val system: ActorSystem,
     implicit val timeout: FiniteDuration = 10.seconds
 ) extends ProcessExecutor[UUID]
-    with PiObservable[UUID] {
+    with AkkaPiObservable[UUID] {
 
-  implicit val tag: ClassTag[UUID] = ClassTag(classOf[UUID])
+  //implicit val tag: ClassTag[UUID] = ClassTag(classOf[UUID])
   implicit override val executionContext: ExecutionContext = system.dispatcher
 
   val execActor: ActorRef = system.actorOf(AkkaExecutor.execprops(store))
-  implicit val tOut: Timeout = Timeout(timeout)
+  override val publisher: ActorRef = execActor
 
   override protected def init(instance: PiInstance[_]): Future[UUID] =
-    execActor ? AkkaExecutor.Init(instance) map (_.asInstanceOf[UUID])
+    (execActor ? AkkaExecutor.Init(instance))(Timeout(timeout)).map(_.asInstanceOf[UUID])
 
   override protected def start(id: UUID): Unit = execActor ! AkkaExecutor.Start(id)
-
-  override def subscribe(handler: PiEventHandler[UUID]): Future[PiSwitch] =
-    (execActor ? AkkaExecutor.Subscribe(handler)).mapTo[PiSwitch]
-
 }
 
 object AkkaExecutor {
@@ -62,24 +57,22 @@ object AkkaExecutor {
 
   def execprops(
       store: PiInstanceStore[UUID]
-  )(implicit system: ActorSystem, timeout: FiniteDuration): Props = Props(
-    new AkkaExecActor(store)(system.dispatcher, timeout)
+  )(implicit system: ActorSystem): Props = Props(
+    new AkkaExecActor(store)(system.dispatcher)
   )
 }
 
 class AkkaExecActor(
     override var store: PiInstanceStore[UUID]
 )(
-    implicit override val executionContext: ExecutionContext,
-    implicit override val timeout: FiniteDuration
+    implicit override val executionContext: ExecutionContext
 ) extends AkkaExecutorActor
 
-trait AkkaExecutorActor extends Actor with PiStream[UUID] {
+trait AkkaExecutorActor extends Actor with AkkaPiStream[UUID] {
   var store: PiInstanceStore[UUID]
   implicit val executionContext: ExecutionContext
 
-  implicit override val tag: ClassTag[PiEvent[UUID]] = ClassTag(classOf[PiEvent[UUID]])
-  implicit override val timeout: FiniteDuration
+//  implicit override val tag: ClassTag[PiEvent[UUID]] = ClassTag(classOf[PiEvent[UUID]])
 
   def init(instance: PiInstance[_]): UUID = {
     val id = java.util.UUID.randomUUID
@@ -209,8 +202,7 @@ trait AkkaExecutorActor extends Actor with PiStream[UUID] {
     }
     case AkkaExecutor.Ping => sender() ! AkkaExecutor.Ping
     case AkkaExecutor.AckCall => Unit
-    case AkkaExecutor.Subscribe(h) => subscribe(h) pipeTo sender()
   }
 
-  override def receive: Receive = LoggingReceive { publisherBehaviour orElse akkaReceive }
+  override def receive: Receive = LoggingReceive { publisherReceive orElse akkaReceive }
 }
