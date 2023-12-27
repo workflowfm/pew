@@ -1,25 +1,17 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
-  
   <url>
-    <loc>http://docs.workflowfm.com/pew/docs/getting-started/</loc>
+    <loc>https://docs.workflowfm.com/pew/docs/getting-started/</loc>
+    <lastmod>2021-06-03T09:21:39+01:00</lastmod>
+  </url><url>
+    <loc>https://docs.workflowfm.com/pew/docs/</loc>
+    <lastmod>2021-06-03T09:21:39+01:00</lastmod>
+  </url><url>
+    <loc>https://docs.workflowfm.com/pew/search/</loc>
+    <lastmod>2021-06-03T09:21:39+01:00</lastmod>
+  </url><url>
+    <loc>https://docs.workflowfm.com/pew/</loc>
     <lastmod>2021-06-03T09:21:39+01:00</lastmod>
   </url>
-  
-  <url>
-    <loc>http://docs.workflowfm.com/pew/docs/</loc>
-    <lastmod>2021-06-03T09:21:39+01:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>http://docs.workflowfm.com/pew/search/</loc>
-    <lastmod>2021-06-03T09:21:39+01:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>http://docs.workflowfm.com/pew/</loc>
-    <lastmod>2021-06-03T09:21:39+01:00</lastmod>
-  </url>
-  
 </urlset>
