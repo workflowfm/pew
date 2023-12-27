@@ -1,4 +1,4 @@
-baseURL = "https://dev.workflowfm.com/pew/"
+baseURL = "https://docs.workflowfm.com/pew/"
 title = "WorkflowFM PEW"
 enableRobotsTXT = true
 # this example loads the theme as hugo module
